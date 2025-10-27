@@ -1,0 +1,139 @@
+﻿@model List<EjemploHorarios.Models.ViewModels.ListaHorarioVM>
+
+@{
+    ViewBag.Title = "Lista de Horarios - SENA";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    :root {
+        --sena-green: #008037;
+        --sena-green-2: #00a859;
+    }
+
+    .border-sena {
+        border-color: var(--sena-green) !important;
+    }
+
+    .bg-sena {
+        background-color: var(--sena-green) !important;
+        color: #fff;
+    }
+
+    .text-sena {
+        color: var(--sena-green) !important;
+    }
+
+    .pointer {
+        cursor: pointer;
+    }
+</style>
+
+<main class="container-fluid p-3">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+        <h2 class="text-sena mb-2 mb-md-0">Horarios Guardados</h2>
+        <div class="input-group input-group-sm" style="max-width: 340px;">
+            <input id="txtFilter" type="text" class="form-control" placeholder="Buscar por nombre o ficha...">
+            <span class="input-group-text bg-success text-white"><i class="bi bi-search"></i></span>
+        </div>
+    </div>
+
+    <div class="card border-sena shadow-sm">
+        <div class="card-header bg-sena fw-bold d-flex justify-content-between align-items-center">
+            <span>Listado de horarios</span>
+            <small class="opacity-75">Total: @(Model != null ? Model.Count : 0)</small>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table id="tblHorarios" class="table table-hover align-middle mb-0">
+                    <thead class="table-success">
+                        <tr>
+                            <th class="text-center" style="width: 50px;">#</th>
+                            <th>Nombre del Horario</th>
+                            <th style="width: 200px;">Número de Ficha</th>
+                            <th style="width: 250px;" class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model != null && Model.Any())
+                        {
+                            var index = 1;
+                            foreach (var h in Model)
+                            {
+                                <tr>
+                                    <td class="text-center"><span class="badge bg-light text-dark border">@index</span></td>
+                                    <td>
+                                        <div class="fw-semibold">@h.NombreHorario</div>
+                                        <small class="text-muted">ID: @h.IdHorario</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge text-bg-light border">
+                                            <i class="bi bi-hash"></i> @h.NumeroFicha
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        @Html.ActionLink(
+                                            "Ver Horario",
+                                            "DetalleHorario",
+                                            "Home",
+                                            new { id = h.IdHorario },
+                                            new { @class = "btn btn-success btn-sm me-1" }
+                                        )
+                                        <button type="button" class="btn btn-outline-success btn-sm"
+                                                onclick="location.href='@Url.Action("CrearSiguienteHorario", "Home", new { idHorarioAnterior = h.IdHorario })'">
+                                            <i class="bi bi-plus-circle"></i> Proximo Horario
+                                        </button>
+
+                                    </td>
+                                </tr>
+                                index++;
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="4" class="text-center py-4">
+                                    <div class="text-muted">
+                                        <i class="bi bi-inbox"></i> No hay horarios guardados todavía.
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card-footer d-flex justify-content-between align-items-center">
+            <button type="button" class="btn btn-success" onclick="location.href='@Url.Action("Index", "Home")'">
+                <i class="bi bi-plus-circle"></i> Crear Horario
+            </button>
+            <small class="text-muted">Sistema de Gestión de Horarios · SENA</small>
+        </div>
+    </div>
+</main>
+
+@section Scripts {
+    <script>
+        // Filtro rápido por nombre de horario o ficha
+        (function () {
+            const input = document.getElementById("txtFilter");
+            const table = document.getElementById("tblHorarios");
+            if (!input || !table) return;
+
+            input.addEventListener("input", function () {
+                const q = this.value.trim().toLowerCase();
+                const rows = table.querySelectorAll("tbody tr");
+
+                rows.forEach(row => {
+                    const nameCell = row.querySelector("td:nth-child(2)");
+                    const fichaCell = row.querySelector("td:nth-child(3)");
+                    if (!nameCell || !fichaCell) return;
+
+                    const txt = (nameCell.innerText + " " + fichaCell.innerText).toLowerCase();
+                    row.style.display = txt.includes(q) ? "" : "none";
+                });
+            });
+        })();
+    </script>
+}

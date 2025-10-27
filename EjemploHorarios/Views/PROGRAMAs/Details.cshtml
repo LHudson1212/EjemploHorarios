@@ -1,0 +1,50 @@
+﻿@model EjemploHorarios.Models.PROGRAMA
+
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Details</title>
+</head>
+<body>
+    <div>
+        <h4>PROGRAMA</h4>
+        <hr />
+        <dl class="dl-horizontal">
+            <dt>
+                @Html.DisplayNameFor(model => model.Nombre)
+            </dt>
+    
+            <dd>
+                @Html.DisplayFor(model => model.Nombre)
+            </dd>
+    
+            <dt>
+                @Html.DisplayNameFor(model => model.Codigo)
+            </dt>
+    
+            <dd>
+                @Html.DisplayFor(model => model.Codigo)
+            </dd>
+    
+            <dt>
+                @Html.DisplayNameFor(model => model.Trimestre)
+            </dt>
+    
+            <dd>
+                @Html.DisplayFor(model => model.Trimestre)
+            </dd>
+    
+        </dl>
+    </div>
+    <p>
+        @Html.ActionLink("Edit", "Edit", new { id = Model.Id_Programa }) |
+        @Html.ActionLink("Back to List", "Index")
+    </p>
+</body>
+</html>

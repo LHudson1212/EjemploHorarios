@@ -1,0 +1,425 @@
+﻿@model EjemploHorarios.Models.ViewModels.PlanificacionVM
+@using System.Web.Helpers
+
+@{
+    ViewBag.Title = "Crear Siguiente Horario - SENA";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var selectedProg = Model?.Programas?.FirstOrDefault();
+    var selectedProgId = selectedProg != null ? selectedProg.Id_Programa : 0;
+}
+
+<style>
+    :root {
+        --sena-green: #008037;
+        --sena-green-2: #00a859;
+    }
+
+    .border-sena {
+        border-color: var(--sena-green) !important;
+    }
+
+    .bg-sena {
+        background-color: var(--sena-green) !important;
+        color: #fff;
+    }
+
+    .text-sena {
+        color: var(--sena-green) !important;
+    }
+
+    .res-dictado {
+        text-decoration: underline;
+        text-decoration-color: var(--sena-green);
+        text-decoration-thickness: 2px;
+        color: #6c757d;
+        font-style: italic;
+    }
+
+    .day-col {
+        min-height: 350px;
+        background: #f8fff8;
+        border: 2px dashed #8fd19e;
+        border-radius: .5rem;
+        padding: .5rem;
+        transition: .2s;
+    }
+
+        .day-col.dragover {
+            background: #eaffea;
+        }
+
+    .event-card {
+        border-left: 5px solid var(--sena-green);
+        background: #fff;
+        padding: .5rem;
+        border-radius: .5rem;
+        box-shadow: 0 1px 2px rgba(0,0,0,.06);
+        margin-bottom: .5rem;
+        font-size: .9rem;
+        text-align: left;
+    }
+
+    .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        padding: .25rem .5rem;
+        border-radius: 999px;
+        border: 1px solid #dee2e6;
+        background: #f8f9fa;
+        font-size: .85rem;
+        margin: .25rem .35rem .25rem 0;
+        cursor: grab;
+    }
+
+    .pointer {
+        cursor: pointer;
+    }
+</style>
+
+<main class="container-fluid p-3">
+    <h2 class="text-center text-sena mb-3">
+        Crear Siguiente Horario — Ficha: @Model?.NumeroFicha
+    </h2>
+
+    @using (Html.BeginForm("GuardarHorario", "Home", FormMethod.Post, new { id = "formGuardarHorario" }))
+    {
+        <input type="hidden" id="hfAsignaciones" name="AsignacionesJson" />
+
+        <div class="row g-3">
+            <!-- Columna izquierda -->
+            <div class="col-lg-3">
+                <div class="card border-sena shadow-sm mb-3">
+                    <div class="card-header bg-sena fw-bold d-flex justify-content-between align-items-center">
+                        <span>Competencias</span>
+                        <div class="input-group input-group-sm" style="width: 55%;">
+                            <input id="txtSearch" type="text" class="form-control" placeholder="Buscar...">
+                            <span class="input-group-text bg-success text-white"><i class="bi bi-search"></i></span>
+                        </div>
+                    </div>
+                    <div class="card-body p-2">
+                        <div id="competenciasList" class="list-group list-group-flush"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Columna central -->
+            <div class="col-lg-9">
+                <div class="card border-sena shadow-sm">
+                    <div class="card-header bg-sena fw-bold">Días de formación</div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered align-middle text-center">
+                                <thead class="table-success">
+                                    <tr>
+                                        <th>Lunes</th>
+                                        <th>Martes</th>
+                                        <th>Miércoles</th>
+                                        <th>Jueves</th>
+                                        <th>Viernes</th>
+                                        <th>Sábado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><div class="day-col" id="day-lunes" data-day="Lunes"></div></td>
+                                        <td><div class="day-col" id="day-martes" data-day="Martes"></div></td>
+                                        <td><div class="day-col" id="day-miercoles" data-day="Miércoles"></div></td>
+                                        <td><div class="day-col" id="day-jueves" data-day="Jueves"></div></td>
+                                        <td><div class="day-col" id="day-viernes" data-day="Viernes"></div></td>
+                                        <td><div class="day-col" id="day-sabado" data-day="Sábado"></div></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <small class="text-muted">Arrastra aquí las asignaciones creadas desde la sección de competencias.</small>
+                    </div>
+                </div>
+
+                <div class="mt-3 text-end">
+                    <button id="btnGuardarHorario" type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalGuardarHorario">
+                        Guardar Todo
+                    </button>
+                    <button type="button" class="btn btn-success" onclick="location.href='@Url.Action("ListaHorarios", "Home")'">
+                        Ver Horarios
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+</main>
+
+<div id="modales-placeholder">
+    @* Inserta tus modales: modalAsignar, modalDetalles, modalGuardarHorario *@
+
+
+    <!-- Modal Asignar -->
+    <div class="modal fade" id="modalAsignar" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content border-sena">
+                <div class="modal-header bg-sena text-white">
+                    <h5 class="modal-title">Asignar Instructor y Horario</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="hfResultadoId" />
+                    <input type="hidden" id="hfProgramaId" />
+                    <input type="hidden" id="hfCompetenciaId" />
+
+                    <div class="mb-3">
+                        <label class="form-label">Instructor</label>
+                        <select id="selInstructor" class="form-select"></select>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label">Desde</label>
+                            <input id="horaDesde" type="time" class="form-control" value="06:00" />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Hasta</label>
+                            <input id="horaHasta" type="time" class="form-control" value="09:00" />
+                        </div>
+                    </div>
+
+                    <button id="btnGuardarAsignacion" type="button" class="btn btn-success w-100" data-bs-dismiss="modal">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Modal Detalles -->
+    <div class="modal fade" id="modalDetalles" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content border-sena">
+                <div class="modal-header bg-sena text-white">
+                    <h5 class="modal-title">Detalles de Asignación</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="detallesBody"></div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <!-- Modal Guardar Horario -->
+    <div class="modal fade" id="modalGuardarHorario" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content border-sena">
+                <div class="modal-header bg-sena text-white">
+                    <h5 class="modal-title">Guardar Horario</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Número de Ficha</label>
+                        <input type="text" id="inputNumeroFicha" class="form-control" placeholder="Ej: 12345" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Nombre del Horario</label>
+                        <input type="text" id="inputNombreHorario" class="form-control" placeholder="Ej: Horario Mañana" />
+                    </div>
+                    <button id="btnConfirmarGuardar" type="button" class="btn btn-success w-100">Confirmar y Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <script>
+const PROGRAMAS = @Html.Raw(Json.Encode(Model?.Programas ?? new List<EjemploHorarios.Models.ViewModels.ProgramaVM>()));
+const INSTRUCTORES = @Html.Raw(Json.Encode(Model?.Instructores ?? new List<EjemploHorarios.Models.ViewModels.InstructorVM>()));
+const PROG_SELEC_ID = @selectedProgId;
+
+const competenciasList = document.getElementById("competenciasList");
+const selInstructor = document.getElementById("selInstructor");
+const hfAsignaciones = document.getElementById("hfAsignaciones");
+
+let payload = { numeroFicha: "@Model?.NumeroFicha", nombreHorario: "Horario generado", asignaciones: [] };
+const nextId = (() => { let c = 1; return () => c++; })();
+
+const prog = PROGRAMAS.find(p => p.Id_Programa === PROG_SELEC_ID) || PROGRAMAS[0];
+
+function renderCompetencias(prog) {
+    competenciasList.innerHTML = "";
+    if (!prog) {
+        competenciasList.innerHTML = "<div class='text-muted'>No hay competencias para el programa seleccionado.</div>";
+        return;
+    }
+
+    prog.Competencias.forEach(c => {
+        const block = document.createElement("div");
+        block.className = "mb-2 border rounded";
+
+        const resultadosHtml = c.Resultados.map(r => {
+            if (r.YaDictado) {
+                return `
+                  <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span class="res-dictado">${r.Descripcion} <small class="text-muted">(ya dictado)</small></span>
+                    <i class="bi bi-check-circle-fill text-success"></i>
+                    <div class="mt-2 w-100" id="result-assignments-${r.Id_Resultado}"></div>
+                  </li>`;
+            } else {
+                return `
+                  <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>${r.Descripcion}</span>
+                    <i class="bi bi-plus-circle pointer text-success"
+                       data-open-assign
+                       data-resultado-id="${r.Id_Resultado}"
+                       data-programa-id="${prog.Id_Programa}"
+                       data-red-id="${c.RedConocimientoId}"
+                       data-bs-toggle="modal"
+                       data-bs-target="#modalAsignar"></i>
+                    <div class="mt-2 w-100" id="result-assignments-${r.Id_Resultado}"></div>
+                  </li>`;
+            }
+        }).join("");
+
+        block.innerHTML = `
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+                <span class="fw-semibold">${c.Nombre}</span>
+                <i class="bi bi-eye pointer text-sena" data-bs-toggle="collapse" data-bs-target="#comp-${c.Id_Competencias}"></i>
+            </div>
+            <div id="comp-${c.Id_Competencias}" class="collapse">
+                <ul class="list-group list-group-flush">
+                    ${resultadosHtml}
+                </ul>
+            </div>
+        `;
+        competenciasList.appendChild(block);
+    });
+
+    wireAssignIcons();
+}
+
+function wireAssignIcons() {
+    document.querySelectorAll("[data-open-assign]").forEach(icon => {
+        icon.addEventListener("click", function () {
+            const resId = +this.dataset.resultadoId;
+            const progId = +this.dataset.programaId;
+            const redId = +this.dataset.redId;
+
+            if (selInstructor) {
+                selInstructor.innerHTML = "";
+                INSTRUCTORES.filter(i => i.RedConocimientoId === redId).forEach(i => {
+                    const opt = document.createElement("option");
+                    opt.value = i.Id_Instructor;
+                    opt.textContent = i.Nombre;
+                    selInstructor.appendChild(opt);
+                });
+            }
+
+            const hfRes = document.getElementById("hfResultadoId");
+            const hfProg = document.getElementById("hfProgramaId");
+            if (hfRes) hfRes.value = resId;
+            if (hfProg) hfProg.value = progId;
+        });
+    });
+}
+
+// Inicializamos
+renderCompetencias(prog);
+
+// -------------------- Funciones de asignación, drag & drop, detalles y eliminar --------------------
+
+document.getElementById("btnGuardarAsignacion")?.addEventListener("click", function () {
+    const resultadoId = +document.getElementById("hfResultadoId").value;
+    const programaId = +document.getElementById("hfProgramaId").value;
+    const instructorId = +selInstructor.value;
+    const desde = document.getElementById("horaDesde").value;
+    const hasta = document.getElementById("horaHasta").value;
+
+    if (!resultadoId || !instructorId) { alert("Completa los campos"); return; }
+
+    const instructorNombre = INSTRUCTORES.find(i => i.Id_Instructor === instructorId)?.Nombre || "";
+    const resultadoDesc = PROGRAMAS.flatMap(p=>p.Competencias).flatMap(c=>c.Resultados).find(r=>r.Id_Resultado===resultadoId)?.Descripcion || "";
+    const competenciaNombre = PROGRAMAS.flatMap(p=>p.Competencias).find(c=>c.Resultados.some(r=>r.Id_Resultado===resultadoId))?.Nombre || "";
+
+    const asig = { id: nextId(), programaId, resultadoId, instructorId, dia: null, desde, hasta, instructorNombre, resultadoDesc, competenciaNombre };
+    payload.asignaciones.push(asig);
+    hfAsignaciones.value = JSON.stringify(payload);
+
+    const host = document.getElementById(`result-assignments-${resultadoId}`);
+    if (host) {
+        const pill = document.createElement("span");
+        pill.className = "chip";
+        pill.draggable = true;
+        pill.dataset.asigId = asig.id;
+        pill.innerHTML = `<strong>${instructorNombre}</strong> <small>${desde} - ${hasta}</small>`;
+        pill.addEventListener("dragstart", ev => ev.dataTransfer.setData("text/plain", asig.id));
+        host.appendChild(pill);
+    }
+});
+
+// Drag & Drop
+document.querySelectorAll(".day-col").forEach(col => {
+    col.addEventListener("dragover", e => { e.preventDefault(); col.classList.add("dragover"); });
+    col.addEventListener("dragleave", () => col.classList.remove("dragover"));
+    col.addEventListener("drop", e => {
+        e.preventDefault(); col.classList.remove("dragover");
+        const asigId = +e.dataTransfer.getData("text/plain");
+        const original = payload.asignaciones.find(x => x.id === asigId);
+        if (!original) return;
+
+        const copy = { ...original, id: nextId(), dia: col.dataset.day };
+        payload.asignaciones.push(copy);
+
+        const card = document.createElement("div");
+        card.className = "event-card d-flex justify-content-between align-items-start";
+        card.dataset.asigId = copy.id;
+        card.innerHTML = `<div>
+                            <b>${copy.instructorNombre}</b>
+                            <small>${copy.desde} - ${copy.hasta}</small>
+                            <a href="#" class="text-sena" data-bs-toggle="modal" data-bs-target="#modalDetalles" data-ver-detalles="${copy.id}">Ver detalles</a>
+                          </div>
+                          <i class="bi bi-x-circle-fill text-danger pointer" data-eliminar-asig="${copy.id}"></i>`;
+        col.appendChild(card);
+
+        hfAsignaciones.value = JSON.stringify(payload);
+        wireDetalles();
+        wireEliminar();
+    });
+});
+
+// Ver detalles
+function wireDetalles() {
+    document.querySelectorAll("[data-ver-detalles]").forEach(link => {
+        link.addEventListener("click", function () {
+            const id = +this.dataset.verDetalles;
+            const asig = payload.asignaciones.find(x => x.id === id);
+            if (!asig) return;
+            document.getElementById("modalDetallesBody").innerHTML = `
+                <p><b>Instructor:</b> ${asig.instructorNombre}</p>
+                <p><b>Resultado:</b> ${asig.resultadoDesc}</p>
+                <p><b>Competencia:</b> ${asig.competenciaNombre}</p>
+                <p><b>Día:</b> ${asig.dia || "No asignado"}</p>
+                <p><b>Hora:</b> ${asig.desde} - ${asig.hasta}</p>
+            `;
+        });
+    });
+}
+
+// Eliminar asignación
+function wireEliminar() {
+    document.querySelectorAll("[data-eliminar-asig]").forEach(icon => {
+        icon.addEventListener("click", function () {
+            const id = +this.dataset.eliminarAsig;
+            payload.asignaciones = payload.asignaciones.filter(a => a.id !== id);
+            hfAsignaciones.value = JSON.stringify(payload);
+            this.parentElement.remove();
+        });
+    });
+}
+
+// Guardar horario
+document.getElementById("btnGuardarHorario")?.addEventListener("click", () => {
+    if (payload.asignaciones.length === 0) { alert("No hay asignaciones para guardar"); return; }
+    // abrir modalGuardarHorario
+});
+    </script>
+}

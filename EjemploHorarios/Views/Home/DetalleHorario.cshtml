@@ -1,0 +1,129 @@
+﻿@model EjemploHorarios.Models.ViewModels.ListaHorarioVM
+@using System.Linq
+
+@{
+    ViewBag.Title = "Detalle de Horario - SENA";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    // Normaliza cómo se mostrará el trimestre:
+    // - si es numérico "3" => "Trimestre 3"
+    // - si ya viene "Trimestre 3" => queda igual
+    // - si está vacío o null => "N/D"
+    string triRaw = Model.Trimestre == null ? null : Model.Trimestre.ToString();
+    string triDisplay = string.IsNullOrWhiteSpace(triRaw)
+        ? "N/D"
+        : (triRaw.All(char.IsDigit) ? $"Trimestre {triRaw}" : triRaw);
+}
+
+<style>
+    :root {
+        --sena-green: #008037;
+        --sena-green-2: #00a859;
+    }
+
+    .border-sena {
+        border-color: var(--sena-green) !important;
+    }
+
+    .bg-sena {
+        background-color: var(--sena-green) !important;
+        color: #fff;
+    }
+
+    .text-sena {
+        color: var(--sena-green) !important;
+    }
+
+    .day-col {
+        min-height: 220px;
+        background: #f8fff8;
+        border: 2px dashed #8fd19e;
+        border-radius: .5rem;
+        padding: .5rem;
+        vertical-align: top;
+    }
+
+    .event-card {
+        border-left: 5px solid var(--sena-green);
+        background: #fff;
+        padding: .5rem;
+        border-radius: .5rem;
+        box-shadow: 0 1px 2px rgba(0,0,0,.06);
+        margin-bottom: .5rem;
+        font-size: .9rem;
+        text-align: left;
+    }
+
+        .event-card small {
+            display: block;
+            color: #6c757d;
+        }
+</style>
+
+<main class="container-fluid p-3">
+
+    <div class="card border-sena shadow-sm mb-3">
+        <div class="card-header bg-sena fw-bold d-flex flex-wrap gap-2 justify-content-between align-items-center">
+            <span>Detalle de Horario</span>
+            <div class="d-flex gap-2">
+                <span class="badge text-bg-light border">
+                    Ficha: <strong class="ms-1">@Model.NumeroFicha</strong>
+                </span>
+                <!-- 🆕 Badge de Trimestre -->
+                <span class="badge text-bg-light border">
+                    @triDisplay
+                </span>
+            </div>
+        </div>
+
+        <div class="card-body">
+            <h3 class="text-sena fw-semibold mb-3">
+                @Model.NombreHorario
+            </h3>
+
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle text-center">
+                    <thead class="table-success">
+                        <tr>
+                            <th>Lunes</th>
+                            <th>Martes</th>
+                            <th>Miércoles</th>
+                            <th>Jueves</th>
+                            <th>Viernes</th>
+                            <th>Sábado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            @foreach (var dia in new[] { "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado" })
+                            {
+                                <td>
+                                    <div class="day-col">
+                                        @foreach (var a in Model.Asignaciones.Where(x => x.Dia == dia))
+                                        {
+                                            <div class="event-card">
+                                                <b>@a.InstructorNombre</b>
+                                                <small>@a.HoraDesde - @a.HoraHasta</small>
+                                                <span class="text-muted">@a.ResultadoDesc</span>
+                                            </div>
+                                        }
+                                        @if (!Model.Asignaciones.Any(x => x.Dia == dia))
+                                        {
+                                            <small class="text-muted">Sin asignaciones</small>
+                                        }
+                                    </div>
+                                </td>
+                            }
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card-footer d-flex justify-content-between align-items-center">
+            @Html.ActionLink("← Volver a la lista", "ListaHorarios", "Home", null, new { @class = "btn btn-secondary" })
+            <small class="text-muted">Sistema de Gestión de Horarios · SENA</small>
+        </div>
+    </div>
+
+</main>

@@ -1,0 +1,534 @@
+﻿@model EjemploHorarios.Models.ViewModels.PlanificacionVM
+@using System.Web.Helpers
+
+@{
+    ViewBag.Title = "Gestión de Horarios - SENA";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    :root {
+        --sena-green: #008037;
+        --sena-green-2: #00a859;
+    }
+
+    .border-sena {
+        border-color: var(--sena-green) !important;
+    }
+
+    .bg-sena {
+        background-color: var(--sena-green) !important;
+        color: #fff;
+    }
+
+    .text-sena {
+        color: var(--sena-green) !important;
+    }
+
+    .pointer {
+        cursor: pointer;
+    }
+
+    .day-col {
+        min-height: 350px;
+        background: #f8fff8;
+        border: 2px dashed #8fd19e;
+        border-radius: .5rem;
+        padding: .5rem;
+        transition: .2s;
+    }
+
+        .day-col.dragover {
+            background: #eaffea;
+        }
+
+    .event-card {
+        border-left: 5px solid var(--sena-green);
+        background: #fff;
+        padding: .5rem;
+        border-radius: .5rem;
+        box-shadow: 0 1px 2px rgba(0,0,0,.06);
+        margin-bottom: .5rem;
+        font-size: .9rem;
+        text-align: left;
+    }
+
+        .event-card small {
+            display: block;
+            color: #6c757d;
+        }
+
+    .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        padding: .25rem .5rem;
+        border-radius: 999px;
+        border: 1px solid #dee2e6;
+        background: #f8f9fa;
+        font-size: .85rem;
+        margin: .25rem .35rem .25rem 0;
+        cursor: grab;
+    }
+
+        .chip small {
+            color: #6c757d;
+        }
+
+    .floating-alert {
+        position: fixed;
+        top: 1rem;
+        right: 1rem;
+        z-index: 1080;
+        min-width: 280px;
+        box-shadow: 0 6px 16px rgba(0,0,0,.15);
+    }
+
+    /* Dropdown de autocompletado */
+    .autocomplete-list {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: calc(100% + .25rem);
+        z-index: 1055;
+        max-height: 220px;
+        overflow-y: auto;
+    }
+
+    .list-group-item-action:hover {
+        background-color: #e9ffe9;
+        color: var(--sena-green);
+        font-weight: 500;
+    }
+
+    /* Unificado Ficha */
+    #fichaSugerencias.d-none {
+        display: none;
+    }
+</style>
+
+<main class="container-fluid p-3">
+    <h2 class="text-center text-sena mb-3">Sistema de Gestión de Horarios</h2>
+
+    <!-- Filtros principales -->
+    <div class="row align-items-end mb-4 g-3">
+        <!-- Año del Horario -->
+        <div class="col-lg-2 col-md-3">
+            <label class="form-label fw-bold text-sena">Año del Horario</label>
+            <input id="selAnio" type="number" min="2000" max="2100" class="form-control" placeholder="Ej: 2025" />
+        </div>
+
+        <!-- Trimestre del Año -->
+        <div class="col-lg-2 col-md-3">
+            <label class="form-label fw-bold text-sena">Trimestre del Año</label>
+            <select id="selTrimestreAnio" class="form-select">
+                <option value="">-- Selecciona un trimestre --</option>
+                <option value="1">Trimestre 1</option>
+                <option value="2">Trimestre 2</option>
+                <option value="3">Trimestre 3</option>
+                <option value="4">Trimestre 4</option>
+            </select>
+        </div>
+
+        <!-- Ficha (UNIFICADO: digitar + seleccionar) -->
+        <div class="col-lg-4 col-md-6 position-relative">
+            <label class="form-label fw-bold text-sena">Ficha</label>
+            <input id="inputFicha" class="form-control" placeholder="Escribe el código o programa..." autocomplete="off" />
+            <input type="hidden" id="hfFichaId" /> <!-- Guarda IdFicha seleccionado -->
+            <div id="fichaSugerencias" class="list-group autocomplete-list shadow-sm bg-white rounded d-none"></div>
+        </div>
+
+        <!-- Trimestre de la Ficha -->
+        <div class="col-lg-3 col-md-3">
+            <label class="form-label fw-bold text-sena">Trimestre de la Ficha</label>
+            <input id="txtTrimestreFicha" class="form-control" placeholder="1..7" readonly />
+        </div>
+    </div>
+
+    @using (Html.BeginForm("GuardarHorario", "Home", FormMethod.Post, new { id = "formGuardarHorario" }))
+    {
+        @Html.AntiForgeryToken()
+        <input type="hidden" id="hfAsignaciones" name="AsignacionesJson" />
+
+        <div class="row g-3">
+            <!-- Columna izquierda -->
+            <div class="col-lg-3 d-flex flex-column">
+                <!-- Botón Excel -->
+                <div class="col-lg-12 col-md-12 mb-2">
+                    <label class="form-label fw-bold text-sena">Importar Excel</label>
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" id="btnCargarExcel" class="btn btn-success btn-sm w-150">
+                            <i class="bi bi-file-earmark-excel-fill me-1"></i> Cargar Planeación
+                        </button>
+                        <input type="file" id="inputExcel" accept=".xlsx, .xls" class="d-none" />
+                    </div>
+                </div>
+
+                <div class="mb-2">
+                    <label class="form-label fw-bold text-sena">Programa de Formación</label>
+                    <input id="inputPrograma" type="text" class="form-control" placeholder="Escribe o selecciona un programa..." autocomplete="off" />
+                </div>
+
+                <div class="card border-sena shadow-sm mb-3">
+                    <div class="card-header bg-sena fw-bold d-flex justify-content-between align-items-center">
+                        <span>Competencias</span>
+                        <div class="input-group input-group-sm" style="width: 55%;">
+                            <input id="txtSearch" type="text" class="form-control" placeholder="Buscar...">
+                            <span class="input-group-text bg-success text-white"><i class="bi bi-search"></i></span>
+                        </div>
+                    </div>
+                    <div class="card-body p-2">
+                        <div id="competenciasList" class="list-group list-group-flush"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Columna central -->
+            <div class="col-lg-9">
+                <div class="card border-sena shadow-sm">
+                    <div class="card-header bg-sena fw-bold">Días de formación</div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered align-middle text-center">
+                                <thead class="table-success">
+                                    <tr>
+                                        <th>Lunes</th>
+                                        <th>Martes</th>
+                                        <th>Miércoles</th>
+                                        <th>Jueves</th>
+                                        <th>Viernes</th>
+                                        <th>Sábado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><div class="day-col" id="day-lunes" data-day="Lunes"></div></td>
+                                        <td><div class="day-col" id="day-martes" data-day="Martes"></div></td>
+                                        <td><div class="day-col" id="day-miercoles" data-day="Miércoles"></div></td>
+                                        <td><div class="day-col" id="day-jueves" data-day="Jueves"></div></td>
+                                        <td><div class="day-col" id="day-viernes" data-day="Viernes"></div></td>
+                                        <td><div class="day-col" id="day-sabado" data-day="Sábado"></div></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <small class="text-muted">Arrastra aquí las asignaciones creadas desde la sección de competencias.</small>
+                    </div>
+                </div>
+
+                <div class="mt-3 text-end">
+                    <button id="btnGuardarHorario" type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalGuardarHorario">
+                        Guardar Todo
+                    </button>
+                    <button type="button" class="btn btn-success" onclick="location.href='@Url.Action("ListaHorarios", "Home")'">
+                        Ver Horarios
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+</main>
+
+<!-- Modal Asignar -->
+<div class="modal fade" id="modalAsignar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content border-sena">
+            <div class="modal-header bg-sena text-white">
+                <h5 class="modal-title">Asignar Instructor y Horario</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="hfResultadoId" />
+                <input type="hidden" id="hfProgramaId" />
+                <input type="hidden" id="hfCompetenciaId" />
+
+                <div class="mb-3">
+                    <label class="form-label">Instructor</label>
+                    <select id="selInstructor" class="form-select"></select>
+                </div>
+
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label">Desde</label>
+                        <input id="horaDesde" type="time" class="form-control" value="06:00" />
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">Hasta</label>
+                        <input id="horaHasta" type="time" class="form-control" value="09:00" />
+                    </div>
+                </div>
+
+                <button id="btnGuardarAsignacion" type="button" class="btn btn-success w-100" data-bs-dismiss="modal">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Detalles -->
+<div class="modal fade" id="modalDetalles" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content border-sena">
+            <div class="modal-header bg-sena text-white">
+                <h5 class="modal-title">Detalles de Asignación</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="detallesBody"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Guardar Horario -->
+<div class="modal fade" id="modalGuardarHorario" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content border-sena">
+            <div class="modal-header bg-sena text-white">
+                <h5 class="modal-title">Guardar Horario</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Número de Ficha</label>
+                    <input type="text" id="inputNumeroFicha" class="form-control" placeholder="Ej: 12345" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Nombre del Horario</label>
+                    <input type="text" id="inputNombreHorario" class="form-control" placeholder="Ej: Horario Mañana" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Trimestre</label>
+                    <select id="selectTrimestre" class="form-select">
+                        <option value="" disabled selected>Seleccione un trimestre</option>
+                        <option value="1">Trimestre 1</option>
+                        <option value="2">Trimestre 2</option>
+                        <option value="3">Trimestre 3</option>
+                        <option value="4">Trimestre 4</option>
+                        <option value="5">Trimestre 5</option>
+                        <option value="6">Trimestre 6</option>
+                        <option value="7">Trimestre 7</option>
+                    </select>
+                </div>
+
+                <button id="btnConfirmarGuardar" type="button" class="btn btn-success w-100">Confirmar y Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+/* =================== Utilidades =================== */
+function showAlert(message, type = "danger") {
+    const wrap = document.createElement("div");
+    wrap.className = `alert alert-${type} floating-alert`;
+    wrap.role = "alert";
+    wrap.innerHTML = `
+        <div class="d-flex align-items-start gap-2">
+            <i class="bi ${type === "success" ? "bi-check-circle-fill" : "bi-exclamation-triangle-fill"}"></i>
+            <div>${message}</div>
+        </div>`;
+    document.body.appendChild(wrap);
+    setTimeout(() => wrap.remove(), 4500);
+}
+function getAntiForgeryToken() {
+    const el = document.querySelector('input[name="__RequestVerificationToken"]');
+    return el ? el.value : null;
+}
+
+/* =================== Referencias =================== */
+const competenciasList = document.getElementById("competenciasList");
+const selInstructor = document.getElementById("selInstructor");
+const hfAsignaciones = document.getElementById("hfAsignaciones");
+
+/* ======== referencias filtro y autocompletados unificados ======== */
+const selAnio = document.getElementById("selAnio");
+const selTrimestreAnio = document.getElementById("selTrimestreAnio");
+const inputFicha = document.getElementById("inputFicha");
+const fichaSugerencias = document.getElementById("fichaSugerencias");
+const hfFichaId = document.getElementById("hfFichaId");
+const txtTrimestreFicha = document.getElementById("txtTrimestreFicha");
+const inputPrograma = document.getElementById("inputPrograma");
+
+/* =================== Estado =================== */
+let payload = { numeroFicha: "", nombreHorario: "Horario generado", trimestre: "", asignaciones: [] };
+const nextId = (()=>{ let c=1; return ()=>c++; })();
+
+/* Cache de fichas para autocompletar */
+let fichasCache = []; // [{ IdFicha, CodigoFicha, TrimestreDeLaFicha, IdPrograma, ProgramaNombre }]
+
+/* =================== Cargar Fichas (unificado) =================== */
+async function cargarFichas() {
+    const anio = selAnio.value.trim();
+    const tri  = selTrimestreAnio.value;
+
+    // Limpia valores actuales
+    inputFicha.value = "";
+    hfFichaId.value = "";
+    txtTrimestreFicha.value = "";
+    inputPrograma.value = "";
+    fichasCache = [];
+    ocultarSugerencias();
+
+    if (!anio || !tri) return;
+
+    try {
+        const url = `@Url.Action("GetFichasEnFormacion","Home")?anio=${encodeURIComponent(anio)}&trimestre=${encodeURIComponent(tri)}`;
+        const resp = await fetch(url, { headers: { "Accept": "application/json" }});
+        const json = await resp.json();
+        if (!resp.ok || !json?.ok) throw new Error(json?.msg || "No fue posible obtener las fichas.");
+
+        const fichas = Array.isArray(json.data) ? json.data : [];
+        // Normaliza y guarda en caché
+        fichasCache = fichas.map(f => ({
+            IdFicha: f.IdFicha,
+            CodigoFicha: (f.CodigoFicha ?? "").toString().trim(),
+            TrimestreDeLaFicha: f.TrimestreDeLaFicha ?? "",
+            IdPrograma: f.IdPrograma ?? "",
+            ProgramaNombre: f.ProgramaNombre ?? ""
+        }));
+    } catch (err) {
+        console.error(err);
+        showAlert(err.message || "Error cargando fichas.", "danger");
+    }
+}
+
+/* =================== Set Programa en textbox =================== */
+function setPrograma(programaNombre) {
+    if (!inputPrograma) return;
+    inputPrograma.value = programaNombre || "";
+}
+
+/* =================== Listeners base =================== */
+selAnio.addEventListener("input", cargarFichas);
+selTrimestreAnio.addEventListener("change", cargarFichas);
+
+/* =================== Autocompletado Ficha (unificado) =================== */
+function ocultarSugerencias() {
+    fichaSugerencias.classList.add("d-none");
+    fichaSugerencias.innerHTML = "";
+}
+function mostrarSugerencias(items) {
+    fichaSugerencias.innerHTML = "";
+    if (!items || items.length === 0) {
+        const item = document.createElement("div");
+        item.className = "list-group-item small text-muted";
+        item.textContent = "Sin coincidencias…";
+        fichaSugerencias.appendChild(item);
+    } else {
+        items.forEach(f => {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "list-group-item list-group-item-action";
+            const progTxt = f.ProgramaNombre ? ` (${f.ProgramaNombre})` : "";
+            const codigo  = f.CodigoFicha || "—";
+            btn.textContent = `${codigo} — ${progTxt}`.trim();
+
+            btn.addEventListener("click", () => {
+                inputFicha.value = f.CodigoFicha || f.ProgramaNombre || "";
+                hfFichaId.value = f.IdFicha;
+                txtTrimestreFicha.value = f.TrimestreDeLaFicha || "";
+                setPrograma(f.ProgramaNombre); // ← ahora escribe en el textbox
+                ocultarSugerencias();
+            });
+
+            fichaSugerencias.appendChild(btn);
+        });
+    }
+    fichaSugerencias.classList.remove("d-none");
+}
+async function asegurarFichasCargadasSiHaceFalta() {
+    if (!fichasCache.length) {
+        await cargarFichas();
+    }
+}
+
+inputFicha.addEventListener("input", async () => {
+    const q = inputFicha.value.trim().toLowerCase();
+    hfFichaId.value = "";                 // al escribir, se limpia la selección
+    txtTrimestreFicha.value = "";
+    setPrograma("");                      // limpia programa si cambian el texto
+    ocultarSugerencias();
+
+    // Requiere año y trimestre
+    const anio = selAnio.value.trim();
+    const tri  = selTrimestreAnio.value;
+    if (!anio || !tri) return;
+
+    await asegurarFichasCargadasSiHaceFalta();
+
+    if (!q) return;
+
+    // Filtra por código o nombre de programa
+    const matches = fichasCache.filter(f => {
+        const codigo = (f.CodigoFicha || "").toLowerCase();
+        const prog   = (f.ProgramaNombre || "").toLowerCase();
+        return codigo.includes(q) || prog.includes(q);
+    }).slice(0, 30); // limitamos para no saturar
+
+    mostrarSugerencias(matches);
+});
+
+// Cerrar dropdown al clicar fuera
+document.addEventListener("click", (e) => {
+    const dentro = fichaSugerencias.contains(e.target) || inputFicha.contains(e.target);
+    if (!dentro) ocultarSugerencias();
+});
+
+/* =================== (Resto) Guardado, Excel =================== */
+function getAnio() { return selAnio.value; }
+function getTrimestreAnio() { return selTrimestreAnio.value; }
+function getIdAsignacion() { return hfFichaId.value; } // usamos hidden con IdFicha
+
+const btnCargarExcel = document.getElementById("btnCargarExcel");
+const inputExcel = document.getElementById("inputExcel");
+btnCargarExcel?.addEventListener("click", () => inputExcel.click());
+
+inputExcel?.addEventListener("change", async function (e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const anio = getAnio();
+    const trimestre = getTrimestreAnio();
+    const idAsignacion = getIdAsignacion();
+
+    if (!anio || !trimestre || !idAsignacion) {
+        showAlert("Selecciona Año, Trimestre del Año y una Ficha antes de importar.", "warning");
+        e.target.value = "";
+        return;
+    }
+
+    const validExt = /\.(xlsx|xls)$/i;
+    if (!validExt.test(file.name)) {
+        showAlert("Por favor selecciona un archivo Excel válido (.xlsx o .xls).", "warning");
+        e.target.value = "";
+        btnCargarExcel.innerHTML = `<i class="bi bi-file-earmark-excel-fill me-1"></i> Cargar Planeación`;
+        return;
+    }
+
+    btnCargarExcel.innerHTML = `<i class="bi bi-file-earmark-excel-fill me-1"></i> ${file.name}`;
+    btnCargarExcel.disabled = true;
+
+    try {
+        const fd = new FormData();
+        fd.append("archivoExcel", file);
+        fd.append("anio", anio);
+        fd.append("trimestre", trimestre);
+        fd.append("idAsignacion", idAsignacion);
+
+        const resp = await fetch('@Url.Action("ImportarExcel","Home")', { method: "POST", body: fd });
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok || !data.ok) throw new Error(data?.msg || "Error al importar la planeación.");
+
+        showAlert(`✅ Planeación importada (Id Horario: ${data.idHorario}).`, "success");
+    } catch (err) {
+        console.error(err);
+        showAlert(`❌ ${err.message}`, "danger");
+        e.target.value = "";
+        btnCargarExcel.innerHTML = `<i class="bi bi-file-earmark-excel-fill me-1"></i> Cargar Planeación`;
+    } finally {
+        btnCargarExcel.disabled = false;
+    }
+});
+    </script>
+}

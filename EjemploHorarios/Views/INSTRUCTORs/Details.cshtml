@@ -1,0 +1,66 @@
+﻿@model EjemploHorarios.Models.INSTRUCTOR
+
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Details</title>
+</head>
+<body>
+    <div>
+        <h4>INSTRUCTOR</h4>
+        <hr />
+        <dl class="dl-horizontal">
+            <dt>
+                @Html.DisplayNameFor(model => model.Nombre)
+            </dt>
+    
+            <dd>
+                @Html.DisplayFor(model => model.Nombre)
+            </dd>
+    
+            <dt>
+                @Html.DisplayNameFor(model => model.Documento)
+            </dt>
+    
+            <dd>
+                @Html.DisplayFor(model => model.Documento)
+            </dd>
+    
+            <dt>
+                @Html.DisplayNameFor(model => model.Especialidad)
+            </dt>
+    
+            <dd>
+                @Html.DisplayFor(model => model.Especialidad)
+            </dd>
+    
+            <dt>
+                @Html.DisplayNameFor(model => model.RED_DE_CONOCIMIENTOS.Nombre)
+            </dt>
+    
+            <dd>
+                @Html.DisplayFor(model => model.RED_DE_CONOCIMIENTOS.Nombre)
+            </dd>
+    
+            <dt>
+                @Html.DisplayNameFor(model => model.RESULTADOS_DE_APRENDIZAJE.Descripcion)
+            </dt>
+    
+            <dd>
+                @Html.DisplayFor(model => model.RESULTADOS_DE_APRENDIZAJE.Descripcion)
+            </dd>
+    
+        </dl>
+    </div>
+    <p>
+        @Html.ActionLink("Edit", "Edit", new { id = Model.Id_Instructor }) |
+        @Html.ActionLink("Back to List", "Index")
+    </p>
+</body>
+</html>
