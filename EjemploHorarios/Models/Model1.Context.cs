@@ -38,5 +38,6 @@ namespace EjemploHorarios.Models
         public virtual DbSet<Red_Conocimiento> Red_Conocimiento { get; set; }
         public virtual DbSet<Resultado_aprendizaje> Resultado_aprendizaje { get; set; }
         public virtual DbSet<Usuario> Usuario { get; set; }
+        public virtual DbSet<Diseño_Curricular> Diseño_Curricular { get; set; }
     }
 }

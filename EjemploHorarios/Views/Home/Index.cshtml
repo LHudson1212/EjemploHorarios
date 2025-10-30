@@ -6,122 +6,482 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
+<!-- Bootstrap 5 -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+
 <style>
+    /* ====================================================================
+               SISTEMA DE GESTIÓN DE HORARIOS SENA - ESTILOS ULTRA MEJORADOS
+               (Aplicados al código funcional existente)
+           ==================================================================== */
+
+    /* ====== Variables de tema ====== */
     :root {
+        /* Colores principales SENA con más variantes */
         --sena-green: #008037;
-        --sena-green-2: #00a859;
+        --sena-green-light: #00a859;
+        --sena-green-dark: #006028;
+        --sena-green-ultra-light: #e6f7ed;
+        --sena-green-glow: rgba(0, 168, 89, 0.4);
+        /* Colores de texto */
+        --sena-ink: #1f2937;
+        --sena-muted: #6b7280;
+        --sena-light: #9ca3af;
+        /* Colores por día */
+        --day-lunes: linear-gradient(135deg, #00a859 0%, #00c96d 100%);
+        --day-lunes-solid: #00a859;
+        --day-martes: linear-gradient(135deg, #0091ea 0%,#00b0ff 100%);
+        --day-martes-solid: #0091ea;
+        --day-miercoles: linear-gradient(135deg, #ff9800 0%, #ffb74d 100%);
+        --day-miercoles-solid: #ff9800;
+        --day-jueves: linear-gradient(135deg, #d81b60 0%, #f06292 100%);
+        --day-jueves-solid: #d81b60;
+        --day-viernes: linear-gradient(135deg, #8e24aa 0%, #ab47bc 100%);
+        --day-viernes-solid: #8e24aa;
+        --day-sabado: linear-gradient(135deg, #5d4037 0%, #795548 100%);
+        --day-sabado-solid: #5d4037;
+        /* Sombras */
+        --shadow-xs: 0 1px 4px rgba(0, 0, 0, 0.02);
+        --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+        --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+        --shadow-xl: 0 12px 32px rgba(0, 0, 0, 0.16);
+        --shadow-2xl: 0 20px 48px rgba(0, 0, 0, 0.2);
+        --shadow-glow: 0 0 20px var(--sena-green-glow);
+        /* Efectos */
+        --ring: 0 0 0 4px rgba(0, 128, 55, 0.15);
+        --ring-success: 0 0 0 4px rgba(0, 168, 89, 0.25);
+        --backdrop-blur: blur(16px);
+        --backdrop-blur-strong: blur(24px);
+        /* Transiciones */
+        --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+        --transition-base: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+        --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+        --transition-bounce: 600ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
     }
 
+    * {
+        box-sizing: border-box;
+    }
+
+    html {
+        scroll-behavior: smooth;
+        font-size: 16px;
+    }
+
+    body {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        color: var(--sena-ink);
+        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 50%, #f0fdf4 100%);
+        background-size: 200% 200%;
+        animation: gradientShift 15s ease infinite;
+        min-height: 100vh;
+        position: relative;
+        overflow-x: hidden;
+    }
+
+    gradientShift {
+        0%,100%
+
+    {
+        background-position: 0% 50%
+    }
+
+    50% {
+        background-position: 100% 50%
+    }
+
+    }
+
+    /* Utilitarios */
     .border-sena {
         border-color: var(--sena-green) !important;
     }
 
     .bg-sena {
-        background-color: var(--sena-green) !important;
+        background: linear-gradient(135deg, var(--sena-green) 0%, var(--sena-green-light) 100%) !important;
         color: #fff;
+        box-shadow: var(--shadow-md);
+        position: relative;
+        overflow: hidden;
     }
+
+        .bg-sena::before {
+            content: "";
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,.15) 0%, transparent 70%);
+            animation: shimmer 4s ease-in-out infinite;
+        }
 
     .text-sena {
         color: var(--sena-green) !important;
+        font-weight: 600;
     }
 
     .pointer {
         cursor: pointer;
     }
 
+    shimmer {
+        from
+
+    {
+        transform: translate(-50%,-50%) rotate(0)
+    }
+
+    to {
+        transform: translate(-50%,-50%) rotate(360deg)
+    }
+
+    }
+
+    /* Tarjetas / contenedores */
+    .card {
+        border-radius: 1.25rem;
+        box-shadow: var(--shadow-md);
+        border: 1px solid rgba(0,128,55,.1);
+        background: rgba(255,255,255,.98);
+        backdrop-filter: var(--backdrop-blur);
+        transition: all var(--transition-base);
+        overflow: hidden;
+    }
+
+        .card:hover {
+            box-shadow: var(--shadow-xl), var(--shadow-glow);
+            transform: translateY(-4px) scale(1.01);
+            border-color: rgba(0,128,55,.2);
+        }
+
+    .card-header {
+        border: 0;
+        font-weight: 700;
+        padding: 1.25rem 1.5rem;
+    }
+
+    /* Header principal */
+    header {
+        position: relative;
+        padding: 1.5rem 0;
+        margin-bottom: .5rem;
+    }
+
+        header h2 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--sena-green) 0%, var(--sena-green-light) 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: .25rem;
+        }
+
+    /* Controles */
+    .form-label {
+        font-weight: 700;
+        color: var(--sena-green);
+        margin-bottom: .55rem;
+        font-size: .95rem;
+        letter-spacing: .3px;
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+    }
+
+        .form-label::before {
+            content: '';
+            width: 4px;
+            height: 16px;
+            background: linear-gradient(180deg, var(--sena-green) 0%, var(--sena-green-light) 100%);
+            border-radius: 2px;
+        }
+
+    .form-control, .form-select {
+        border-radius: .85rem;
+        border: 2px solid #e5e7eb;
+        padding: .7rem 1rem;
+        transition: all var(--transition-base);
+        background: #fff;
+        font-size: .95rem;
+        box-shadow: var(--shadow-xs);
+    }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--sena-green);
+            box-shadow: var(--ring), var(--shadow-md);
+            outline: none;
+            transform: translateY(-1px);
+        }
+
+    /* Botones */
+    .btn {
+        border-radius: .85rem;
+        padding: .7rem 1.5rem;
+        font-weight: 600;
+        transition: all var(--transition-base);
+        border: none;
+        letter-spacing: .4px;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .btn-success {
+        background: linear-gradient(135deg, var(--sena-green) 0%, var(--sena-green-light) 100%);
+        color: #fff;
+    }
+
+        .btn-success:hover {
+            background: linear-gradient(135deg, var(--sena-green-dark) 0%, var(--sena-green) 100%);
+            box-shadow: var(--shadow-lg), var(--shadow-glow);
+            transform: translateY(-3px) scale(1.02);
+        }
+
+    .btn-outline-success {
+        border: 2px solid var(--sena-green);
+        color: var(--sena-green);
+        background: transparent;
+    }
+
+        .btn-outline-success:hover {
+            background: var(--sena-green);
+            color: #fff;
+        }
+
+    /* Zona de días */
     .day-col {
-        min-height: 350px;
-        background: #f8fff8;
-        border: 2px dashed #8fd19e;
-        border-radius: .5rem;
-        padding: .5rem;
-        transition: .2s;
+        min-height: 500px;
+        background: linear-gradient(180deg, rgba(246, 255, 246, .9) 0%, rgba(255,255,255,.95) 100%);
+        border: 3px dashed #b6e4c3;
+        border-radius: 1.25rem;
+        padding: 1.25rem;
+        transition: all var(--transition-base);
+        position: relative;
+        backdrop-filter: var(--backdrop-blur);
+        box-shadow: var(--shadow-xs);
     }
 
         .day-col.dragover {
-            background: #eaffea;
+            background: linear-gradient(180deg, rgba(234,255,234,.98) 0%, rgba(246,255,246,.98) 100%);
+            transform: scale(1.02);
+            border-color: var(--sena-green);
+            border-style: solid;
+            box-shadow: var(--ring-success), var(--shadow-xl), var(--shadow-glow);
         }
 
+        .day-col small.text-muted {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%,-50%);
+            color: var(--sena-light);
+            font-size: .9rem;
+            text-align: center;
+            pointer-events: none;
+            opacity: .6;
+            font-weight: 600;
+        }
+
+    /* Tarjeta de evento */
     .event-card {
         border-left: 5px solid var(--sena-green);
         background: #fff;
-        padding: .5rem;
-        border-radius: .5rem;
-        box-shadow: 0 1px 2px rgba(0,0,0,.06);
-        margin-bottom: .5rem;
-        font-size: .9rem;
+        padding: 1rem;
+        border-radius: 1rem;
+        box-shadow: var(--shadow-sm);
+        margin-bottom: 1rem;
+        font-size: .95rem;
         text-align: left;
+        transition: all var(--transition-base);
+        position: relative;
     }
+
+        .event-card:hover {
+            transform: translateY(-4px) translateX(3px) scale(1.01);
+            box-shadow: var(--shadow-lg);
+        }
 
         .event-card small {
             display: block;
-            color: #6c757d;
+            color: var(--sena-muted);
+            font-size: .86rem;
         }
 
+        .event-card .btn {
+            opacity: 0;
+            transform: scale(.9) translateY(5px);
+            transition: all var(--transition-bounce);
+        }
+
+        .event-card:hover .btn {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+
+    /* Chips (competencias) */
     .chip {
         display: inline-flex;
         align-items: center;
-        gap: .35rem;
-        padding: .25rem .5rem;
+        gap: .6rem;
+        padding: .5rem 1rem;
         border-radius: 999px;
-        border: 1px solid #dee2e6;
-        background: #f8f9fa;
-        font-size: .85rem;
-        margin: .25rem .35rem .25rem 0;
+        border: 2px solid #e5e7eb;
+        background: linear-gradient(135deg, #fff 0%, #f9fafb 100%);
+        font-size: .9rem;
+        margin: .35rem .45rem .35rem 0;
         cursor: grab;
+        transition: all var(--transition-base);
+        font-weight: 500;
+        box-shadow: var(--shadow-sm);
     }
 
-        .chip small {
-            color: #6c757d;
+        .chip:hover {
+            box-shadow: var(--shadow-md), var(--shadow-glow);
+            transform: translateY(-3px) scale(1.03);
+            border-color: var(--sena-green-light);
         }
 
-    .floating-alert {
-        position: fixed;
-        top: 1rem;
-        right: 1rem;
-        z-index: 1080;
-        min-width: 280px;
-        box-shadow: 0 6px 16px rgba(0,0,0,.15);
-    }
+        .chip small {
+            color: var(--sena-muted);
+            font-weight: 600;
+            font-size: .82rem;
+        }
 
-    /* Dropdown de autocompletado */
+    /* Autocomplete */
     .autocomplete-list {
         position: absolute;
         left: 0;
         right: 0;
-        top: calc(100% + .25rem);
+        top: calc(100% + .6rem);
         z-index: 1055;
-        max-height: 220px;
+        max-height: 320px;
         overflow-y: auto;
+        border-radius: 1rem;
+        border: 2px solid var(--sena-green-light);
+        background: rgba(255,255,255,.98);
+        box-shadow: var(--shadow-2xl);
     }
 
-    .list-group-item-action:hover {
-        background-color: #e9ffe9;
-        color: var(--sena-green);
-        font-weight: 500;
+    .list-group-item-action {
+        padding: .85rem 1.25rem;
+        border: none;
+        border-bottom: 1px solid #f3f4f6;
     }
 
-    /* Unificado Ficha */
+        .list-group-item-action:hover {
+            background: linear-gradient(90deg, rgba(234,255,234,.9) 0%, rgba(246,255,246,.5) 100%);
+            color: var(--sena-green);
+            font-weight: 600;
+            padding-left: 1.5rem;
+        }
+
     #fichaSugerencias.d-none {
         display: none;
+    }
+
+    /* Tabla */
+    .table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: linear-gradient(135deg, var(--sena-green) 0%, var(--sena-green-light) 100%);
+        color: #fff;
+        font-weight: 700;
+        padding: 1.25rem;
+        border: none;
+        letter-spacing: 1px;
+    }
+
+    /* Alertas */
+    .floating-alert {
+        position: fixed;
+        top: 2rem;
+        right: 2rem;
+        z-index: 1080;
+        min-width: 360px;
+        max-width: 480px;
+        box-shadow: var(--shadow-2xl);
+        border-radius: 1.25rem;
+        overflow: hidden;
+        border: none;
+    }
+
+        .floating-alert .progress {
+            height: 4px;
+            background: rgba(0,0,0,.08);
+            border-radius: 0;
+        }
+
+        .floating-alert .progress-bar {
+            background: linear-gradient(90deg, var(--sena-green) 0%, var(--sena-green-light) 100%);
+            transition: width 100ms linear;
+            box-shadow: 0 0 10px rgba(0,168,89,.5);
+        }
+
+    (max-width: 768px) {
+        .floating-alert
+
+    {
+        min-width: 320px;
+        right: 1rem;
+        left: 1rem;
+    }
+
+    .day-col {
+        min-height: 380px;
+    }
+
+    .table thead th {
+        min-width: 150px;
+        padding: 1rem;
+        font-size: .9rem;
+    }
+
+    }
+
+
+
+
+    /* ===== Efectos visuales del acordeón de competencias ===== */
+    .card-header.pointer {
+        cursor: pointer;
+        transition: all 0.25s ease;
+    }
+
+        .card-header.pointer:hover {
+            background: rgba(0, 128, 55, 0.05);
+        }
+
+    .card-header .bi {
+        transition: transform 0.3s ease;
+    }
+
+    .collapse.show + .card-header .bi-chevron-down {
+        transform: rotate(180deg);
     }
 </style>
 
 <main class="container-fluid p-3">
-    <h2 class="text-center text-sena mb-3">Sistema de Gestión de Horarios</h2>
+    <header class="mb-3 text-center">
+        <h2 class="text-sena mb-1">Sistema de Gestión de Horarios</h2>
+        <p class="text-muted mb-0">Planifica y organiza la formación por días con arrastrar y soltar.</p>
+    </header>
 
     <!-- Filtros principales -->
-    <div class="row align-items-end mb-4 g-3">
+    <section class="row align-items-end mb-4 g-3" aria-label="Filtros de búsqueda">
         <!-- Año del Horario -->
         <div class="col-lg-2 col-md-3">
-            <label class="form-label fw-bold text-sena">Año del Horario</label>
-            <input id="selAnio" type="number" min="2000" max="2100" class="form-control" placeholder="Ej: 2025" />
+            <label class="form-label fw-bold text-sena" for="selAnio">Año del Horario</label>
+            <input id="selAnio" type="number" min="2000" max="2100" class="form-control" placeholder="Ej: 2025" autocomplete="off" spellcheck="false" />
         </div>
 
         <!-- Trimestre del Año -->
         <div class="col-lg-2 col-md-3">
-            <label class="form-label fw-bold text-sena">Trimestre del Año</label>
-            <select id="selTrimestreAnio" class="form-select">
+            <label class="form-label fw-bold text-sena" for="selTrimestreAnio">Trimestre del Año</label>
+            <select id="selTrimestreAnio" class="form-select" aria-label="Selecciona trimestre del año">
                 <option value="">-- Selecciona un trimestre --</option>
                 <option value="1">Trimestre 1</option>
                 <option value="2">Trimestre 2</option>
@@ -132,82 +492,113 @@
 
         <!-- Ficha (UNIFICADO: digitar + seleccionar) -->
         <div class="col-lg-4 col-md-6 position-relative">
-            <label class="form-label fw-bold text-sena">Ficha</label>
-            <input id="inputFicha" class="form-control" placeholder="Escribe el código o programa..." autocomplete="off" />
-            <input type="hidden" id="hfFichaId" /> <!-- Guarda IdFicha seleccionado -->
-            <div id="fichaSugerencias" class="list-group autocomplete-list shadow-sm bg-white rounded d-none"></div>
+            <label class="form-label fw-bold text-sena" for="inputFicha">Ficha</label>
+            <input id="inputFicha" class="form-control" placeholder="Escribe el código o programa..." autocomplete="off" spellcheck="false" aria-autocomplete="list" aria-expanded="false" aria-controls="fichaSugerencias" />
+            <input type="hidden" id="hfFichaId" />
+            <div id="fichaSugerencias" class="list-group autocomplete-list shadow-sm bg-white rounded d-none" role="listbox" aria-label="Sugerencias de ficha"></div>
         </div>
 
         <!-- Trimestre de la Ficha -->
         <div class="col-lg-3 col-md-3">
-            <label class="form-label fw-bold text-sena">Trimestre de la Ficha</label>
-            <input id="txtTrimestreFicha" class="form-control" placeholder="1..7" readonly />
+            <label class="form-label fw-bold text-sena" for="txtTrimestreFicha">Trimestre de la Ficha</label>
+            <input id="txtTrimestreFicha" class="form-control" placeholder="1..7" readonly aria-readonly="true" />
         </div>
-    </div>
+    </section>
 
-    @using (Html.BeginForm("GuardarHorario", "Home", FormMethod.Post, new { id = "formGuardarHorario" }))
+    @using (Html.BeginForm("GuardarHorario", "Home", FormMethod.Post, new { id = "formGuardarHorario", autocomplete = "off" }))
     {
         @Html.AntiForgeryToken()
         <input type="hidden" id="hfAsignaciones" name="AsignacionesJson" />
 
         <div class="row g-3">
             <!-- Columna izquierda -->
-            <div class="col-lg-3 d-flex flex-column">
+            <aside class="col-lg-3 d-flex flex-column" aria-label="Panel lateral">
                 <!-- Botón Excel -->
                 <div class="col-lg-12 col-md-12 mb-2">
                     <label class="form-label fw-bold text-sena">Importar Excel</label>
                     <div class="d-flex align-items-center gap-2">
-                        <button type="button" id="btnCargarExcel" class="btn btn-success btn-sm w-150">
-                            <i class="bi bi-file-earmark-excel-fill me-1"></i> Cargar Planeación
+                        <button type="button" id="btnCargarExcel" class="btn btn-success btn-sm w-150" data-bs-toggle="tooltip" title="Importa la planeación desde un archivo Excel">
+                            <i class="bi bi-file-earmark-excel-fill me-1" aria-hidden="true"></i>
+                            <span> Cargar Planeación</span>
                         </button>
-                        <input type="file" id="inputExcel" accept=".xlsx, .xls" class="d-none" />
+                        <input type="file" id="inputExcel" accept=".xlsx,.xls" class="d-none" />
                     </div>
                 </div>
 
                 <div class="mb-2">
-                    <label class="form-label fw-bold text-sena">Programa de Formación</label>
-                    <input id="inputPrograma" type="text" class="form-control" placeholder="Escribe o selecciona un programa..." autocomplete="off" />
+                    <label class="form-label fw-bold text-sena" for="inputPrograma">Programa de Formación</label>
+                    <input id="inputPrograma" type="text" class="form-control" placeholder="Escribe o selecciona un programa..." autocomplete="off" spellcheck="false" />
                 </div>
 
                 <div class="card border-sena shadow-sm mb-3">
                     <div class="card-header bg-sena fw-bold d-flex justify-content-between align-items-center">
                         <span>Competencias</span>
-                        <div class="input-group input-group-sm" style="width: 55%;">
-                            <input id="txtSearch" type="text" class="form-control" placeholder="Buscar...">
-                            <span class="input-group-text bg-success text-white"><i class="bi bi-search"></i></span>
+                        <div class="input-group input-group-sm" style="width:55%;">
+                            <input id="txtSearch" type="text" class="form-control" placeholder="Buscar..." autocomplete="off" spellcheck="false" aria-label="Buscar competencia">
+                            <span class="input-group-text bg-success text-white" data-bs-toggle="tooltip" title="Buscar">
+                                <i class="bi bi-search" aria-hidden="true"></i>
+                            </span>
                         </div>
                     </div>
                     <div class="card-body p-2">
-                        <div id="competenciasList" class="list-group list-group-flush"></div>
+                        <div id="competenciasList" class="list-group list-group-flush" aria-live="polite" aria-label="Listado de competencias"></div>
                     </div>
                 </div>
-            </div>
+
+            </aside>
 
             <!-- Columna central -->
-            <div class="col-lg-9">
+            <section class="col-lg-9">
                 <div class="card border-sena shadow-sm">
-                    <div class="card-header bg-sena fw-bold">Días de formación</div>
+                    <div class="card-header bg-sena fw-bold d-flex justify-content-between align-items-center">
+                        <span>Días de formación</span>
+                        <small class="opacity-75">Arrastra las competencias hacia un día para crear asignaciones</small>
+                    </div>
                     <div class="card-body">
                         <div class="table-responsive">
-                            <table class="table table-bordered align-middle text-center">
+                            <table class="table table-bordered align-middle text-center" aria-label="Calendario semanal de formación">
                                 <thead class="table-success">
                                     <tr>
-                                        <th>Lunes</th>
-                                        <th>Martes</th>
-                                        <th>Miércoles</th>
-                                        <th>Jueves</th>
-                                        <th>Viernes</th>
-                                        <th>Sábado</th>
+                                        <th scope="col">Lunes</th>
+                                        <th scope="col">Martes</th>
+                                        <th scope="col">Miércoles</th>
+                                        <th scope="col">Jueves</th>
+                                        <th scope="col">Viernes</th>
+                                        <th scope="col">Sábado</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td><div class="day-col" id="day-lunes" data-day="Lunes"></div></td>
-                                        <td><div class="day-col" id="day-martes" data-day="Martes"></div></td>
-                                        <td><div class="day-col" id="day-miercoles" data-day="Miércoles"></div></td>
-                                        <td><div class="day-col" id="day-jueves" data-day="Jueves"></div></td>
-                                        <td><div class="day-col" id="day-viernes" data-day="Viernes"></div></td>
-                                        <td><div class="day-col" id="day-sabado" data-day="Sábado"></div></td>
+                                        <td>
+                                            <div class="day-col" id="day-lunes" data-day="Lunes" role="list" aria-label="Lunes">
+                                                <small class="text-muted d-block">Suelta aquí</small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="day-col" id="day-martes" data-day="Martes" role="list" aria-label="Martes">
+                                                <small class="text-muted d-block">Suelta aquí</small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="day-col" id="day-miercoles" data-day="Miércoles" role="list" aria-label="Miércoles">
+                                                <small class="text-muted d-block">Suelta aquí</small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="day-col" id="day-jueves" data-day="Jueves" role="list" aria-label="Jueves">
+                                                <small class="text-muted d-block">Suelta aquí</small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="day-col" id="day-viernes" data-day="Viernes" role="list" aria-label="Viernes">
+                                                <small class="text-muted d-block">Suelta aquí</small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="day-col" id="day-sabado" data-day="Sábado" role="list" aria-label="Sábado">
+                                                <small class="text-muted d-block">Suelta aquí</small>
+                                            </div>
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -217,25 +608,25 @@
                 </div>
 
                 <div class="mt-3 text-end">
-                    <button id="btnGuardarHorario" type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalGuardarHorario">
-                        Guardar Todo
+                    <button id="btnGuardarHorario" type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalGuardarHorario" title="Guarda el horario actual">
+                        <i class="bi bi-save me-2"></i>Guardar Todo
                     </button>
-                    <button type="button" class="btn btn-success" onclick="location.href='@Url.Action("ListaHorarios", "Home")'">
-                        Ver Horarios
+                    <button type="button" class="btn btn-success" onclick="location.href='@Url.Action("ListaHorarios", "Home")'" title="Ver horarios guardados">
+                        <i class="bi bi-calendar-check me-2"></i>Ver Horarios
                     </button>
                 </div>
-            </div>
+            </section>
         </div>
     }
 </main>
 
 <!-- Modal Asignar -->
-<div class="modal fade" id="modalAsignar" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="modalAsignar" tabindex="-1" aria-hidden="true" role="dialog" aria-labelledby="modalAsignarLabel">
     <div class="modal-dialog">
         <div class="modal-content border-sena">
             <div class="modal-header bg-sena text-white">
-                <h5 class="modal-title">Asignar Instructor y Horario</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <h5 class="modal-title" id="modalAsignarLabel">Asignar Instructor y Horario</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
             <div class="modal-body">
                 <input type="hidden" id="hfResultadoId" />
@@ -243,62 +634,64 @@
                 <input type="hidden" id="hfCompetenciaId" />
 
                 <div class="mb-3">
-                    <label class="form-label">Instructor</label>
-                    <select id="selInstructor" class="form-select"></select>
+                    <label class="form-label" for="selInstructor">Instructor</label>
+                    <select id="selInstructor" class="form-select" aria-label="Selecciona instructor"></select>
                 </div>
 
                 <div class="row g-2 mb-3">
                     <div class="col-6">
-                        <label class="form-label">Desde</label>
+                        <label class="form-label" for="horaDesde">Desde</label>
                         <input id="horaDesde" type="time" class="form-control" value="06:00" />
                     </div>
                     <div class="col-6">
-                        <label class="form-label">Hasta</label>
+                        <label class="form-label" for="horaHasta">Hasta</label>
                         <input id="horaHasta" type="time" class="form-control" value="09:00" />
                     </div>
                 </div>
 
-                <button id="btnGuardarAsignacion" type="button" class="btn btn-success w-100" data-bs-dismiss="modal">Guardar</button>
+                <button id="btnGuardarAsignacion" type="button" class="btn btn-success w-100" data-bs-dismiss="modal" data-bs-toggle="tooltip" title="Guardar asignación">
+                    <i class="bi bi-check-circle me-2"></i>Guardar
+                </button>
             </div>
         </div>
     </div>
 </div>
 
 <!-- Modal Detalles -->
-<div class="modal fade" id="modalDetalles" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="modalDetalles" tabindex="-1" aria-hidden="true" role="dialog" aria-labelledby="modalDetallesLabel">
     <div class="modal-dialog">
         <div class="modal-content border-sena">
             <div class="modal-header bg-sena text-white">
-                <h5 class="modal-title">Detalles de Asignación</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <h5 class="modal-title" id="modalDetallesLabel">Detalles de Asignación</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
-            <div class="modal-body" id="detallesBody"></div>
+            <div class="modal-body" id="detallesBody" aria-live="polite"></div>
         </div>
     </div>
 </div>
 
 <!-- Modal Guardar Horario -->
-<div class="modal fade" id="modalGuardarHorario" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="modalGuardarHorario" tabindex="-1" aria-hidden="true" role="dialog" aria-labelledby="modalGuardarLabel" aria-describedby="modalGuardarDesc">
     <div class="modal-dialog">
         <div class="modal-content border-sena">
             <div class="modal-header bg-sena text-white">
-                <h5 class="modal-title">Guardar Horario</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <h5 class="modal-title" id="modalGuardarLabel">Guardar Horario</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body" id="modalGuardarDesc">
                 <div class="mb-3">
-                    <label class="form-label">Número de Ficha</label>
-                    <input type="text" id="inputNumeroFicha" class="form-control" placeholder="Ej: 12345" />
+                    <label class="form-label" for="inputNumeroFicha">Número de Ficha</label>
+                    <input type="text" id="inputNumeroFicha" class="form-control" placeholder="Ej: 12345" autocomplete="off" spellcheck="false" />
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label">Nombre del Horario</label>
-                    <input type="text" id="inputNombreHorario" class="form-control" placeholder="Ej: Horario Mañana" />
+                    <label class="form-label" for="inputNombreHorario">Nombre del Horario</label>
+                    <input type="text" id="inputNombreHorario" class="form-control" placeholder="Ej: Horario Mañana" autocomplete="off" spellcheck="false" />
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label">Trimestre</label>
-                    <select id="selectTrimestre" class="form-select">
+                    <label class="form-label" for="selectTrimestre">Trimestre</label>
+                    <select id="selectTrimestre" class="form-select" aria-label="Selecciona el trimestre de la ficha">
                         <option value="" disabled selected>Seleccione un trimestre</option>
                         <option value="1">Trimestre 1</option>
                         <option value="2">Trimestre 2</option>
@@ -310,203 +703,210 @@
                     </select>
                 </div>
 
-                <button id="btnConfirmarGuardar" type="button" class="btn btn-success w-100">Confirmar y Guardar</button>
+                <button id="btnConfirmarGuardar" type="button" class="btn btn-success w-100" data-bs-toggle="tooltip" title="Confirmar y guardar el horario">
+                    <i class="bi bi-cloud-upload me-2"></i>Confirmar y Guardar
+                </button>
             </div>
         </div>
     </div>
 </div>
 
+
+
+
+
 @section Scripts {
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
     <script>
-/* =================== Utilidades =================== */
-function showAlert(message, type = "danger") {
-    const wrap = document.createElement("div");
-    wrap.className = `alert alert-${type} floating-alert`;
-    wrap.role = "alert";
-    wrap.innerHTML = `
-        <div class="d-flex align-items-start gap-2">
-            <i class="bi ${type === "success" ? "bi-check-circle-fill" : "bi-exclamation-triangle-fill"}"></i>
-            <div>${message}</div>
-        </div>`;
-    document.body.appendChild(wrap);
-    setTimeout(() => wrap.remove(), 4500);
-}
-function getAntiForgeryToken() {
-    const el = document.querySelector('input[name="__RequestVerificationToken"]');
-    return el ? el.value : null;
-}
+    /* =================== Utilidades =================== */
+    function showAlert(message, type = "danger", ms = 4500) {
+        const wrap = document.createElement("div");
+        wrap.className = `alert alert-${type} floating-alert`;
+        wrap.role = "alert";
+        wrap.innerHTML = `
+            <div class="d-flex align-items-start gap-2 p-3">
+                <i class="bi ${type === "success" ? "bi-check-circle-fill" : "bi-exclamation-triangle-fill"} fs-5 mt-1"></i>
+                <div class="flex-grow-1">${message}</div>
+                <button type="button" class="btn-close" aria-label="Close"></button>
+            </div>
+            <div class="progress"><div class="progress-bar" style="width:100%"></div></div>`;
+        document.body.appendChild(wrap);
 
-/* =================== Referencias =================== */
-const competenciasList = document.getElementById("competenciasList");
-const selInstructor = document.getElementById("selInstructor");
-const hfAsignaciones = document.getElementById("hfAsignaciones");
-
-/* ======== referencias filtro y autocompletados unificados ======== */
-const selAnio = document.getElementById("selAnio");
-const selTrimestreAnio = document.getElementById("selTrimestreAnio");
-const inputFicha = document.getElementById("inputFicha");
-const fichaSugerencias = document.getElementById("fichaSugerencias");
-const hfFichaId = document.getElementById("hfFichaId");
-const txtTrimestreFicha = document.getElementById("txtTrimestreFicha");
-const inputPrograma = document.getElementById("inputPrograma");
-
-/* =================== Estado =================== */
-let payload = { numeroFicha: "", nombreHorario: "Horario generado", trimestre: "", asignaciones: [] };
-const nextId = (()=>{ let c=1; return ()=>c++; })();
-
-/* Cache de fichas para autocompletar */
-let fichasCache = []; // [{ IdFicha, CodigoFicha, TrimestreDeLaFicha, IdPrograma, ProgramaNombre }]
-
-/* =================== Cargar Fichas (unificado) =================== */
-async function cargarFichas() {
-    const anio = selAnio.value.trim();
-    const tri  = selTrimestreAnio.value;
-
-    // Limpia valores actuales
-    inputFicha.value = "";
-    hfFichaId.value = "";
-    txtTrimestreFicha.value = "";
-    inputPrograma.value = "";
-    fichasCache = [];
-    ocultarSugerencias();
-
-    if (!anio || !tri) return;
-
-    try {
-        const url = `@Url.Action("GetFichasEnFormacion","Home")?anio=${encodeURIComponent(anio)}&trimestre=${encodeURIComponent(tri)}`;
-        const resp = await fetch(url, { headers: { "Accept": "application/json" }});
-        const json = await resp.json();
-        if (!resp.ok || !json?.ok) throw new Error(json?.msg || "No fue posible obtener las fichas.");
-
-        const fichas = Array.isArray(json.data) ? json.data : [];
-        // Normaliza y guarda en caché
-        fichasCache = fichas.map(f => ({
-            IdFicha: f.IdFicha,
-            CodigoFicha: (f.CodigoFicha ?? "").toString().trim(),
-            TrimestreDeLaFicha: f.TrimestreDeLaFicha ?? "",
-            IdPrograma: f.IdPrograma ?? "",
-            ProgramaNombre: f.ProgramaNombre ?? ""
-        }));
-    } catch (err) {
-        console.error(err);
-        showAlert(err.message || "Error cargando fichas.", "danger");
+        const bar = wrap.querySelector(".progress-bar");
+        const closeBtn = wrap.querySelector(".btn-close");
+        let start = performance.now();
+        const tick = (t) => {
+            const elapsed = t - start; const pct = Math.max(0, 100 - (elapsed / ms) * 100);
+            bar.style.width = pct + "%";
+            if (elapsed >= ms) { wrap.classList.add("hide"); setTimeout(() => wrap.remove(), 220); }
+            else { wrap._raf = requestAnimationFrame(tick); }
+        };
+        wrap._raf = requestAnimationFrame(tick);
+        closeBtn.addEventListener("click", () => { cancelAnimationFrame(wrap._raf); wrap.classList.add("hide"); setTimeout(() => wrap.remove(), 200); });
     }
-}
+    function getAntiForgeryToken() {
+        const el = document.querySelector('input[name="__RequestVerificationToken"]');
+        return el ? el.value : null;
+    }
 
-/* =================== Set Programa en textbox =================== */
-function setPrograma(programaNombre) {
-    if (!inputPrograma) return;
-    inputPrograma.value = programaNombre || "";
-}
+    /* =================== Referencias =================== */
+    const competenciasList = document.getElementById("competenciasList");
+    const selInstructor = document.getElementById("selInstructor");
+    const hfAsignaciones = document.getElementById("hfAsignaciones");
 
-/* =================== Listeners base =================== */
-selAnio.addEventListener("input", cargarFichas);
-selTrimestreAnio.addEventListener("change", cargarFichas);
+    /* ======== referencias filtro y autocompletados unificados ======== */
+    const selAnio = document.getElementById("selAnio");
+    const selTrimestreAnio = document.getElementById("selTrimestreAnio");
+    const inputFicha = document.getElementById("inputFicha");
+    const fichaSugerencias = document.getElementById("fichaSugerencias");
+    const hfFichaId = document.getElementById("hfFichaId");
+    const txtTrimestreFicha = document.getElementById("txtTrimestreFicha");
+    const inputPrograma = document.getElementById("inputPrograma");
 
-/* =================== Autocompletado Ficha (unificado) =================== */
-function ocultarSugerencias() {
-    fichaSugerencias.classList.add("d-none");
-    fichaSugerencias.innerHTML = "";
-}
-function mostrarSugerencias(items) {
-    fichaSugerencias.innerHTML = "";
-    if (!items || items.length === 0) {
-        const item = document.createElement("div");
-        item.className = "list-group-item small text-muted";
-        item.textContent = "Sin coincidencias…";
-        fichaSugerencias.appendChild(item);
-    } else {
-        items.forEach(f => {
-            const btn = document.createElement("button");
-            btn.type = "button";
-            btn.className = "list-group-item list-group-item-action";
-            const progTxt = f.ProgramaNombre ? ` (${f.ProgramaNombre})` : "";
-            const codigo  = f.CodigoFicha || "—";
-            btn.textContent = `${codigo} — ${progTxt}`.trim();
+    /* =================== Estado =================== */
+    let payload = { numeroFicha: "", nombreHorario: "Horario generado", trimestre: "", asignaciones: [] };
+    const nextId = (()=>{ let c=1; return ()=>c++; })();
 
-            btn.addEventListener("click", () => {
-                inputFicha.value = f.CodigoFicha || f.ProgramaNombre || "";
-                hfFichaId.value = f.IdFicha;
-                txtTrimestreFicha.value = f.TrimestreDeLaFicha || "";
-                setPrograma(f.ProgramaNombre); // ← ahora escribe en el textbox
-                ocultarSugerencias();
+    /* Cache de fichas para autocompletar */
+    let fichasCache = []; // [{ IdFicha, CodigoFicha, TrimestreDeLaFicha, IdPrograma, ProgramaNombre }]
+
+    /* =================== Cargar Fichas (unificado) =================== */
+    async function cargarFichas() {
+        const anio = selAnio.value.trim();
+        const tri  = selTrimestreAnio.value;
+
+        // Limpia valores actuales
+        inputFicha.value = "";
+        hfFichaId.value = "";
+        txtTrimestreFicha.value = "";
+        inputPrograma.value = "";
+        fichasCache = [];
+        ocultarSugerencias();
+
+        if (!anio || !tri) return;
+
+        try {
+            const url = `@Url.Action("GetFichasEnFormacion","Home")?anio=${encodeURIComponent(anio)}&trimestre=${encodeURIComponent(tri)}`;
+            const resp = await fetch(url, { headers: { "Accept": "application/json" }});
+            const json = await resp.json();
+            if (!resp.ok || !json?.ok) throw new Error(json?.msg || "No fue posible obtener las fichas.");
+
+            const fichas = Array.isArray(json.data) ? json.data : [];
+            // Normaliza y guarda en caché
+            fichasCache = fichas.map(f => ({
+                IdFicha: f.IdFicha,
+                CodigoFicha: (f.CodigoFicha ?? "").toString().trim(),
+                TrimestreDeLaFicha: f.TrimestreDeLaFicha ?? "",
+                IdPrograma: f.IdPrograma ?? "",
+                ProgramaNombre: f.ProgramaNombre ?? ""
+            }));
+        } catch (err) {
+            console.error(err);
+            showAlert(err.message || "Error cargando fichas.", "danger");
+        }
+    }
+
+    /* =================== Set Programa en textbox =================== */
+    function setPrograma(programaNombre) { if (!inputPrograma) return; inputPrograma.value = programaNombre || ""; }
+
+    /* =================== Listeners base =================== */
+    selAnio.addEventListener("input", cargarFichas);
+    selTrimestreAnio.addEventListener("change", cargarFichas);
+
+    /* =================== Autocompletado Ficha (unificado) =================== */
+    function ocultarSugerencias() { fichaSugerencias.classList.add("d-none"); fichaSugerencias.innerHTML = ""; }
+    function mostrarSugerencias(items) {
+        fichaSugerencias.innerHTML = "";
+        if (!items || items.length === 0) {
+            const item = document.createElement("div");
+            item.className = "list-group-item small text-muted";
+            item.textContent = "Sin coincidencias…";
+            fichaSugerencias.appendChild(item);
+        } else {
+            items.forEach(f => {
+                const btn = document.createElement("button");
+                btn.type = "button"; btn.className = "list-group-item list-group-item-action";
+                const progTxt = f.ProgramaNombre ? ` (${f.ProgramaNombre})` : "";
+                const codigo  = f.CodigoFicha || "—";
+                btn.textContent = `${codigo} — ${progTxt}`.trim();
+                btn.addEventListener("click", () => {
+                    inputFicha.value = f.CodigoFicha || f.ProgramaNombre || "";
+                    hfFichaId.value = f.IdFicha;
+                    txtTrimestreFicha.value = f.TrimestreDeLaFicha || "";
+                    setPrograma(f.ProgramaNombre);
+                    ocultarSugerencias();
+
+                    // 🔹 Cargar automáticamente las competencias de esta ficha
+                    cargarCompetenciasFicha(f.IdFicha);
+                });
+
+                fichaSugerencias.appendChild(btn);
             });
-
-            fichaSugerencias.appendChild(btn);
-        });
+        }
+        fichaSugerencias.classList.remove("d-none");
     }
-    fichaSugerencias.classList.remove("d-none");
-}
-async function asegurarFichasCargadasSiHaceFalta() {
-    if (!fichasCache.length) {
-        await cargarFichas();
-    }
-}
+    async function asegurarFichasCargadasSiHaceFalta() { if (!fichasCache.length) { await cargarFichas(); } }
 
-inputFicha.addEventListener("input", async () => {
-    const q = inputFicha.value.trim().toLowerCase();
-    hfFichaId.value = "";                 // al escribir, se limpia la selección
-    txtTrimestreFicha.value = "";
-    setPrograma("");                      // limpia programa si cambian el texto
-    ocultarSugerencias();
+    inputFicha.addEventListener("input", async () => {
+        const q = inputFicha.value.trim().toLowerCase();
+        hfFichaId.value = "";                 // al escribir, se limpia la selección
+        txtTrimestreFicha.value = "";
+        setPrograma("");                      // limpia programa si cambian el texto
+        ocultarSugerencias();
 
-    // Requiere año y trimestre
-    const anio = selAnio.value.trim();
-    const tri  = selTrimestreAnio.value;
-    if (!anio || !tri) return;
+        // Requiere año y trimestre
+        const anio = selAnio.value.trim();
+        const tri  = selTrimestreAnio.value;
+        if (!anio || !tri) return;
 
-    await asegurarFichasCargadasSiHaceFalta();
+        await asegurarFichasCargadasSiHaceFalta();
+        if (!q) return;
 
-    if (!q) return;
+        // Filtra por código o nombre de programa
+        const matches = fichasCache.filter(f => {
+            const codigo = (f.CodigoFicha || "").toLowerCase();
+            const prog   = (f.ProgramaNombre || "").toLowerCase();
+            return codigo.includes(q) || prog.includes(q);
+        }).slice(0, 30);
 
-    // Filtra por código o nombre de programa
-    const matches = fichasCache.filter(f => {
-        const codigo = (f.CodigoFicha || "").toLowerCase();
-        const prog   = (f.ProgramaNombre || "").toLowerCase();
-        return codigo.includes(q) || prog.includes(q);
-    }).slice(0, 30); // limitamos para no saturar
+        mostrarSugerencias(matches);
+    });
 
-    mostrarSugerencias(matches);
-});
+    // Cerrar dropdown al clicar fuera
+    document.addEventListener("click", (e) => {
+        const dentro = fichaSugerencias.contains(e.target) || inputFicha.contains(e.target);
+        if (!dentro) ocultarSugerencias();
+    });
 
-// Cerrar dropdown al clicar fuera
-document.addEventListener("click", (e) => {
-    const dentro = fichaSugerencias.contains(e.target) || inputFicha.contains(e.target);
-    if (!dentro) ocultarSugerencias();
-});
 
-/* =================== (Resto) Guardado, Excel =================== */
-function getAnio() { return selAnio.value; }
-function getTrimestreAnio() { return selTrimestreAnio.value; }
-function getIdAsignacion() { return hfFichaId.value; } // usamos hidden con IdFicha
 
+        /* =================== EVENTOS DE CARGA DE EXCEL =================== */
 const btnCargarExcel = document.getElementById("btnCargarExcel");
 const inputExcel = document.getElementById("inputExcel");
-btnCargarExcel?.addEventListener("click", () => inputExcel.click());
 
+/* 🔹 Paso 1: al hacer clic en el botón visible, abrimos el input oculto */
+btnCargarExcel?.addEventListener("click", () => {
+    inputExcel.click();
+});
+
+/* 🔹 Paso 2: cuando se selecciona un archivo, procesamos la carga */
 inputExcel?.addEventListener("change", async function (e) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const anio = getAnio();
-    const trimestre = getTrimestreAnio();
-    const idAsignacion = getIdAsignacion();
+    const anio = selAnio.value;
+    const trimestre = selTrimestreAnio.value;
+    const idFicha = hfFichaId.value;
 
-    if (!anio || !trimestre || !idAsignacion) {
-        showAlert("Selecciona Año, Trimestre del Año y una Ficha antes de importar.", "warning");
+    if (!anio || !trimestre || !idFicha) {
+        showAlert("⚠️ Debes seleccionar un Año, un Trimestre y una Ficha antes de importar.", "warning");
         e.target.value = "";
         return;
     }
 
-    const validExt = /\.(xlsx|xls)$/i;
-    if (!validExt.test(file.name)) {
-        showAlert("Por favor selecciona un archivo Excel válido (.xlsx o .xls).", "warning");
-        e.target.value = "";
-        btnCargarExcel.innerHTML = `<i class="bi bi-file-earmark-excel-fill me-1"></i> Cargar Planeación`;
-        return;
-    }
-
-    btnCargarExcel.innerHTML = `<i class="bi bi-file-earmark-excel-fill me-1"></i> ${file.name}`;
+    btnCargarExcel.innerHTML = `<i class="bi bi-hourglass-split me-1"></i> Cargando...`;
     btnCargarExcel.disabled = true;
 
     try {
@@ -514,21 +914,75 @@ inputExcel?.addEventListener("change", async function (e) {
         fd.append("archivoExcel", file);
         fd.append("anio", anio);
         fd.append("trimestre", trimestre);
-        fd.append("idAsignacion", idAsignacion);
+        fd.append("idFicha", idFicha);
 
         const resp = await fetch('@Url.Action("ImportarExcel","Home")', { method: "POST", body: fd });
-        const data = await resp.json().catch(() => ({}));
-        if (!resp.ok || !data.ok) throw new Error(data?.msg || "Error al importar la planeación.");
+        const data = await resp.json();
 
-        showAlert(`✅ Planeación importada (Id Horario: ${data.idHorario}).`, "success");
+        if (!data.ok) throw new Error(data.msg || "Error al importar la planeación.");
+
+        showAlert(data.msg, "success");
+
+        // ✅ Mostrar las competencias cargadas después de importar
+        mostrarCompetenciasCargadas(data.competencias);
+
     } catch (err) {
-        console.error(err);
-        showAlert(`❌ ${err.message}`, "danger");
-        e.target.value = "";
-        btnCargarExcel.innerHTML = `<i class="bi bi-file-earmark-excel-fill me-1"></i> Cargar Planeación`;
+        showAlert("❌ " + err.message, "danger");
     } finally {
         btnCargarExcel.disabled = false;
+        btnCargarExcel.innerHTML = `<i class="bi bi-file-earmark-excel-fill me-1"></i> Cargar Planeación`;
+        e.target.value = ""; // limpia el input
     }
 });
+            /* =================== RENDERIZAR COMPETENCIAS CON ACORDEÓN =================== */
+            function mostrarCompetenciasCargadas(competencias) {
+                const contenedor = document.getElementById("competenciasList");
+                contenedor.innerHTML = "";
+
+                if (!competencias || !competencias.length) {
+                    contenedor.innerHTML = `<div class="text-muted text-center py-2">No hay competencias en este archivo.</div>`;
+                    return;
+                }
+
+                competencias.forEach((c, index) => {
+                    const bloque = document.createElement("div");
+                    bloque.className = "card mb-2 border-0 shadow-sm";
+
+                    const competenciaId = `competencia_${index}`;
+
+                    // Encabezado con botón que expande/colapsa
+                    bloque.innerHTML = `
+            <div class="card-header d-flex justify-content-between align-items-center bg-white border-start border-4 border-success pointer"
+                 data-bs-toggle="collapse" data-bs-target="#${competenciaId}" aria-expanded="false" aria-controls="${competenciaId}">
+                <span class="fw-bold text-sena">${c.Competencia}</span>
+                <i class="bi bi-chevron-down text-success fs-5 transition"></i>
+            </div>
+
+            <div id="${competenciaId}" class="collapse">
+                <div class="card-body pt-2 pb-2 ps-4">
+                    ${Array.isArray(c.Resultados) && c.Resultados.length > 0
+                            ? `
+                                <ul class="mb-0">
+                                    ${c.Resultados.map(r => `<li class="small text-muted mb-1">${r}</li>`).join("")}
+                                </ul>
+                              `
+                            : `<small class="text-muted fst-italic">Sin resultados de aprendizaje</small>`
+                        }
+                </div>
+            </div>
+        `;
+
+                    contenedor.appendChild(bloque);
+
+                    // Animación del ícono de flecha
+                    const header = bloque.querySelector(".card-header");
+                    const icon = header.querySelector("i");
+                    header.addEventListener("click", () => {
+                        const isExpanded = header.getAttribute("aria-expanded") === "true";
+                        icon.classList.toggle("bi-chevron-up", !isExpanded);
+                        icon.classList.toggle("bi-chevron-down", isExpanded);
+                    });
+                });
+            }
     </script>
 }

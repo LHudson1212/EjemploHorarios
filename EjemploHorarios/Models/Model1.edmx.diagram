@@ -30,6 +30,11 @@
         <AssociationConnector Association="SenaPlanningModel.FK__Oferta__IdUsuari__5AEE82B9" ManuallyRouted="false" />
         <AssociationConnector Association="SenaPlanningModel.Area_conocimiento_has_Instructor" ManuallyRouted="false" />
         <AssociationConnector Association="SenaPlanningModel.Ficha_has_Ambiente" ManuallyRouted="false" />
+        <EntityTypeShape EntityType="SenaPlanningModel.Diseño_Curricular" Width="1.5" PointX="9.75" PointY="10" />
+        <AssociationConnector Association="SenaPlanningModel.FK__Diseño_Cu__Id_Ho__17F790F9" />
+        <AssociationConnector Association="SenaPlanningModel.FK__Diseño_Cu__IdFic__160F4887" />
+        <AssociationConnector Association="SenaPlanningModel.FK__Diseño_Cu__IdIns__17036CC0" />
+        <AssociationConnector Association="SenaPlanningModel.FK__Horario__IdFicha__07C12930" />
       </Diagram>
     </edmx:Diagrams>
   </edmx:Designer>

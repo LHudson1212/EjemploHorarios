@@ -14,12 +14,22 @@ namespace EjemploHorarios.Models
     
     public partial class Horario
     {
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors")]
+        public Horario()
+        {
+            this.Diseño_Curricular = new HashSet<Diseño_Curricular>();
+        }
+    
         public int Id_Horario { get; set; }
         public Nullable<int> Año_Horario { get; set; }
         public Nullable<int> Trimestre_Año { get; set; }
         public Nullable<System.DateTime> Fecha_Creacion { get; set; }
         public int Id_Asignacion { get; set; }
+        public Nullable<int> IdFicha { get; set; }
     
         public virtual Asignacion_horario Asignacion_horario { get; set; }
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<Diseño_Curricular> Diseño_Curricular { get; set; }
+        public virtual Ficha Ficha { get; set; }
     }
 }
