@@ -135,7 +135,7 @@ namespace EjemploHorarios.Controllers
                             HrTrimVI = ParseNullableInt(ws.Cells[row, 13].Text),
                             HrTrimVII = ParseNullableInt(ws.Cells[row, 14].Text),
                             Total_Hr = ParseNullableInt(ws.Cells[row, 15].Text),
-                            Prog = programaNombre,
+                            Prog = programaNombre,                           
                             IdInstructor = idInstructor,
                             Id_Horario = horarioId,
                             IdFicha = idFicha
@@ -183,9 +183,6 @@ namespace EjemploHorarios.Controllers
         }
 
 
-
-
-
         private int ObtenerInstructorId(string nombre)
         {
             if (string.IsNullOrWhiteSpace(nombre))
@@ -224,7 +221,7 @@ namespace EjemploHorarios.Controllers
                 db.SaveChanges();
             }
 
-            // ✅ Luego crear el horario con referencia a esa asignación
+            // Luego crear el horario con referencia a esa asignación
             var nuevo = new Horario
             {
                 IdFicha = idFicha,

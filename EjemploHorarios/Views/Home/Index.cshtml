@@ -12,7 +12,7 @@
 
 <style>
     /* ====================================================================
-               SISTEMA DE GESTIÓN DE HORARIOS SENA - ESTILOS ULTRA MEJORADOS
+               SISTEMA DE GESTIÓN DE HORARIOS SENA - ESTILOS MEJORADOS
                (Aplicados al código funcional existente)
            ==================================================================== */
 
@@ -204,10 +204,10 @@
     .form-control, .form-select {
         border-radius: .85rem;
         border: 2px solid #e5e7eb;
-        padding: .7rem 1rem;
+        padding: .5rem 1rem;
         transition: all var(--transition-base);
         background: #fff;
-        font-size: .95rem;
+        font-size: .80rem;
         box-shadow: var(--shadow-xs);
     }
 
@@ -470,6 +470,16 @@
         <p class="text-muted mb-0">Planifica y organiza la formación por días con arrastrar y soltar.</p>
     </header>
 
+    <div class="mt-3 text-end">
+        <button id="btnGuardarHorario" type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalGuardarHorario" title="Guarda el horario actual">
+            <i class="bi bi-save me-2"></i>Guardar Todo
+        </button>
+        <button type="button" class="btn btn-success" onclick="location.href='@Url.Action("ListaHorarios", "Home")'" title="Ver horarios guardados">
+            <i class="bi bi-calendar-check me-2"></i>Ver Horarios
+        </button>
+    </div>
+    <br />
+
     <!-- Filtros principales -->
     <section class="row align-items-end mb-4 g-3" aria-label="Filtros de búsqueda">
         <!-- Año del Horario -->
@@ -513,6 +523,13 @@
         <div class="row g-3">
             <!-- Columna izquierda -->
             <aside class="col-lg-3 d-flex flex-column" aria-label="Panel lateral">
+
+
+                <div class="mb-2">
+                    <label class="form-label fw-bold text-sena" for="inputPrograma">Programa de Formación</label>
+                    <input id="inputPrograma" type="text" class="form-control" placeholder="Escribe o selecciona un programa..." autocomplete="off" spellcheck="false" />
+                </div>
+
                 <!-- Botón Excel -->
                 <div class="col-lg-12 col-md-12 mb-2">
                     <label class="form-label fw-bold text-sena">Importar Excel</label>
@@ -524,11 +541,7 @@
                         <input type="file" id="inputExcel" accept=".xlsx,.xls" class="d-none" />
                     </div>
                 </div>
-
-                <div class="mb-2">
-                    <label class="form-label fw-bold text-sena" for="inputPrograma">Programa de Formación</label>
-                    <input id="inputPrograma" type="text" class="form-control" placeholder="Escribe o selecciona un programa..." autocomplete="off" spellcheck="false" />
-                </div>
+                <br />
 
                 <div class="card border-sena shadow-sm mb-3">
                     <div class="card-header bg-sena fw-bold d-flex justify-content-between align-items-center">
@@ -605,15 +618,6 @@
                         </div>
                         <small class="text-muted">Arrastra aquí las asignaciones creadas desde la sección de competencias.</small>
                     </div>
-                </div>
-
-                <div class="mt-3 text-end">
-                    <button id="btnGuardarHorario" type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalGuardarHorario" title="Guarda el horario actual">
-                        <i class="bi bi-save me-2"></i>Guardar Todo
-                    </button>
-                    <button type="button" class="btn btn-success" onclick="location.href='@Url.Action("ListaHorarios", "Home")'" title="Ver horarios guardados">
-                        <i class="bi bi-calendar-check me-2"></i>Ver Horarios
-                    </button>
                 </div>
             </section>
         </div>
@@ -710,7 +714,6 @@
         </div>
     </div>
 </div>
-
 
 
 
