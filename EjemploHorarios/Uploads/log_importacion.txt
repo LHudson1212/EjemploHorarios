@@ -1,0 +1,172 @@
+✅ Columna del instructor detectada: 35
+📄 Fila 2: Instructor='MARRUGO LEYVA  WILLIAM' | Competencia='ADMINISTRAR HARDWARE Y SOFTWARE DE SEGURIDAD EN LA RED A PARTIR DE NORMAS INTERNACIONALES.'
+➡️  Instructor 'MARRUGO LEYVA  WILLIAM' → ID asignado: 1136
+📄 Fila 3: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 4: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 5: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 6: Instructor='' | Competencia=''
+📄 Fila 7: Instructor='MARRUGO LEYVA  WILLIAM' | Competencia='Administrar infraestructura tecnológica de red según modelos de referencia y procedimiento técnico'
+➡️  Instructor 'MARRUGO LEYVA  WILLIAM' → ID asignado: 1136
+📄 Fila 8: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 9: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 10: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 11: Instructor='' | Competencia=''
+📄 Fila 12: Instructor='MARRUGO LEYVA  WILLIAM' | Competencia='APLICACIÓN DE CONOCIMIENTOS DE LAS CIENCIAS NATURALES DE ACUERDO CON SITUACIONES DEL CONTEXTO PRODUCTIVO Y SOCIAL.'
+➡️  Instructor 'MARRUGO LEYVA  WILLIAM' → ID asignado: 1136
+📄 Fila 13: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 14: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 15: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 16: Instructor='' | Competencia=''
+📄 Fila 17: Instructor='MARRUGO LEYVA  WILLIAM' | Competencia='APLICAR PRÁCTICAS DE PROTECCIÓN AMBIENTAL, SEGURIDAD Y SALUD EN EL TRABAJO DE ACUERDO CON LAS POLÍTICAS ORGANIZACIONALES Y LA NORMATIVIDAD VIGENTE.'
+➡️  Instructor 'MARRUGO LEYVA  WILLIAM' → ID asignado: 1136
+📄 Fila 18: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 19: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 20: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 21: Instructor='' | Competencia=''
+📄 Fila 22: Instructor='MARRUGO LEYVA  WILLIAM' | Competencia='Configurar dispositivos activos de interconexión según especificaciones del diseño y protocolos técnicos'
+➡️  Instructor 'MARRUGO LEYVA  WILLIAM' → ID asignado: 1136
+📄 Fila 23: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 24: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 25: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 26: Instructor='' | Competencia=''
+📄 Fila 27: Instructor='MARRUGO LEYVA  WILLIAM' | Competencia='CONFIGURAR DISPOSITIVOS DE CÓMPUTO DE ACUERDO CON ESPECIFICACIONES DEL DISEÑO Y PROTOCOLOS TÉCNICOS'
+➡️  Instructor 'MARRUGO LEYVA  WILLIAM' → ID asignado: 1136
+📄 Fila 28: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 29: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 30: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 31: Instructor='' | Competencia=''
+📄 Fila 32: Instructor='MARRUGO LEYVA  WILLIAM' | Competencia='DESARROLLAR PROCESOS DE COMUNICACIÓN EFICACES Y EFECTIVOS, TENIENDO EN CUENTA SITUACIONES  DE ORDEN SOCIAL, PERSONAL Y'
+➡️  Instructor 'MARRUGO LEYVA  WILLIAM' → ID asignado: 1136
+📄 Fila 33: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 34: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 35: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 36: Instructor='' | Competencia=''
+📄 Fila 37: Instructor='MARRUGO LEYVA  WILLIAM' | Competencia='Ejercer derechos fundamentales del trabajo en el marco de la constitución política y los convenios internacionales.'
+➡️  Instructor 'MARRUGO LEYVA  WILLIAM' → ID asignado: 1136
+📄 Fila 38: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 39: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 40: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 41: Instructor='' | Competencia=''
+📄 Fila 42: Instructor='MARRUGO LEYVA  WILLIAM' | Competencia='Enrrrique Low Murtra-Interactuar en el contexto productivo y social de acuerdo con principios  éticos para la construcción de una cultura de paz.'
+➡️  Instructor 'MARRUGO LEYVA  WILLIAM' → ID asignado: 1136
+📄 Fila 43: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 44: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 45: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 46: Instructor='' | Competencia=''
+📄 Fila 47: Instructor='MARRUGO LEYVA  WILLIAM' | Competencia='GENERAR HÁBITOS SALUDABLES DE VIDA MEDIANTE LA APLICACIÓN DE PROGRAMAS DE ACTIVIDAD FÍSICA EN LOS CONTEXTOS PRODUCTIVOS Y SOCIALES.'
+➡️  Instructor 'MARRUGO LEYVA  WILLIAM' → ID asignado: 1136
+📄 Fila 48: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 49: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 50: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 51: Instructor='' | Competencia=''
+📄 Fila 52: Instructor='MARRUGO LEYVA  WILLIAM' | Competencia='Gestionar procesos propios de la cultura emprendedora y empresarial de acuerdo con el perfil personal y los requerimientos de los contextos productivo y social.'
+➡️  Instructor 'MARRUGO LEYVA  WILLIAM' → ID asignado: 1136
+📄 Fila 53: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 54: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 55: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 56: Instructor='' | Competencia=''
+📄 Fila 57: Instructor='MARRUGO LEYVA  WILLIAM' | Competencia='Implementar red inalámbrica local según especificaciones del diseño y estándares técnicos'
+➡️  Instructor 'MARRUGO LEYVA  WILLIAM' → ID asignado: 1136
+📄 Fila 58: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 59: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 60: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 61: Instructor='' | Competencia=''
+📄 Fila 62: Instructor='MARRUGO LEYVA  WILLIAM' | Competencia='Implementar tecnologías de voz sobre IP de acuerdo con el diseño y normas técnicas'
+➡️  Instructor 'MARRUGO LEYVA  WILLIAM' → ID asignado: 1136
+📄 Fila 63: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 64: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 65: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 66: Instructor='' | Competencia=''
+📄 Fila 67: Instructor='MARRUGO LEYVA  WILLIAM' | Competencia='INTERACTUAR EN LENGUA INGLESA DE FORMA ORAL Y ESCRITA DENTRO DE CONTEXTOS SOCIALES Y LABORALES SEGÚN LOS CRITERIOS ESTABLECIDOS POR EL MARCO COMÚN EUROPEO DE REFERENCIA PARA LAS LENGUAS.'
+➡️  Instructor 'MARRUGO LEYVA  WILLIAM' → ID asignado: 1136
+📄 Fila 68: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 69: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 70: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 71: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 72: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 73: Instructor='' | Competencia=''
+📄 Fila 74: Instructor='MARRUGO LEYVA  WILLIAM' | Competencia='Orientar investigación formativa según referentes técnicos'
+➡️  Instructor 'MARRUGO LEYVA  WILLIAM' → ID asignado: 1136
+📄 Fila 75: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 76: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 77: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 78: Instructor='' | Competencia=''
+📄 Fila 79: Instructor='MARRUGO LEYVA  WILLIAM' | Competencia='Razonar cuantitativamente frente a situaciones susceptibles de ser abordadas de manera matemática en contextos laborales, sociales y personales.'
+➡️  Instructor 'MARRUGO LEYVA  WILLIAM' → ID asignado: 1136
+📄 Fila 80: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 81: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 82: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 83: Instructor='' | Competencia=''
+📄 Fila 84: Instructor='MARRUGO LEYVA  WILLIAM' | Competencia='Utilizar herramientas informáticas de acuerdo con las necesidades de manejo de información'
+➡️  Instructor 'MARRUGO LEYVA  WILLIAM' → ID asignado: 1136
+📄 Fila 85: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 86: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 87: Instructor='' | Competencia=''
+➡️  Instructor '' → ID asignado: 1219
+📄 Fila 88: Instructor='' | Competencia=''
+📄 Fila 89: Instructor='MARRUGO LEYVA  WILLIAM' | Competencia='Resultado de Aprendizaje de la Inducción.'
+➡️  Instructor 'MARRUGO LEYVA  WILLIAM' → ID asignado: 1136
+📄 Fila 90: Instructor='' | Competencia=''
+📄 Fila 91: Instructor='' | Competencia=''
+📄 Fila 92: Instructor='' | Competencia=''
+📄 Fila 93: Instructor='' | Competencia=''
+📄 Fila 94: Instructor='' | Competencia=''
+📄 Fila 95: Instructor='' | Competencia=''
+📄 Fila 96: Instructor='' | Competencia=''
+📄 Fila 97: Instructor='' | Competencia=''
+📄 Fila 98: Instructor='' | Competencia=''
+📄 Fila 99: Instructor='' | Competencia=''
+📄 Fila 100: Instructor='' | Competencia=''
+📄 Fila 101: Instructor='' | Competencia=''
