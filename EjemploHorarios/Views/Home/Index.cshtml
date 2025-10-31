@@ -12,96 +12,74 @@
 
 <style>
     /* ====================================================================
-               SISTEMA DE GESTIÓN DE HORARIOS SENA - ESTILOS MEJORADOS
-               (Aplicados al código funcional existente)
-           ==================================================================== */
+     SISTEMA DE GESTIÓN DE HORARIOS SENA - ESTILOS MEJORADOS
+     ==================================================================== */
 
     /* ====== Variables de tema ====== */
     :root {
-        /* Colores principales SENA con más variantes */
         --sena-green: #008037;
         --sena-green-light: #00a859;
         --sena-green-dark: #006028;
         --sena-green-ultra-light: #e6f7ed;
-        --sena-green-glow: rgba(0, 168, 89, 0.4);
-        /* Colores de texto */
+        --sena-green-glow: rgba(0,168,89,.4);
         --sena-ink: #1f2937;
         --sena-muted: #6b7280;
         --sena-light: #9ca3af;
-        /* Colores por día */
-        --day-lunes: linear-gradient(135deg, #00a859 0%, #00c96d 100%);
+        --day-lunes: linear-gradient(135deg,#00a859 0%,#00c96d 100%);
         --day-lunes-solid: #00a859;
-        --day-martes: linear-gradient(135deg, #0091ea 0%,#00b0ff 100%);
+        --day-martes: linear-gradient(135deg,#0091ea 0%,#00b0ff 100%);
         --day-martes-solid: #0091ea;
-        --day-miercoles: linear-gradient(135deg, #ff9800 0%, #ffb74d 100%);
+        --day-miercoles: linear-gradient(135deg,#ff9800 0%,#ffb74d 100%);
         --day-miercoles-solid: #ff9800;
-        --day-jueves: linear-gradient(135deg, #d81b60 0%, #f06292 100%);
+        --day-jueves: linear-gradient(135deg,#d81b60 0%,#f06292 100%);
         --day-jueves-solid: #d81b60;
-        --day-viernes: linear-gradient(135deg, #8e24aa 0%, #ab47bc 100%);
+        --day-viernes: linear-gradient(135deg,#8e24aa 0%,#ab47bc 100%);
         --day-viernes-solid: #8e24aa;
-        --day-sabado: linear-gradient(135deg, #5d4037 0%, #795548 100%);
+        --day-sabado: linear-gradient(135deg,#5d4037 0%,#795548 100%);
         --day-sabado-solid: #5d4037;
-        /* Sombras */
-        --shadow-xs: 0 1px 4px rgba(0, 0, 0, 0.02);
-        --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
-        --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
-        --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
-        --shadow-xl: 0 12px 32px rgba(0, 0, 0, 0.16);
-        --shadow-2xl: 0 20px 48px rgba(0, 0, 0, 0.2);
+        --shadow-xs: 0 1px 4px rgba(0,0,0,.02);
+        --shadow-sm: 0 2px 8px rgba(0,0,0,.05);
+        --shadow-md: 0 4px 16px rgba(0,0,0,.08);
+        --shadow-lg: 0 8px 24px rgba(0,0,0,.12);
+        --shadow-xl: 0 12px 32px rgba(0,0,0,.16);
+        --shadow-2xl: 0 20px 48px rgba(0,0,0,.20);
         --shadow-glow: 0 0 20px var(--sena-green-glow);
-        /* Efectos */
-        --ring: 0 0 0 4px rgba(0, 128, 55, 0.15);
-        --ring-success: 0 0 0 4px rgba(0, 168, 89, 0.25);
+        --ring: 0 0 0 4px rgba(0,128,55,.15);
+        --ring-success: 0 0 0 4px rgba(0,168,89,.25);
         --backdrop-blur: blur(16px);
-        --backdrop-blur-strong: blur(24px);
-        /* Transiciones */
-        --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-        --transition-base: 300ms cubic-bezier(0.4, 0, 0.2, 1);
-        --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
-        --transition-bounce: 600ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        --transition-fast: 150ms cubic-bezier(.4,0,.2,1);
+        --transition-base: 300ms cubic-bezier(.4,0,.2,1);
+        --transition-bounce: 600ms cubic-bezier(.68,-.55,.265,1.55);
     }
 
     * {
-        box-sizing: border-box;
+        box-sizing: border-box
     }
 
     html {
         scroll-behavior: smooth;
-        font-size: 16px;
+        font-size: 16px
     }
 
     body {
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         color: var(--sena-ink);
-        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 50%, #f0fdf4 100%);
+        background: linear-gradient(135deg,#f0fdf4 0%,#dcfce7 50%,#f0fdf4 100%);
         background-size: 200% 200%;
-        animation: gradientShift 15s ease infinite;
+        animation: gradientShift 15s ease infinite; /* en cshtml usamos @@ abajo */
         min-height: 100vh;
         position: relative;
         overflow-x: hidden;
     }
 
-    gradientShift {
-        0%,100%
-
-    {
-        background-position: 0% 50%
-    }
-
-    50% {
-        background-position: 100% 50%
-    }
-
-    }
-
-    /* Utilitarios */
+    /* ====== Utilitarios ====== */
     .border-sena {
-        border-color: var(--sena-green) !important;
+        border-color: var(--sena-green) !important
     }
 
     .bg-sena {
-        background: linear-gradient(135deg, var(--sena-green) 0%, var(--sena-green-light) 100%) !important;
+        background: linear-gradient(135deg,var(--sena-green) 0%,var(--sena-green-light) 100%) !important;
         color: #fff;
         box-shadow: var(--shadow-md);
         position: relative;
@@ -115,33 +93,20 @@
             right: -50%;
             width: 200%;
             height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,.15) 0%, transparent 70%);
+            background: radial-gradient(circle,rgba(255,255,255,.15) 0%,transparent 70%);
             animation: shimmer 4s ease-in-out infinite;
         }
 
     .text-sena {
         color: var(--sena-green) !important;
-        font-weight: 600;
+        font-weight: 600
     }
 
     .pointer {
-        cursor: pointer;
+        cursor: pointer
     }
 
-    shimmer {
-        from
-
-    {
-        transform: translate(-50%,-50%) rotate(0)
-    }
-
-    to {
-        transform: translate(-50%,-50%) rotate(360deg)
-    }
-
-    }
-
-    /* Tarjetas / contenedores */
+    /* ====== Tarjetas / contenedores ====== */
     .card {
         border-radius: 1.25rem;
         box-shadow: var(--shadow-md);
@@ -153,35 +118,34 @@
     }
 
         .card:hover {
-            box-shadow: var(--shadow-xl), var(--shadow-glow);
+            box-shadow: var(--shadow-xl),var(--shadow-glow);
             transform: translateY(-4px) scale(1.01);
-            border-color: rgba(0,128,55,.2);
+            border-color: rgba(0,128,55,.2)
         }
 
     .card-header {
         border: 0;
         font-weight: 700;
-        padding: 1.25rem 1.5rem;
+        padding: 1.25rem 1.5rem
     }
 
-    /* Header principal */
+    /* ====== Header principal (izquierda) ====== */
     header {
         position: relative;
-        padding: 1.5rem 0;
-        margin-bottom: .5rem;
+        padding: 1.25rem 0 .5rem
     }
 
         header h2 {
             font-size: 2.2rem;
             font-weight: 800;
-            background: linear-gradient(135deg, var(--sena-green) 0%, var(--sena-green-light) 100%);
+            background: linear-gradient(135deg,var(--sena-green) 0%,var(--sena-green-light) 100%);
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
             margin-bottom: .25rem;
         }
 
-    /* Controles */
+    /* ====== Controles ====== */
     .form-label {
         font-weight: 700;
         color: var(--sena-green);
@@ -194,10 +158,10 @@
     }
 
         .form-label::before {
-            content: '';
+            content: "";
             width: 4px;
             height: 16px;
-            background: linear-gradient(180deg, var(--sena-green) 0%, var(--sena-green-light) 100%);
+            background: linear-gradient(180deg,var(--sena-green) 0%,var(--sena-green-light) 100%);
             border-radius: 2px;
         }
 
@@ -213,12 +177,12 @@
 
         .form-control:focus, .form-select:focus {
             border-color: var(--sena-green);
-            box-shadow: var(--ring), var(--shadow-md);
+            box-shadow: var(--ring),var(--shadow-md);
             outline: none;
             transform: translateY(-1px);
         }
 
-    /* Botones */
+    /* ====== Botones ====== */
     .btn {
         border-radius: .85rem;
         padding: .7rem 1.5rem;
@@ -226,35 +190,52 @@
         transition: all var(--transition-base);
         border: none;
         letter-spacing: .4px;
-        box-shadow: var(--shadow-sm);
+        box-shadow: var(--shadow-sm)
     }
 
     .btn-success {
-        background: linear-gradient(135deg, var(--sena-green) 0%, var(--sena-green-light) 100%);
-        color: #fff;
+        background: linear-gradient(135deg,var(--sena-green) 0%,var(--sena-green-light) 100%);
+        color: #fff
     }
 
         .btn-success:hover {
-            background: linear-gradient(135deg, var(--sena-green-dark) 0%, var(--sena-green) 100%);
-            box-shadow: var(--shadow-lg), var(--shadow-glow);
-            transform: translateY(-3px) scale(1.02);
+            background: linear-gradient(135deg,var(--sena-green-dark) 0%,var(--sena-green) 100%);
+            box-shadow: var(--shadow-lg),var(--shadow-glow);
+            transform: translateY(-3px) scale(1.02)
         }
 
     .btn-outline-success {
         border: 2px solid var(--sena-green);
         color: var(--sena-green);
-        background: transparent;
+        background: transparent
     }
 
         .btn-outline-success:hover {
             background: var(--sena-green);
-            color: #fff;
+            color: #fff
         }
 
-    /* Zona de días */
+    /* ====== Barra de filtros arriba ====== */
+    .filters-bar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: end;
+        gap: .75rem;
+        margin-bottom: 1rem
+    }
+
+        .filters-bar .form-group {
+            min-width: 230px
+        }
+
+            .filters-bar .form-group[style*="flex:1"] {
+                min-width: 280px
+            }
+
+    /* ====== Zona de días ====== */
     .day-col {
         min-height: 500px;
-        background: linear-gradient(180deg, rgba(246, 255, 246, .9) 0%, rgba(255,255,255,.95) 100%);
+        background: linear-gradient(180deg,rgba(246,255,246,.9) 0%,rgba(255,255,255,.95) 100%);
         border: 3px dashed #b6e4c3;
         border-radius: 1.25rem;
         padding: 1.25rem;
@@ -265,11 +246,11 @@
     }
 
         .day-col.dragover {
-            background: linear-gradient(180deg, rgba(234,255,234,.98) 0%, rgba(246,255,246,.98) 100%);
+            background: linear-gradient(180deg,rgba(234,255,234,.98) 0%,rgba(246,255,246,.98) 100%);
             transform: scale(1.02);
             border-color: var(--sena-green);
             border-style: solid;
-            box-shadow: var(--ring-success), var(--shadow-xl), var(--shadow-glow);
+            box-shadow: var(--ring-success),var(--shadow-xl),var(--shadow-glow);
         }
 
         .day-col small.text-muted {
@@ -285,7 +266,24 @@
             font-weight: 600;
         }
 
-    /* Tarjeta de evento */
+    /* ====== Footer del section: texto + botones ====== */
+    .card-footer-inline {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: .75rem;
+        padding: .75rem 1rem;
+        border-top: 1px solid #e8f2ea;
+        background: #fff;
+    }
+
+        .card-footer-inline .actions {
+            display: flex;
+            gap: .5rem;
+            flex-wrap: wrap
+        }
+
+    /* ====== Tarjeta de evento ====== */
     .event-card {
         border-left: 5px solid var(--sena-green);
         background: #fff;
@@ -301,27 +299,27 @@
 
         .event-card:hover {
             transform: translateY(-4px) translateX(3px) scale(1.01);
-            box-shadow: var(--shadow-lg);
+            box-shadow: var(--shadow-lg)
         }
 
         .event-card small {
             display: block;
             color: var(--sena-muted);
-            font-size: .86rem;
+            font-size: .86rem
         }
 
         .event-card .btn {
             opacity: 0;
             transform: scale(.9) translateY(5px);
-            transition: all var(--transition-bounce);
+            transition: all var(--transition-bounce)
         }
 
         .event-card:hover .btn {
             opacity: 1;
-            transform: scale(1) translateY(0);
+            transform: scale(1) translateY(0)
         }
 
-    /* Chips (competencias) */
+    /* ====== Chips (competencias) ====== */
     .chip {
         display: inline-flex;
         align-items: center;
@@ -329,7 +327,7 @@
         padding: .5rem 1rem;
         border-radius: 999px;
         border: 2px solid #e5e7eb;
-        background: linear-gradient(135deg, #fff 0%, #f9fafb 100%);
+        background: linear-gradient(135deg,#fff 0%,#f9fafb 100%);
         font-size: .9rem;
         margin: .35rem .45rem .35rem 0;
         cursor: grab;
@@ -339,18 +337,18 @@
     }
 
         .chip:hover {
-            box-shadow: var(--shadow-md), var(--shadow-glow);
+            box-shadow: var(--shadow-md),var(--shadow-glow);
             transform: translateY(-3px) scale(1.03);
-            border-color: var(--sena-green-light);
+            border-color: var(--sena-green-light)
         }
 
         .chip small {
             color: var(--sena-muted);
             font-weight: 600;
-            font-size: .82rem;
+            font-size: .82rem
         }
 
-    /* Autocomplete */
+    /* ====== Autocomplete ====== */
     .autocomplete-list {
         position: absolute;
         left: 0;
@@ -368,26 +366,26 @@
     .list-group-item-action {
         padding: .85rem 1.25rem;
         border: none;
-        border-bottom: 1px solid #f3f4f6;
+        border-bottom: 1px solid #f3f4f6
     }
 
         .list-group-item-action:hover {
-            background: linear-gradient(90deg, rgba(234,255,234,.9) 0%, rgba(246,255,246,.5) 100%);
+            background: linear-gradient(90deg,rgba(234,255,234,.9) 0%,rgba(246,255,246,.5) 100%);
             color: var(--sena-green);
             font-weight: 600;
-            padding-left: 1.5rem;
+            padding-left: 1.5rem
         }
 
     #fichaSugerencias.d-none {
-        display: none;
+        display: none
     }
 
-    /* Tabla */
+    /* ====== Tabla ====== */
     .table thead th {
         position: sticky;
         top: 0;
         z-index: 10;
-        background: linear-gradient(135deg, var(--sena-green) 0%, var(--sena-green-light) 100%);
+        background: linear-gradient(135deg,var(--sena-green) 0%,var(--sena-green-light) 100%);
         color: #fff;
         font-weight: 700;
         padding: 1.25rem;
@@ -395,7 +393,7 @@
         letter-spacing: 1px;
     }
 
-    /* Alertas */
+    /* ====== Alertas ====== */
     .floating-alert {
         position: fixed;
         top: 2rem;
@@ -412,73 +410,98 @@
         .floating-alert .progress {
             height: 4px;
             background: rgba(0,0,0,.08);
-            border-radius: 0;
+            border-radius: 0
         }
 
         .floating-alert .progress-bar {
-            background: linear-gradient(90deg, var(--sena-green) 0%, var(--sena-green-light) 100%);
+            background: linear-gradient(90deg,var(--sena-green) 0%,var(--sena-green-light) 100%);
             transition: width 100ms linear;
-            box-shadow: 0 0 10px rgba(0,168,89,.5);
+            box-shadow: 0 0 10px rgba(0,168,89,.5)
         }
 
-    (max-width: 768px) {
-        .floating-alert
-
-    {
-        min-width: 320px;
-        right: 1rem;
-        left: 1rem;
-    }
-
-    .day-col {
-        min-height: 380px;
-    }
-
-    .table thead th {
-        min-width: 150px;
-        padding: 1rem;
-        font-size: .9rem;
-    }
-
-    }
-
-
-
-
-    /* ===== Efectos visuales del acordeón de competencias ===== */
+    /* ====== Acordeón de competencias ====== */
     .card-header.pointer {
         cursor: pointer;
-        transition: all 0.25s ease;
+        transition: all .25s ease
     }
 
         .card-header.pointer:hover {
-            background: rgba(0, 128, 55, 0.05);
+            background: rgba(0,128,55,.05)
         }
 
     .card-header .bi {
-        transition: transform 0.3s ease;
+        transition: transform .3s ease
     }
 
     .collapse.show + .card-header .bi-chevron-down {
-        transform: rotate(180deg);
+        transform: rotate(180deg)
+    }
+
+    /* Chips arrastrables (resultados) */
+    .result-chip {
+        display: inline-block;
+        padding: .35rem .6rem;
+        border-radius: 999px;
+        border: 1px solid #e5e7eb;
+        background: #f9fafb;
+        font-size: .85rem;
+        margin: .25rem .35rem .25rem 0;
+        cursor: grab;
+        user-select: none;
+    }
+
+        .result-chip:active {
+            cursor: grabbing
+        }
+
+
+    /* ====== Animaciones (usar @@ en cshtml) ====== */
+    @@keyframes gradientShift {
+        0%, 100% {
+            background-position: 0% 50%
+        }
+
+        50% {
+            background-position: 100% 50%
+        }
+    }
+
+    @@keyframes shimmer {
+        from {
+            transform: translate(-50%,-50%) rotate(0)
+        }
+
+        to {
+            transform: translate(-50%,-50%) rotate(360deg)
+        }
+    }
+
+    /* ====== Responsive (usar @@ en cshtml) ====== */
+    @@media (max-width:768px) {
+        .floating-alert {
+            min-width: 320px;
+            right: 1rem;
+            left: 1rem
+        }
+
+        .day-col {
+            min-height: 380px
+        }
+
+        .table thead th {
+            min-width: 150px;
+            padding: 1rem;
+            font-size: .9rem
+        }
     }
 </style>
 
+
 <main class="container-fluid p-3">
-    <header class="mb-3 text-center">
+    <header class="mb-3 text-start">
         <h2 class="text-sena mb-1">Sistema de Gestión de Horarios</h2>
         <p class="text-muted mb-0">Planifica y organiza la formación por días con arrastrar y soltar.</p>
     </header>
-
-    <div class="mt-3 text-end">
-        <button id="btnGuardarHorario" type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalGuardarHorario" title="Guarda el horario actual">
-            <i class="bi bi-save me-2"></i>Guardar Todo
-        </button>
-        <button type="button" class="btn btn-success" onclick="location.href='@Url.Action("ListaHorarios", "Home")'" title="Ver horarios guardados">
-            <i class="bi bi-calendar-check me-2"></i>Ver Horarios
-        </button>
-    </div>
-    <br />
 
     <!-- Filtros principales -->
     <section class="row align-items-end mb-4 g-3" aria-label="Filtros de búsqueda">
@@ -521,52 +544,14 @@
         <input type="hidden" id="hfAsignaciones" name="AsignacionesJson" />
 
         <div class="row g-3">
-            <!-- Columna izquierda -->
-            <aside class="col-lg-3 d-flex flex-column" aria-label="Panel lateral">
-
-
-                <div class="mb-2">
-                    <label class="form-label fw-bold text-sena" for="inputPrograma">Programa de Formación</label>
-                    <input id="inputPrograma" type="text" class="form-control" placeholder="Escribe o selecciona un programa..." autocomplete="off" spellcheck="false" />
-                </div>
-
-                <!-- Botón Excel -->
-                <div class="col-lg-12 col-md-12 mb-2">
-                    <label class="form-label fw-bold text-sena">Importar Excel</label>
-                    <div class="d-flex align-items-center gap-2">
-                        <button type="button" id="btnCargarExcel" class="btn btn-success btn-sm w-150" data-bs-toggle="tooltip" title="Importa la planeación desde un archivo Excel">
-                            <i class="bi bi-file-earmark-excel-fill me-1" aria-hidden="true"></i>
-                            <span> Cargar Planeación</span>
-                        </button>
-                        <input type="file" id="inputExcel" accept=".xlsx,.xls" class="d-none" />
-                    </div>
-                </div>
-                <br />
-
-                <div class="card border-sena shadow-sm mb-3">
-                    <div class="card-header bg-sena fw-bold d-flex justify-content-between align-items-center">
-                        <span>Competencias</span>
-                        <div class="input-group input-group-sm" style="width:55%;">
-                            <input id="txtSearch" type="text" class="form-control" placeholder="Buscar..." autocomplete="off" spellcheck="false" aria-label="Buscar competencia">
-                            <span class="input-group-text bg-success text-white" data-bs-toggle="tooltip" title="Buscar">
-                                <i class="bi bi-search" aria-hidden="true"></i>
-                            </span>
-                        </div>
-                    </div>
-                    <div class="card-body p-2">
-                        <div id="competenciasList" class="list-group list-group-flush" aria-live="polite" aria-label="Listado de competencias"></div>
-                    </div>
-                </div>
-
-            </aside>
-
-            <!-- Columna central -->
-            <section class="col-lg-9">
+            <!-- SECTION principal -->
+            <section class="col-12 col-xl-9">
                 <div class="card border-sena shadow-sm">
                     <div class="card-header bg-sena fw-bold d-flex justify-content-between align-items-center">
                         <span>Días de formación</span>
                         <small class="opacity-75">Arrastra las competencias hacia un día para crear asignaciones</small>
                     </div>
+
                     <div class="card-body">
                         <div class="table-responsive">
                             <table class="table table-bordered align-middle text-center" aria-label="Calendario semanal de formación">
@@ -582,44 +567,68 @@
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td>
-                                            <div class="day-col" id="day-lunes" data-day="Lunes" role="list" aria-label="Lunes">
-                                                <small class="text-muted d-block">Suelta aquí</small>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="day-col" id="day-martes" data-day="Martes" role="list" aria-label="Martes">
-                                                <small class="text-muted d-block">Suelta aquí</small>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="day-col" id="day-miercoles" data-day="Miércoles" role="list" aria-label="Miércoles">
-                                                <small class="text-muted d-block">Suelta aquí</small>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="day-col" id="day-jueves" data-day="Jueves" role="list" aria-label="Jueves">
-                                                <small class="text-muted d-block">Suelta aquí</small>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="day-col" id="day-viernes" data-day="Viernes" role="list" aria-label="Viernes">
-                                                <small class="text-muted d-block">Suelta aquí</small>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="day-col" id="day-sabado" data-day="Sábado" role="list" aria-label="Sábado">
-                                                <small class="text-muted d-block">Suelta aquí</small>
-                                            </div>
-                                        </td>
+                                        <td><div class="day-col" id="day-lunes" data-day="Lunes" role="list" aria-label="Lunes"><small class="text-muted d-block">Suelta aquí</small></div></td>
+                                        <td><div class="day-col" id="day-martes" data-day="Martes" role="list" aria-label="Martes"><small class="text-muted d-block">Suelta aquí</small></div></td>
+                                        <td><div class="day-col" id="day-miercoles" data-day="Miércoles" role="list" aria-label="Miércoles"><small class="text-muted d-block">Suelta aquí</small></div></td>
+                                        <td><div class="day-col" id="day-jueves" data-day="Jueves" role="list" aria-label="Jueves"><small class="text-muted d-block">Suelta aquí</small></div></td>
+                                        <td><div class="day-col" id="day-viernes" data-day="Viernes" role="list" aria-label="Viernes"><small class="text-muted d-block">Suelta aquí</small></div></td>
+                                        <td><div class="day-col" id="day-sabado" data-day="Sábado" role="list" aria-label="Sábado"><small class="text-muted d-block">Suelta aquí</small></div></td>
                                     </tr>
                                 </tbody>
                             </table>
                         </div>
+                    </div>
+
+                    <!-- Footer dentro del section: texto + botones -->
+                    <div class="card-footer card-footer-inline">
                         <small class="text-muted">Arrastra aquí las asignaciones creadas desde la sección de competencias.</small>
+                        <div class="actions">
+                            <button id="btnGuardarHorario" type="button" class="btn btn-success"
+                                    data-bs-toggle="modal" data-bs-target="#modalGuardarHorario" title="Guarda el horario actual">
+                                <i class="bi bi-save me-2"></i>Guardar Todo
+                            </button>
+                            <button type="button" class="btn btn-success"
+                                    onclick="location.href='@Url.Action("ListaHorarios", "Home")'" title="Ver horarios guardados">
+                                <i class="bi bi-calendar-check me-2"></i>Ver Horarios
+                            </button>
+                        </div>
                     </div>
                 </div>
             </section>
+
+            <!-- ASIDE: Competencias -->
+            <aside class="col-12 col-xl-3 d-flex flex-column" aria-label="Panel lateral">
+                <div class="mb-2">
+                    <label class="form-label fw-bold text-sena" for="inputPrograma">Programa de Formación</label>
+                    <input id="inputPrograma" type="text" class="form-control" placeholder="Escribe o selecciona un programa..." autocomplete="off" spellcheck="false" />
+                </div>
+
+                <!-- Botón Excel -->
+                <div class="col-lg-12 col-md-12 mb-2">
+                    <label class="form-label fw-bold text-sena">Importar Excel</label>
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" id="btnCargarExcel" class="btn btn-success btn-sm w-150" data-bs-toggle="tooltip" title="Importa la planeación desde un archivo Excel">
+                            <i class="bi bi-file-earmark-excel-fill me-1" aria-hidden="true"></i><span> Cargar Planeación</span>
+                        </button>
+                        <input type="file" id="inputExcel" accept=".xlsx,.xls" class="d-none" />
+                    </div>
+                </div>
+
+                <div class="card border-sena shadow-sm mb-3 flex-grow-1">
+                    <div class="card-header bg-sena fw-bold d-flex justify-content-between align-items-center">
+                        <span>Competencias</span>
+                        <div class="input-group input-group-sm" style="width:55%;">
+                            <input id="txtSearch" type="text" class="form-control" placeholder="Buscar..." autocomplete="off" spellcheck="false" aria-label="Buscar competencia">
+                            <span class="input-group-text bg-success text-white" data-bs-toggle="tooltip" title="Buscar">
+                                <i class="bi bi-search" aria-hidden="true"></i>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body p-2">
+                        <div id="competenciasList" class="list-group list-group-flush" aria-live="polite" aria-label="Listado de competencias"></div>
+                    </div>
+                </div>
+            </aside>
         </div>
     }
 </main>
@@ -717,184 +726,189 @@
 
 
 
-
 @section Scripts {
     <!-- Bootstrap 5 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-    /* =================== Utilidades =================== */
-    function showAlert(message, type = "danger", ms = 4500) {
-        const wrap = document.createElement("div");
-        wrap.className = `alert alert-${type} floating-alert`;
-        wrap.role = "alert";
-        wrap.innerHTML = `
-            <div class="d-flex align-items-start gap-2 p-3">
-                <i class="bi ${type === "success" ? "bi-check-circle-fill" : "bi-exclamation-triangle-fill"} fs-5 mt-1"></i>
-                <div class="flex-grow-1">${message}</div>
-                <button type="button" class="btn-close" aria-label="Close"></button>
-            </div>
-            <div class="progress"><div class="progress-bar" style="width:100%"></div></div>`;
-        document.body.appendChild(wrap);
+/* =================== Utilidades =================== */
+function showAlert(message, type = "danger", ms = 4500) {
+    const wrap = document.createElement("div");
+    wrap.className = `alert alert-${type} floating-alert`;
+    wrap.role = "alert";
+    wrap.innerHTML = `
+        <div class="d-flex align-items-start gap-2 p-3">
+            <i class="bi ${type === "success" ? "bi-check-circle-fill" : "bi-exclamation-triangle-fill"} fs-5 mt-1"></i>
+            <div class="flex-grow-1">${message}</div>
+            <button type="button" class="btn-close" aria-label="Close"></button>
+        </div>
+        <div class="progress"><div class="progress-bar" style="width:100%"></div></div>`;
+    document.body.appendChild(wrap);
 
-        const bar = wrap.querySelector(".progress-bar");
-        const closeBtn = wrap.querySelector(".btn-close");
-        let start = performance.now();
-        const tick = (t) => {
-            const elapsed = t - start; const pct = Math.max(0, 100 - (elapsed / ms) * 100);
-            bar.style.width = pct + "%";
-            if (elapsed >= ms) { wrap.classList.add("hide"); setTimeout(() => wrap.remove(), 220); }
-            else { wrap._raf = requestAnimationFrame(tick); }
-        };
-        wrap._raf = requestAnimationFrame(tick);
-        closeBtn.addEventListener("click", () => { cancelAnimationFrame(wrap._raf); wrap.classList.add("hide"); setTimeout(() => wrap.remove(), 200); });
+    const bar = wrap.querySelector(".progress-bar");
+    const closeBtn = wrap.querySelector(".btn-close");
+    let start = performance.now();
+    const tick = (t) => {
+        const elapsed = t - start; const pct = Math.max(0, 100 - (elapsed / ms) * 100);
+        bar.style.width = pct + "%";
+        if (elapsed >= ms) { wrap.classList.add("hide"); setTimeout(() => wrap.remove(), 220); }
+        else { wrap._raf = requestAnimationFrame(tick); }
+    };
+    wrap._raf = requestAnimationFrame(tick);
+    closeBtn.addEventListener("click", () => { cancelAnimationFrame(wrap._raf); wrap.classList.add("hide"); setTimeout(() => wrap.remove(), 200); });
+}
+function getAntiForgeryToken() {
+    const el = document.querySelector('input[name="__RequestVerificationToken"]');
+    return el ? el.value : null;
+}
+function escapeHtml(s){
+    return (s??"").replace(/[&<>'"]/g, c => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"
+    }[c]));
+}
+
+/* =================== Referencias =================== */
+const competenciasList   = document.getElementById("competenciasList");
+const selInstructor      = document.getElementById("selInstructor");
+const hfAsignaciones     = document.getElementById("hfAsignaciones");
+const txtSearch          = document.getElementById("txtSearch");
+
+/* ======== referencias filtro y autocompletados unificados ======== */
+const selAnio            = document.getElementById("selAnio");
+const selTrimestreAnio   = document.getElementById("selTrimestreAnio");
+const inputFicha         = document.getElementById("inputFicha");
+const fichaSugerencias   = document.getElementById("fichaSugerencias");
+const hfFichaId          = document.getElementById("hfFichaId");
+const txtTrimestreFicha  = document.getElementById("txtTrimestreFicha");
+const inputPrograma      = document.getElementById("inputPrograma");
+
+/* =================== Estado =================== */
+let payload = { numeroFicha: "", nombreHorario: "Horario generado", trimestre: "", asignaciones: [] };
+const nextId = (()=>{ let c=1; return ()=>c++; })();
+
+/* Cache de fichas para autocompletar */
+let fichasCache = []; // [{ IdFicha, CodigoFicha, TrimestreDeLaFicha, IdPrograma, ProgramaNombre }]
+
+// Competencias/Resultados cargados (para filtrar)
+let _competenciasData = [];     // [{ Competencia, Resultados: [] }]
+let _lastDropContext  = null;   // { day, data, container }
+
+/* =================== Cargar Fichas (unificado) =================== */
+async function cargarFichas() {
+    const anio = selAnio.value.trim();
+    const tri  = selTrimestreAnio.value;
+
+    // Limpia valores actuales
+    inputFicha.value = "";
+    hfFichaId.value = "";
+    txtTrimestreFicha.value = "";
+    inputPrograma.value = "";
+    fichasCache = [];
+    ocultarSugerencias();
+
+    if (!anio || !tri) return;
+
+    try {
+        const url = `@Url.Action("GetFichasEnFormacion","Home")?anio=${encodeURIComponent(anio)}&trimestre=${encodeURIComponent(tri)}`;
+        const resp = await fetch(url, { headers: { "Accept": "application/json" }});
+        const json = await resp.json();
+        if (!resp.ok || !json?.ok) throw new Error(json?.msg || "No fue posible obtener las fichas.");
+
+        const fichas = Array.isArray(json.data) ? json.data : [];
+        // Normaliza y guarda en caché
+        fichasCache = fichas.map(f => ({
+            IdFicha: f.IdFicha,
+            CodigoFicha: (f.CodigoFicha ?? "").toString().trim(),
+            TrimestreDeLaFicha: f.TrimestreDeLaFicha ?? "",
+            IdPrograma: f.IdPrograma ?? "",
+            ProgramaNombre: f.ProgramaNombre ?? ""
+        }));
+    } catch (err) {
+        console.error(err);
+        showAlert(err.message || "Error cargando fichas.", "danger");
     }
-    function getAntiForgeryToken() {
-        const el = document.querySelector('input[name="__RequestVerificationToken"]');
-        return el ? el.value : null;
-    }
+}
 
-    /* =================== Referencias =================== */
-    const competenciasList = document.getElementById("competenciasList");
-    const selInstructor = document.getElementById("selInstructor");
-    const hfAsignaciones = document.getElementById("hfAsignaciones");
+/* =================== Set Programa en textbox =================== */
+function setPrograma(programaNombre) { if (!inputPrograma) return; inputPrograma.value = programaNombre || ""; }
 
-    /* ======== referencias filtro y autocompletados unificados ======== */
-    const selAnio = document.getElementById("selAnio");
-    const selTrimestreAnio = document.getElementById("selTrimestreAnio");
-    const inputFicha = document.getElementById("inputFicha");
-    const fichaSugerencias = document.getElementById("fichaSugerencias");
-    const hfFichaId = document.getElementById("hfFichaId");
-    const txtTrimestreFicha = document.getElementById("txtTrimestreFicha");
-    const inputPrograma = document.getElementById("inputPrograma");
+/* =================== Listeners base =================== */
+selAnio.addEventListener("input", cargarFichas);
+selTrimestreAnio.addEventListener("change", cargarFichas);
 
-    /* =================== Estado =================== */
-    let payload = { numeroFicha: "", nombreHorario: "Horario generado", trimestre: "", asignaciones: [] };
-    const nextId = (()=>{ let c=1; return ()=>c++; })();
+/* =================== Autocompletado Ficha (unificado) =================== */
+function ocultarSugerencias() { fichaSugerencias.classList.add("d-none"); fichaSugerencias.innerHTML = ""; }
+function mostrarSugerencias(items) {
+    fichaSugerencias.innerHTML = "";
+    if (!items || items.length === 0) {
+        const item = document.createElement("div");
+        item.className = "list-group-item small text-muted";
+        item.textContent = "Sin coincidencias…";
+        fichaSugerencias.appendChild(item);
+    } else {
+        items.forEach(f => {
+            const btn = document.createElement("button");
+            btn.type = "button"; btn.className = "list-group-item list-group-item-action";
+            const progTxt = f.ProgramaNombre ? ` (${f.ProgramaNombre})` : "";
+            const codigo  = f.CodigoFicha || "—";
+            btn.textContent = `${codigo} — ${progTxt}`.trim();
+            btn.addEventListener("click", async () => {
+                inputFicha.value = f.CodigoFicha || f.ProgramaNombre || "";
+                hfFichaId.value = f.IdFicha;
+                txtTrimestreFicha.value = f.TrimestreDeLaFicha || "";
+                setPrograma(f.ProgramaNombre);
+                ocultarSugerencias();
 
-    /* Cache de fichas para autocompletar */
-    let fichasCache = []; // [{ IdFicha, CodigoFicha, TrimestreDeLaFicha, IdPrograma, ProgramaNombre }]
-
-    /* =================== Cargar Fichas (unificado) =================== */
-    async function cargarFichas() {
-        const anio = selAnio.value.trim();
-        const tri  = selTrimestreAnio.value;
-
-        // Limpia valores actuales
-        inputFicha.value = "";
-        hfFichaId.value = "";
-        txtTrimestreFicha.value = "";
-        inputPrograma.value = "";
-        fichasCache = [];
-        ocultarSugerencias();
-
-        if (!anio || !tri) return;
-
-        try {
-            const url = `@Url.Action("GetFichasEnFormacion","Home")?anio=${encodeURIComponent(anio)}&trimestre=${encodeURIComponent(tri)}`;
-            const resp = await fetch(url, { headers: { "Accept": "application/json" }});
-            const json = await resp.json();
-            if (!resp.ok || !json?.ok) throw new Error(json?.msg || "No fue posible obtener las fichas.");
-
-            const fichas = Array.isArray(json.data) ? json.data : [];
-            // Normaliza y guarda en caché
-            fichasCache = fichas.map(f => ({
-                IdFicha: f.IdFicha,
-                CodigoFicha: (f.CodigoFicha ?? "").toString().trim(),
-                TrimestreDeLaFicha: f.TrimestreDeLaFicha ?? "",
-                IdPrograma: f.IdPrograma ?? "",
-                ProgramaNombre: f.ProgramaNombre ?? ""
-            }));
-        } catch (err) {
-            console.error(err);
-            showAlert(err.message || "Error cargando fichas.", "danger");
-        }
-    }
-
-    /* =================== Set Programa en textbox =================== */
-    function setPrograma(programaNombre) { if (!inputPrograma) return; inputPrograma.value = programaNombre || ""; }
-
-    /* =================== Listeners base =================== */
-    selAnio.addEventListener("input", cargarFichas);
-    selTrimestreAnio.addEventListener("change", cargarFichas);
-
-    /* =================== Autocompletado Ficha (unificado) =================== */
-    function ocultarSugerencias() { fichaSugerencias.classList.add("d-none"); fichaSugerencias.innerHTML = ""; }
-    function mostrarSugerencias(items) {
-        fichaSugerencias.innerHTML = "";
-        if (!items || items.length === 0) {
-            const item = document.createElement("div");
-            item.className = "list-group-item small text-muted";
-            item.textContent = "Sin coincidencias…";
-            fichaSugerencias.appendChild(item);
-        } else {
-            items.forEach(f => {
-                const btn = document.createElement("button");
-                btn.type = "button"; btn.className = "list-group-item list-group-item-action";
-                const progTxt = f.ProgramaNombre ? ` (${f.ProgramaNombre})` : "";
-                const codigo  = f.CodigoFicha || "—";
-                btn.textContent = `${codigo} — ${progTxt}`.trim();
-                btn.addEventListener("click", () => {
-                    inputFicha.value = f.CodigoFicha || f.ProgramaNombre || "";
-                    hfFichaId.value = f.IdFicha;
-                    txtTrimestreFicha.value = f.TrimestreDeLaFicha || "";
-                    setPrograma(f.ProgramaNombre);
-                    ocultarSugerencias();
-
-                    // 🔹 Cargar automáticamente las competencias de esta ficha
-                    cargarCompetenciasFicha(f.IdFicha);
-                });
-
-                fichaSugerencias.appendChild(btn);
+                // 🔹 Intento cargar competencias por ficha (si tienes el endpoint)
+                await cargarCompetenciasFicha(f.IdFicha);
             });
-        }
-        fichaSugerencias.classList.remove("d-none");
+
+            fichaSugerencias.appendChild(btn);
+        });
     }
-    async function asegurarFichasCargadasSiHaceFalta() { if (!fichasCache.length) { await cargarFichas(); } }
+    fichaSugerencias.classList.remove("d-none");
+}
+async function asegurarFichasCargadasSiHaceFalta() { if (!fichasCache.length) { await cargarFichas(); } }
 
-    inputFicha.addEventListener("input", async () => {
-        const q = inputFicha.value.trim().toLowerCase();
-        hfFichaId.value = "";                 // al escribir, se limpia la selección
-        txtTrimestreFicha.value = "";
-        setPrograma("");                      // limpia programa si cambian el texto
-        ocultarSugerencias();
+inputFicha.addEventListener("input", async () => {
+    const q = inputFicha.value.trim().toLowerCase();
+    hfFichaId.value = "";                 // al escribir, se limpia la selección
+    txtTrimestreFicha.value = "";
+    setPrograma("");                      // limpia programa si cambian el texto
+    ocultarSugerencias();
 
-        // Requiere año y trimestre
-        const anio = selAnio.value.trim();
-        const tri  = selTrimestreAnio.value;
-        if (!anio || !tri) return;
+    // Requiere año y trimestre
+    const anio = selAnio.value.trim();
+    const tri  = selTrimestreAnio.value;
+    if (!anio || !tri) return;
 
-        await asegurarFichasCargadasSiHaceFalta();
-        if (!q) return;
+    await asegurarFichasCargadasSiHaceFalta();
+    if (!q) return;
 
-        // Filtra por código o nombre de programa
-        const matches = fichasCache.filter(f => {
-            const codigo = (f.CodigoFicha || "").toLowerCase();
-            const prog   = (f.ProgramaNombre || "").toLowerCase();
-            return codigo.includes(q) || prog.includes(q);
-        }).slice(0, 30);
+    // Filtra por código o nombre de programa
+    const matches = fichasCache.filter(f => {
+        const codigo = (f.CodigoFicha || "").toLowerCase();
+        const prog   = (f.ProgramaNombre || "").toLowerCase();
+        return codigo.includes(q) || prog.includes(q);
+    }).slice(0, 30);
 
-        mostrarSugerencias(matches);
-    });
+    mostrarSugerencias(matches);
+});
 
-    // Cerrar dropdown al clicar fuera
-    document.addEventListener("click", (e) => {
-        const dentro = fichaSugerencias.contains(e.target) || inputFicha.contains(e.target);
-        if (!dentro) ocultarSugerencias();
-    });
+// Cerrar dropdown al clicar fuera
+document.addEventListener("click", (e) => {
+    const dentro = fichaSugerencias.contains(e.target) || inputFicha.contains(e.target);
+    if (!dentro) ocultarSugerencias();
+});
 
-
-
-        /* =================== EVENTOS DE CARGA DE EXCEL =================== */
+/* =================== EVENTOS DE CARGA DE EXCEL =================== */
 const btnCargarExcel = document.getElementById("btnCargarExcel");
 const inputExcel = document.getElementById("inputExcel");
 
-/* 🔹 Paso 1: al hacer clic en el botón visible, abrimos el input oculto */
-btnCargarExcel?.addEventListener("click", () => {
-    inputExcel.click();
-});
+/* Paso 1: al hacer clic en el botón visible, abrimos el input oculto */
+btnCargarExcel?.addEventListener("click", () => { inputExcel.click(); });
 
-/* 🔹 Paso 2: cuando se selecciona un archivo, procesamos la carga */
+/* Paso 2: cuando se selecciona un archivo, procesamos la carga */
 inputExcel?.addEventListener("change", async function (e) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -937,55 +951,193 @@ inputExcel?.addEventListener("change", async function (e) {
         e.target.value = ""; // limpia el input
     }
 });
-            /* =================== RENDERIZAR COMPETENCIAS CON ACORDEÓN =================== */
-            function mostrarCompetenciasCargadas(competencias) {
-                const contenedor = document.getElementById("competenciasList");
-                contenedor.innerHTML = "";
 
-                if (!competencias || !competencias.length) {
-                    contenedor.innerHTML = `<div class="text-muted text-center py-2">No hay competencias en este archivo.</div>`;
-                    return;
-                }
+/* =================== (Opcional) Cargar competencias por Ficha =================== */
+async function cargarCompetenciasFicha(idFicha){
+    if(!idFicha) return;
+    try{
+        const url = `@Url.Action("GetCompetenciasDeFicha","Home")?idFicha=${'${'}encodeURIComponent(idFicha)${'}'}`;
+        const resp = await fetch(url, { headers: { "Accept":"application/json" }});
+        if(!resp.ok) return; // si no existe el endpoint, no hacemos nada
+        const json = await resp.json();
+        if(json?.ok && Array.isArray(json.competencias)){
+            mostrarCompetenciasCargadas(json.competencias);
+        }
+    }catch{ /* silencioso */ }
+}
 
-                competencias.forEach((c, index) => {
-                    const bloque = document.createElement("div");
-                    bloque.className = "card mb-2 border-0 shadow-sm";
+/* =================== RENDER: competencias + resultados (draggables) =================== */
+function mostrarCompetenciasCargadas(competencias){
+    _competenciasData = Array.isArray(competencias) ? competencias : [];
+    renderCompetencias(_competenciasData);
+}
 
-                    const competenciaId = `competencia_${index}`;
+function renderCompetencias(lista){
+    const contenedor = document.getElementById("competenciasList");
+    contenedor.innerHTML = "";
 
-                    // Encabezado con botón que expande/colapsa
-                    bloque.innerHTML = `
-            <div class="card-header d-flex justify-content-between align-items-center bg-white border-start border-4 border-success pointer"
-                 data-bs-toggle="collapse" data-bs-target="#${competenciaId}" aria-expanded="false" aria-controls="${competenciaId}">
-                <span class="fw-bold text-sena">${c.Competencia}</span>
-                <i class="bi bi-chevron-down text-success fs-5 transition"></i>
+    if(!lista || !lista.length){
+        contenedor.innerHTML = `<div class="text-muted text-center py-2">No hay competencias para mostrar.</div>`;
+        return;
+    }
+
+    lista.forEach((c, idx) => {
+        const bloque = document.createElement("div");
+        bloque.className = "card mb-2 border-0 shadow-sm";
+
+        const competenciaId = `competencia_${idx}`;
+
+        // cabecera de la competencia
+        bloque.innerHTML = `
+          <div class="card-header d-flex justify-content-between align-items-center bg-white border-start border-4 border-success pointer"
+              data-bs-toggle="collapse" data-bs-target="#${competenciaId}" aria-expanded="false" aria-controls="${competenciaId}">
+              <span class="fw-bold text-sena">${escapeHtml(c.Competencia || "Competencia")}</span>
+              <i class="bi bi-chevron-down text-success fs-5"></i>
+          </div>
+          <div id="${competenciaId}" class="collapse">
+            <div class="card-body pt-2 pb-2">
+              <div class="d-flex flex-wrap"></div>
             </div>
+          </div>`;
 
-            <div id="${competenciaId}" class="collapse">
-                <div class="card-body pt-2 pb-2 ps-4">
-                    ${Array.isArray(c.Resultados) && c.Resultados.length > 0
-                            ? `
-                                <ul class="mb-0">
-                                    ${c.Resultados.map(r => `<li class="small text-muted mb-1">${r}</li>`).join("")}
-                                </ul>
-                              `
-                            : `<small class="text-muted fst-italic">Sin resultados de aprendizaje</small>`
-                        }
-                </div>
-            </div>
-        `;
+        const chipsWrap = bloque.querySelector(".card-body .d-flex");
+        const resultados = Array.isArray(c.Resultados) ? c.Resultados : [];
 
-                    contenedor.appendChild(bloque);
+        if(resultados.length === 0){
+            chipsWrap.innerHTML = `<small class="text-muted fst-italic">Sin resultados de aprendizaje</small>`;
+        } else {
+            resultados.forEach((r, ridx) => {
+                const chip = document.createElement("span");
+                chip.className = "result-chip";        // usa "chip" si prefieres tu estilo original
+                chip.setAttribute("draggable", "true");
+                chip.textContent = r;
 
-                    // Animación del ícono de flecha
-                    const header = bloque.querySelector(".card-header");
-                    const icon = header.querySelector("i");
-                    header.addEventListener("click", () => {
-                        const isExpanded = header.getAttribute("aria-expanded") === "true";
-                        icon.classList.toggle("bi-chevron-up", !isExpanded);
-                        icon.classList.toggle("bi-chevron-down", isExpanded);
-                    });
+                // datos para DnD
+                chip.dataset.competencia = c.Competencia || "";
+                chip.dataset.resultado   = r;
+                chip.dataset.key         = `${idx}-${ridx}`;
+
+                chip.addEventListener("dragstart", (ev) => {
+                    const data = {
+                        competencia: chip.dataset.competencia,
+                        resultado: chip.dataset.resultado,
+                        key: chip.dataset.key
+                    };
+                    ev.dataTransfer.setData("text/plain", JSON.stringify(data));
+                    ev.dataTransfer.effectAllowed = "copy";
                 });
-            }
+
+                chipsWrap.appendChild(chip);
+            });
+        }
+
+        competenciasList.appendChild(bloque);
+
+        // animación de ícono
+        const header = bloque.querySelector(".card-header");
+        const icon   = header.querySelector("i");
+        header.addEventListener("click", () => {
+            const isOpen = header.getAttribute("aria-expanded") === "true";
+            icon.classList.toggle("bi-chevron-up", !isOpen);
+            icon.classList.toggle("bi-chevron-down", isOpen);
+        });
+    });
+}
+
+/* =================== BUSCADOR de competencias/resultados =================== */
+txtSearch?.addEventListener("input", () => {
+    const q = (txtSearch.value || "").toLowerCase().trim();
+    if(!q){ renderCompetencias(_competenciasData); return; }
+
+    // filtra por nombre de competencia o por resultados
+    const filtradas = _competenciasData
+        .map(c => {
+            const matchComp = (c.Competencia || "").toLowerCase().includes(q);
+            const resultados = (c.Resultados || []).filter(r => (r||"").toLowerCase().includes(q));
+            if(matchComp) return {...c}; // muestra todos sus resultados
+            if(resultados.length) return {...c, Resultados: resultados}; // sólo los que hacen match
+            return null;
+        })
+        .filter(Boolean);
+
+    renderCompetencias(filtradas);
+});
+
+/* =================== DROPZONES: días =================== */
+function setDropzones(){
+    document.querySelectorAll(".day-col").forEach(col => {
+        col.addEventListener("dragover", (ev) => {
+            ev.preventDefault();
+            col.classList.add("dragover");
+        });
+        col.addEventListener("dragleave", () => col.classList.remove("dragover"));
+        col.addEventListener("drop", (ev) => {
+            ev.preventDefault();
+            col.classList.remove("dragover");
+            let data;
+            try{ data = JSON.parse(ev.dataTransfer.getData("text/plain")||"{}"); }catch{}
+            if(!data || !data.resultado) return;
+
+            const day = col.dataset.day || "Lunes";
+            // Guardamos contexto para el modal “Asignar”
+            _lastDropContext = { day, data, container: col };
+
+            // Abre el modal para horas/instructor (si no lo quieres, llama directamente a createCard)
+            const m = new bootstrap.Modal(document.getElementById("modalAsignar"));
+            m.show();
+        });
+    });
+}
+setDropzones();
+
+/* =================== CREAR tarjeta en el día + actualizar payload =================== */
+function createCard(container, day, data, horaDesde, horaHasta, idInstructor) {
+    // quita placeholder si existe
+    const placeholder = container.querySelector("small.text-muted");
+    if (placeholder) placeholder.remove();
+
+    const card = document.createElement("div");
+    card.className = "event-card";
+    // 👇 Solo mostramos el resultado y el rango de horas
+    card.innerHTML = `
+<strong>${escapeHtml(data.resultado)}</strong>
+<small>${horaDesde} - ${horaHasta}${idInstructor ? ` • Instructor #${idInstructor}` : ""}</small>
+`;
+    container.appendChild(card);
+
+    // Seguimos guardando la competencia en el payload (por si la necesitas en backend),
+    // pero no se muestra en la tarjeta.
+    payload.asignaciones = payload.asignaciones || [];
+    payload.asignaciones.push({
+        Dia: day,
+        Resultado: data.resultado,
+        Competencia: data.competencia, // se conserva para guardar
+        HoraDesde: horaDesde,
+        HoraHasta: horaHasta,
+        IdInstructor: idInstructor || 0
+    });
+
+    if (hfAsignaciones) {
+        hfAsignaciones.value = JSON.stringify(payload);
+    }
+}
+        
+
+/* =================== Modal “Asignar” -> Confirmar =================== */
+const btnGuardarAsignacion = document.getElementById("btnGuardarAsignacion");
+btnGuardarAsignacion?.addEventListener("click", () => {
+    if(!_lastDropContext) return;
+    const col   = _lastDropContext.container;
+    const day   = _lastDropContext.day;
+    const data  = _lastDropContext.data;
+
+    const horaDesde = (document.getElementById("horaDesde")?.value) || "06:00";
+    const horaHasta = (document.getElementById("horaHasta")?.value) || "09:00";
+    const idInst    = parseInt(document.getElementById("selInstructor")?.value||"0",10) || 0;
+
+    createCard(col, day, data, horaDesde, horaHasta, idInst);
+    _lastDropContext = null;
+});
     </script>
 }
+
