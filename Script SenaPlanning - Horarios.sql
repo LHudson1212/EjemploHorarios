@@ -1,4 +1,6 @@
-
+CREATE DATABASE [SenaPlanning]
+GO
+	
 USE [SenaPlanning]
 GO
 
@@ -4810,3 +4812,4 @@ GO
 ALTER DATABASE [SenaPlanning] SET  READ_WRITE 
 
 GO
+
