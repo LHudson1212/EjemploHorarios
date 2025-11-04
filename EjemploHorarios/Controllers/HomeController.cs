@@ -93,7 +93,7 @@ namespace EjemploHorarios.Controllers
                 int horarioId = ObtenerHorarioValido(idFicha, anio, trimestre);
                 string programaNombre = ficha.Programa_Formacion?.DenominacionPrograma ?? "Programa desconocido";
 
-                var listaCompetencias = new List<CompetenciaDTO>(); // ✅ Lista agrupada
+                var listaCompetencias = new List<CompetenciaDTO>();
 
                 using (var package = new OfficeOpenXml.ExcelPackage(new FileInfo(filePath)))
                 {
@@ -116,17 +116,15 @@ namespace EjemploHorarios.Controllers
                         if (string.IsNullOrEmpty(competenciaActual) || string.IsNullOrEmpty(resultado))
                             continue;
 
-                        int idInstructor = ObtenerInstructorId(string.IsNullOrWhiteSpace(instructorNombre)
-                            ? "Instructor Genérico"
-                            : instructorNombre);
+                        int idInstructorTemp = ObtenerInstructorId(instructorNombre);
+                        int? idInstructorFinal = idInstructorTemp == 0 ? (int?)null : idInstructorTemp;
 
-                        // ✅ Guardar en la base
                         var registro = new Diseño_Curricular
                         {
                             Competencia = competenciaActual,
-                            Orden = ParseNullableInt(ws.Cells[row, 5].Text),       // E
+                            Orden = ParseNullableInt(ws.Cells[row, 5].Text),
                             Resultado = resultado,
-                            Duracion = ParseNullableInt(ws.Cells[row, 7].Text),    // G
+                            Duracion = ParseNullableInt(ws.Cells[row, 7].Text),
                             HrTrimI = ParseNullableInt(ws.Cells[row, 8].Text),
                             HrTrimII = ParseNullableInt(ws.Cells[row, 9].Text),
                             HrTrimIII = ParseNullableInt(ws.Cells[row, 10].Text),
@@ -136,34 +134,25 @@ namespace EjemploHorarios.Controllers
                             HrTrimVII = ParseNullableInt(ws.Cells[row, 14].Text),
                             Total_Hr = ParseNullableInt(ws.Cells[row, 15].Text),
                             Prog = programaNombre,
-                            IdInstructor = idInstructor,
+                            IdInstructor = idInstructorFinal ?? 1219,
                             Id_Horario = horarioId,
                             IdFicha = idFicha
                         };
-                        db.Diseño_Curricular.Add(registro);
 
-                        // ✅ Agrupar resultados por competencia
-                        var existente = listaCompetencias.FirstOrDefault(c => c.Competencia == competenciaActual);
-                        if (existente == null)
-                        {
-                            existente = new CompetenciaDTO
-                            {
-                                Competencia = competenciaActual,
-                                Resultados = new List<string>()
-                            };
-                            listaCompetencias.Add(existente);
-                        }
-                        existente.Resultados.Add(resultado);
+                        db.Diseño_Curricular.Add(registro);
                     }
 
                     db.SaveChanges();
                 }
 
+                // 🔹 Filtramos automáticamente por el trimestre de la ficha
+                var competenciasFiltradas = FiltrarCompetenciasPorTrimestre(idFicha, trimestre);
+
                 return Json(new
                 {
                     ok = true,
-                    msg = "✅ Competencias y resultados de aprendizaje cargados correctamente.",
-                    competencias = listaCompetencias
+                    msg = "✅ Competencias cargadas y filtradas correctamente.",
+                    competencias = competenciasFiltradas
                 });
             }
             catch (Exception ex)
@@ -180,6 +169,58 @@ namespace EjemploHorarios.Controllers
         {
             public string Competencia { get; set; }
             public List<string> Resultados { get; set; }
+        }
+
+
+
+        [HttpGet]
+        public JsonResult GetCompetenciasPorTrimestre(int idFicha, int trimestre)
+        {
+            if (idFicha <= 0 || trimestre < 1 || trimestre > 7)
+                return Json(new { ok = false, msg = "Parámetros inválidos." }, JsonRequestBehavior.AllowGet);
+
+            var data = FiltrarCompetenciasPorTrimestre(idFicha, trimestre);
+            if (!data.Any())
+                return Json(new { ok = false, msg = "No hay competencias para este trimestre." }, JsonRequestBehavior.AllowGet);
+
+            return Json(new { ok = true, data }, JsonRequestBehavior.AllowGet);
+        }
+        private List<CompetenciaDTO> FiltrarCompetenciasPorTrimestre(int idFicha, int trimestreFicha)
+        {
+            // 🔹 Calcula el trimestre siguiente
+            int trimestreObjetivo = (trimestreFicha < 7) ? trimestreFicha + 1 : 7;
+
+            // 🔹 Obtiene solo los registros de la ficha
+            var registros = db.Diseño_Curricular
+                .Where(c => c.IdFicha == idFicha)
+                .ToList();
+
+            // 🔹 Agrupa por competencia y toma solo los resultados del trimestre siguiente
+            var competencias = registros
+                .GroupBy(c => c.Competencia)
+                .Select(g => new CompetenciaDTO
+                {
+                    Competencia = g.Key,
+                    Resultados = g
+                        .Where(r =>
+                            (trimestreObjetivo == 1 && (r.HrTrimI ?? 0) > 0) ||
+                            (trimestreObjetivo == 2 && (r.HrTrimII ?? 0) > 0) ||
+                            (trimestreObjetivo == 3 && (r.HrTrimIII ?? 0) > 0) ||
+                            (trimestreObjetivo == 4 && (r.HrTrimIV ?? 0) > 0) ||
+                            (trimestreObjetivo == 5 && (r.HrTrimV ?? 0) > 0) ||
+                            (trimestreObjetivo == 6 && (r.HrTrimVI ?? 0) > 0) ||
+                            (trimestreObjetivo == 7 && (r.HrTrimVII ?? 0) > 0)
+                        )
+                        .Select(r => r.Resultado)
+                        .Where(r => !string.IsNullOrWhiteSpace(r))
+                        .Distinct()
+                        .ToList()
+                })
+                // 🔹 Filtra competencias que sí tienen resultados válidos
+                .Where(c => c.Resultados.Any())
+                .ToList();
+
+            return competencias;
         }
 
 

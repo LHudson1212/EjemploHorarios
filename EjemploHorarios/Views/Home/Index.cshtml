@@ -972,6 +972,8 @@ inputExcel?.addEventListener("change", async function (e) {
             </div>
         `;
 
+
+
                     contenedor.appendChild(bloque);
 
                     // Animación del ícono de flecha
@@ -983,6 +985,41 @@ inputExcel?.addEventListener("change", async function (e) {
                         icon.classList.toggle("bi-chevron-down", isExpanded);
                     });
                 });
-            }
+        }
+
+
+
+
+
+        
+        async function cargarCompetenciasFicha(idFicha) {
+    const trimestreFicha = document.getElementById("txtTrimestreFicha").value.trim();
+
+    if (!idFicha || !trimestreFicha) {
+        showAlert("⚠️ No se puede cargar competencias sin seleccionar ficha y trimestre.", "warning");
+        return;
+    }
+
+    try {
+        const url = `@Url.Action("GetCompetenciasPorTrimestre", "Home")?idFicha=${idFicha}&trimestre=${trimestreFicha}`;
+        const resp = await fetch(url, { headers: { "Accept": "application/json" } });
+        const json = await resp.json();
+
+        if (!json.ok) {
+            showAlert(json.msg || "No hay competencias en este trimestre.", "info");
+            document.getElementById("competenciasList").innerHTML =
+                `<div class="text-muted text-center py-2">Sin competencias para este trimestre.</div>`;
+            return;
+        }
+
+        // ✅ Mostrar competencias filtradas
+        mostrarCompetenciasCargadas(json.data);
+
+    } catch (err) {
+        console.error(err);
+      
+    }
+}
+
     </script>
 }
