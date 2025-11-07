@@ -442,9 +442,6 @@
 
     }
 
-
-
-
     /* ===== Efectos visuales del acordeón de competencias ===== */
     .card-header.pointer {
         cursor: pointer;
@@ -461,6 +458,27 @@
 
     .collapse.show + .card-header .bi-chevron-down {
         transform: rotate(180deg);
+    }
+
+    .day-col {
+        min-height: 120px;
+        border: 1px dashed #aaa;
+        border-radius: 8px;
+        padding: 4px;
+        background-color: #f8f9fa;
+        transition: background-color 0.2s ease;
+    }
+
+        .day-col.drag-over {
+            background-color: #d1e7dd;
+        }
+
+    .resultado-item.dragging {
+        opacity: 0.5;
+    }
+
+    .asignacion {
+        font-size: 0.85rem;
     }
 </style>
 
@@ -712,9 +730,6 @@
 </div>
 
 
-
-
-
 @section Scripts {
     <!-- Bootstrap 5 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -883,77 +898,75 @@
 
 
         /* =================== EVENTOS DE CARGA DE EXCEL =================== */
-const btnCargarExcel = document.getElementById("btnCargarExcel");
-const inputExcel = document.getElementById("inputExcel");
+        const btnCargarExcel = document.getElementById("btnCargarExcel");
+        const inputExcel = document.getElementById("inputExcel");
 
-/* 🔹 Paso 1: al hacer clic en el botón visible, abrimos el input oculto */
-btnCargarExcel?.addEventListener("click", () => {
-    inputExcel.click();
-});
+        /* 🔹 Paso 1: al hacer clic en el botón visible, abrimos el input oculto */
+        btnCargarExcel?.addEventListener("click", () => {
+            inputExcel.click();
+        });
 
-/* 🔹 Paso 2: cuando se selecciona un archivo, procesamos la carga */
-inputExcel?.addEventListener("change", async function (e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+        /* 🔹 Paso 2: cuando se selecciona un archivo, procesamos la carga */
+        inputExcel?.addEventListener("change", async function (e) {
+            const file = e.target.files?.[0];
+            if (!file) return;
 
-    const anio = selAnio.value;
-    const trimestre = selTrimestreAnio.value;
-    const idFicha = hfFichaId.value;
+            const anio = selAnio.value;
+            const trimestre = selTrimestreAnio.value;
+            const idFicha = hfFichaId.value;
 
-    if (!anio || !trimestre || !idFicha) {
-        showAlert("⚠️ Debes seleccionar un Año, un Trimestre y una Ficha antes de importar.", "warning");
-        e.target.value = "";
-        return;
-    }
+            if (!anio || !trimestre || !idFicha) {
+                showAlert("⚠️ Debes seleccionar un Año, un Trimestre y una Ficha antes de importar.", "warning");
+                e.target.value = "";
+                return;
+            }
 
-    btnCargarExcel.innerHTML = `<i class="bi bi-hourglass-split me-1"></i> Cargando...`;
-    btnCargarExcel.disabled = true;
+            btnCargarExcel.innerHTML = `<i class="bi bi-hourglass-split me-1"></i> Cargando...`;
+            btnCargarExcel.disabled = true;
 
-    try {
-        const fd = new FormData();
-        fd.append("archivoExcel", file);
-        fd.append("anio", anio);
-        fd.append("trimestre", trimestre);
-        fd.append("idFicha", idFicha);
+            try {
+                const fd = new FormData();
+                fd.append("archivoExcel", file);
+                fd.append("anio", anio);
+                fd.append("trimestre", trimestre);
+                fd.append("idFicha", idFicha);
 
-        const resp = await fetch('@Url.Action("ImportarExcel","Home")', { method: "POST", body: fd });
-        const data = await resp.json();
+                const resp = await fetch('@Url.Action("ImportarExcel","Home")', { method: "POST", body: fd });
+                const data = await resp.json();
 
-        if (!data.ok) throw new Error(data.msg || "Error al importar la planeación.");
+                if (!data.ok) throw new Error(data.msg || "Error al importar la planeación.");
 
-        showAlert(data.msg, "success");
+                showAlert(data.msg, "success");
 
-        // ✅ Mostrar las competencias cargadas después de importar
-        mostrarCompetenciasCargadas(data.competencias);
+                // ✅ Mostrar las competencias cargadas después de importar
+                mostrarCompetenciasCargadas(data.competencias);
 
-    } catch (err) {
-        showAlert("❌ " + err.message, "danger");
-    } finally {
-        btnCargarExcel.disabled = false;
-        btnCargarExcel.innerHTML = `<i class="bi bi-file-earmark-excel-fill me-1"></i> Cargar Planeación`;
-        e.target.value = ""; // limpia el input
-    }
-});
-            /* =================== RENDERIZAR COMPETENCIAS CON ACORDEÓN =================== */
-            function mostrarCompetenciasCargadas(competencias) {
-                const contenedor = document.getElementById("competenciasList");
-                contenedor.innerHTML = "";
+            } catch (err) {
+                showAlert("❌ " + err.message, "danger");
+            } finally {
+                btnCargarExcel.disabled = false;
+                btnCargarExcel.innerHTML = `<i class="bi bi-file-earmark-excel-fill me-1"></i> Cargar Planeación`;
+                e.target.value = ""; // limpia el input
+            }
+        });
+        /* =================== RENDERIZAR COMPETENCIAS CON ACORDEÓN =================== */
+        function mostrarCompetenciasCargadas(competencias) {
+            const contenedor = document.getElementById("competenciasList");
+            contenedor.innerHTML = "";
 
-                if (!competencias || !competencias.length) {
-                    contenedor.innerHTML = `<div class="text-muted text-center py-2">No hay competencias en este archivo.</div>`;
-                    return;
-                }
+            if (!competencias || !competencias.length) {
+                contenedor.innerHTML = `<div class="text-muted text-center py-2">No hay competencias en este archivo.</div>`;
+                return;
+            }
 
-                competencias.forEach((c, index) => {
-                    const bloque = document.createElement("div");
-                    bloque.className = "card mb-2 border-0 shadow-sm";
+            competencias.forEach((c, index) => {
+                const bloque = document.createElement("div");
+                bloque.className = "card mb-2 border-0 shadow-sm";
+                const competenciaId = `competencia_${index}`;
 
-                    const competenciaId = `competencia_${index}`;
-
-                    // Encabezado con botón que expande/colapsa
-                    bloque.innerHTML = `
+                bloque.innerHTML = `
             <div class="card-header d-flex justify-content-between align-items-center bg-white border-start border-4 border-success pointer"
-                 data-bs-toggle="collapse" data-bs-target="#${competenciaId}" aria-expanded="false" aria-controls="${competenciaId}">
+                    data-bs-toggle="collapse" data-bs-target="#${competenciaId}" aria-expanded="false" aria-controls="${competenciaId}">
                 <span class="fw-bold text-sena">${c.Competencia}</span>
                 <i class="bi bi-chevron-down text-success fs-5 transition"></i>
             </div>
@@ -961,38 +974,93 @@ inputExcel?.addEventListener("change", async function (e) {
             <div id="${competenciaId}" class="collapse">
                 <div class="card-body pt-2 pb-2 ps-4">
                     ${Array.isArray(c.Resultados) && c.Resultados.length > 0
-                            ? `
-                                <ul class="mb-0">
-                                    ${c.Resultados.map(r => `<li class="small text-muted mb-1">${r}</li>`).join("")}
+                        ? `
+                                <ul class="list-unstyled mb-0">
+                                    ${c.Resultados.map((r, i) => `
+                                        <li class="resultado-item small text-muted border p-1 mb-1 rounded bg-light"
+                                            draggable="true"
+                                            data-competencia="${encodeURIComponent(c.Competencia)}"
+                                            data-resultado="${encodeURIComponent(r)}">
+                                            <i class="bi bi-arrows-move me-1 text-success"></i> ${r}
+                                        </li>
+                                    `).join("")}
                                 </ul>
-                              `
-                            : `<small class="text-muted fst-italic">Sin resultados de aprendizaje</small>`
-                        }
+                                `
+                        : `<small class="text-muted fst-italic">Sin resultados de aprendizaje</small>`
+                    }
                 </div>
             </div>
         `;
+                contenedor.appendChild(bloque);
+            });
 
+            // Activar animación de flecha y drag&drop
+            activarDragDropResultados();
+        }
 
+        function activarDragDropResultados() {
+            const resultados = document.querySelectorAll(".resultado-item");
+            const dias = document.querySelectorAll(".day-col");
 
-                    contenedor.appendChild(bloque);
-
-                    // Animación del ícono de flecha
-                    const header = bloque.querySelector(".card-header");
-                    const icon = header.querySelector("i");
-                    header.addEventListener("click", () => {
-                        const isExpanded = header.getAttribute("aria-expanded") === "true";
-                        icon.classList.toggle("bi-chevron-up", !isExpanded);
-                        icon.classList.toggle("bi-chevron-down", isExpanded);
-                    });
+            // Al iniciar el arrastre
+            resultados.forEach(r => {
+                r.addEventListener("dragstart", e => {
+                    e.dataTransfer.setData("competencia", r.dataset.competencia);
+                    e.dataTransfer.setData("resultado", r.dataset.resultado);
+                    e.dataTransfer.effectAllowed = "move";
+                    r.classList.add("dragging");
                 });
+                r.addEventListener("dragend", () => {
+                    r.classList.remove("dragging");
+                });
+            });
+
+            // Permitir que los días reciban drops
+            dias.forEach(dia => {
+                dia.addEventListener("dragover", e => {
+                    e.preventDefault();
+                    dia.classList.add("drag-over");
+                });
+
+                dia.addEventListener("dragleave", () => {
+                    dia.classList.remove("drag-over");
+                });
+
+                dia.addEventListener("drop", e => {
+                    e.preventDefault();
+                    dia.classList.remove("drag-over");
+
+                    const competencia = decodeURIComponent(e.dataTransfer.getData("competencia"));
+                    const resultado = decodeURIComponent(e.dataTransfer.getData("resultado"));
+                    const diaSemana = dia.dataset.day;
+
+                    // ✅ Mostrar SOLO el resultado (sin la competencia)
+                    const item = document.createElement("div");
+                    item.className = "asignacion bg-success-subtle border rounded p-1 mb-1 text-start";
+                    item.textContent = resultado;           // ← Solo se ve el resultado
+                    // (opcional) guarda datos por si luego quieres editar/eliminar
+                    item.dataset.competencia = competencia;
+                    item.dataset.resultado = resultado;
+                    item.dataset.dia = diaSemana;
+
+                    dia.appendChild(item);
+
+                    // Guardar en memoria (payload) — se conserva la competencia para persistencia
+                    payload.asignaciones.push({
+                        id: nextId(),
+                        competencia: competencia,
+                        resultado: resultado,
+                        dia: diaSemana
+                    });
+
+                    console.log("Asignaciones actuales:", payload.asignaciones);
+                });
+            });
         }
 
 
 
-
-
-        
-        async function cargarCompetenciasFicha(idFicha) {
+    async function cargarCompetenciasFicha(idFicha) {
     const trimestreFicha = document.getElementById("txtTrimestreFicha").value.trim();
 
     if (!idFicha || !trimestreFicha) {
@@ -1008,7 +1076,7 @@ inputExcel?.addEventListener("change", async function (e) {
         if (!json.ok) {
             showAlert(json.msg || "No hay competencias en este trimestre.", "info");
             document.getElementById("competenciasList").innerHTML =
-                `<div class="text-muted text-center py-2">Sin competencias para este trimestre.</div>`;
+                `<div class="text-muted text-center py-2"> Sin competencias para este trimestre.</div>`;
             return;
         }
 
