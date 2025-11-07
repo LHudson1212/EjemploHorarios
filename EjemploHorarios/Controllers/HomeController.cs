@@ -223,10 +223,6 @@ namespace EjemploHorarios.Controllers
             return competencias;
         }
 
-
-
-
-
         private int ObtenerInstructorId(string nombre)
         {
             if (string.IsNullOrWhiteSpace(nombre))
