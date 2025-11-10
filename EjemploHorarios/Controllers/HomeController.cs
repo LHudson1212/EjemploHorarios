@@ -301,5 +301,51 @@ namespace EjemploHorarios.Controllers
             return Json(new { ok = true, resultados }, JsonRequestBehavior.AllowGet);
         }
 
+        [HttpGet]
+        public JsonResult GetInstructores(string q = null, int? top = null)
+        {
+            try
+            {
+                // Si tienes auth global y este endpoint debe ser público:
+                // [AllowAnonymous] sobre el método (o quita el filtro para esta acción)
+
+                var query = db.Instructor.AsNoTracking()
+                             .Where(i => i.EstadoInstructor == true);
+
+                if (!string.IsNullOrWhiteSpace(q))
+                {
+                    var term = q.Trim().ToLower();
+                    // Evita nulls en NombreCompletoInstructor
+                    query = query.Where(i => (i.NombreCompletoInstructor ?? "").ToLower().Contains(term));
+                }
+
+                query = query.OrderBy(i => i.NombreCompletoInstructor);
+
+                if (top.HasValue && top.Value > 0)
+                    query = query.Take(top.Value);
+
+                var data = query.Select(i => new
+                {
+                    id = i.IdInstructor,
+                    nombre = i.NombreCompletoInstructor ?? "(Sin nombre)"
+                })
+                            .ToList();
+
+                // Fuerza tipo de contenido JSON y 200
+                Response.ContentType = "application/json";
+                Response.StatusCode = 200;
+
+                return Json(new { ok = true, data }, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                // Devuelve JSON también en error
+                Response.ContentType = "application/json";
+                Response.StatusCode = 200; // o 500 si prefieres manejarlo en el cliente
+                return Json(new { ok = false, msg = "Error al obtener instructores: " + ex.Message },
+                            JsonRequestBehavior.AllowGet);
+            }
+        }
     }
 }
+

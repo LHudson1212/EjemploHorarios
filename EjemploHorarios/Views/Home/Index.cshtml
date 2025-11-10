@@ -480,6 +480,41 @@
     .asignacion {
         font-size: 0.85rem;
     }
+
+        /* Meta de la asignación: instructor y horario */
+        .asignacion .meta {
+            display: flex;
+            align-items: center;
+            gap: .75rem;
+            margin-top: .15rem;
+            font-size: .85rem;
+            color: var(--sena-muted);
+            line-height: 1.2;
+        }
+
+            .asignacion .meta i {
+                font-size: 1rem;
+            }
+
+            .asignacion .meta .sep {
+                opacity: .5;
+            }
+
+        .asignacion .fw-semibold {
+            font-weight: 600;
+        }
+
+    /* El panel izquierdo puede crecer y hace que la página empuje al <section> */
+    aside.col-lg-3 {
+        align-self: flex-start;
+    }
+
+    /* Si tu lista de competencias es MUY larga, dale scroll interno en vez de empujar TODA la página */
+    #competenciasList {
+        max-height: calc(100vh - 320px); /* ajusta al gusto */
+        overflow: auto;
+    }
+
 </style>
 
 <main class="container-fluid p-3">
@@ -570,7 +605,7 @@
                 <div class="card border-sena shadow-sm">
                     <div class="card-header bg-sena fw-bold d-flex justify-content-between align-items-center">
                         <span>Días de formación</span>
-                        <small class="opacity-75">Arrastra las competencias hacia un día para crear asignaciones</small>
+                        <small class="opacity-75">Arrastra los resultados de aprendizaje hacia un día para crear asignaciones</small>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
@@ -779,6 +814,180 @@
     const hfFichaId = document.getElementById("hfFichaId");
     const txtTrimestreFicha = document.getElementById("txtTrimestreFicha");
     const inputPrograma = document.getElementById("inputPrograma");
+
+
+    // ======= Referencias del modal =======
+    const modalAsignarEl = document.getElementById("modalAsignar");
+    const selInstructorEl = document.getElementById("selInstructor");
+    const horaDesdeEl = document.getElementById("horaDesde");
+    const horaHastaEl = document.getElementById("horaHasta");
+    const btnGuardarAsig = document.getElementById("btnGuardarAsignacion");
+
+    // Contexto temporal para saber a qué asignación (recién creada) se está editando
+    let dropContext = null;
+    let dropContextGuardado = false;
+
+    // Cache simple para mapear id → nombre (nos sirve para pintar luego)
+    const INSTRUCTORES_BY_ID = new Map();
+
+    // Carga instructores desde el backend y llena el <select>
+    async function loadInstructores(q = "") {
+      try {
+        const url = '@Url.Action("GetInstructores","Home")' + (q ? ('?q=' + encodeURIComponent(q)) : '');
+        const resp = await fetch(url, { headers: { "Accept": "application/json" }, credentials: "same-origin" });
+
+        let json;
+        try {
+          json = await resp.json();
+        } catch {
+          const text = await resp.text();
+          throw new Error("Respuesta no-JSON del servidor.\n" + text.substring(0, 400));
+        }
+
+        if (!resp.ok || !json?.ok) throw new Error(json?.msg || "No se pudieron cargar los instructores.");
+
+        const lista = Array.isArray(json.data) ? json.data : [];
+
+        // 🔹 Reset y llenado del <select> + cache de ids → nombres
+        INSTRUCTORES_BY_ID.clear();
+        selInstructorEl.innerHTML = "";
+        selInstructorEl.appendChild(new Option("Seleccione un instructor…", "", true, false));
+        lista.forEach(i => {
+          INSTRUCTORES_BY_ID.set(String(i.id), i.nombre);
+          selInstructorEl.appendChild(new Option(i.nombre, i.id));
+        });
+      } catch (err) {
+        showAlert("Error cargando instructores: " + err.message, "danger");
+        selInstructorEl.innerHTML = "";
+        selInstructorEl.appendChild(new Option("Seleccione un instructor…", "", true, false));
+      }
+    }
+
+
+        // Abre el modal y (opcional) pre-carga valores para edición
+        async function abrirModalAsignar(ctx, preset = null) {
+            await loadInstructores(); // llena el select
+
+            // Valores por defecto o pre-cargados (edición)
+            selInstructorEl.value = preset?.instructorId ?? "";
+            horaDesdeEl.value = preset?.horaDesde ?? "06:00";
+            horaHastaEl.value = preset?.horaHasta ?? "09:00";
+
+            dropContext = ctx; // { asignacionId, itemEl }
+            dropContextGuardado = false;
+
+            const modal = new bootstrap.Modal(modalAsignarEl);
+            modal.show();
+        }
+
+
+        /* =================== MODAL: guardar con validaciones fuertes =================== */
+        function wireGuardarAsignacion() {
+            // Asegura que el botón NO cierre solo el modal
+            btnGuardarAsig?.removeAttribute("data-bs-dismiss");
+
+            btnGuardarAsig?.addEventListener("click", () => {
+                if (!dropContext) return;
+
+                const instructorId = selInstructorEl.value || null;
+                const horaDesde = horaDesdeEl.value || "";
+                const horaHasta = horaHastaEl.value || "";
+
+                // Requeridos
+                if (!instructorId) { showAlert("Debes seleccionar un instructor.", "warning"); return; }
+                if (!horaDesde || !horaHasta) { showAlert("Debes indicar el horario completo.", "warning"); return; }
+
+                // Conflictos
+                const asignacion = payload.asignaciones.find(a => a.id === dropContext.asignacionId);
+                const dia = asignacion?.dia || dropContext.itemEl.dataset.dia;
+
+                const conflicto = tieneConflictoEnDia({
+                    dia, instructorId, desde: horaDesde, hasta: horaHasta, ignoreId: dropContext.asignacionId
+                });
+                if (conflicto) { showAlert(conflicto, "danger"); return; }
+
+                // OK → aplicar cambios
+                const instructorNombre = INSTRUCTORES_BY_ID.get(String(instructorId)) || "—";
+
+                if (asignacion) {
+                    asignacion.instructorId = parseInt(instructorId, 10);
+                    asignacion.instructorNombre = instructorNombre;
+                    asignacion.horaDesde = horaDesde;
+                    asignacion.horaHasta = horaHasta;
+                }
+
+                // Actualizar DOM
+                const nombreEl = dropContext.itemEl.querySelector(".instructor");
+                const horarioEl = dropContext.itemEl.querySelector(".horario");
+                if (nombreEl) nombreEl.textContent = instructorNombre;
+                if (horarioEl) horarioEl.textContent = `${horaDesde} – ${horaHasta}`;
+                dropContext.itemEl.title = `${instructorNombre} • ${horaDesde} – ${horaHasta}`;
+
+                dropContextGuardado = true;
+
+                // Cerrar modal manualmente SOLO si todo fue válido
+                const modal = bootstrap.Modal.getInstance(modalAsignarEl) || new bootstrap.Modal(modalAsignarEl);
+                modal.hide();
+
+                dropContext = null;
+            });
+        }
+        wireGuardarAsignacion();
+
+        /* =================== BUSCADOR DE COMPETENCIAS =================== */
+        const txtSearch = document.getElementById("txtSearch");
+        txtSearch?.addEventListener("input", () => {
+            const q = (txtSearch.value || "").toLowerCase().trim();
+            const cards = document.querySelectorAll("#competenciasList > .card");
+            cards.forEach(card => {
+                const hayTexto = card.textContent.toLowerCase().includes(q);
+                card.style.display = hayTexto ? "" : "none";
+            });
+        });
+
+        /* =================== DOM READY: inicializaciones =================== */
+        document.addEventListener("DOMContentLoaded", () => {
+            initDropHints();              // ← IMPORTANTE
+            activarDragDropResultados();  // al renderizar competencias también lo llamas
+        }); 
+
+
+    // Si el usuario cierra el modal SIN guardar, elimina el bloque
+        modalAsignarEl?.addEventListener("hidden.bs.modal", () => {
+            if (!dropContext) return;
+
+            const asignacion = payload.asignaciones.find(a => a.id === dropContext.asignacionId);
+
+            // Si no se guardó manualmente, intenta guardar automático
+            if (!dropContextGuardado && asignacion) {
+                const instructorId = selInstructorEl.value?.trim() || null;
+                const horaDesde = horaDesdeEl.value?.trim() || "06:00";
+                const horaHasta = horaHastaEl.value?.trim() || "09:00";
+
+                // Si instructor y horas válidos → guardar
+                if (instructorId) {
+                    asignacion.instructorId = parseInt(instructorId, 10);
+                    asignacion.horaDesde = horaDesde;
+                    asignacion.horaHasta = horaHasta;
+                    asignacion.instructorNombre = INSTRUCTORES_BY_ID.get(String(instructorId)) || "—";
+
+                    const nombreEl = dropContext.itemEl.querySelector(".instructor");
+                    const horarioEl = dropContext.itemEl.querySelector(".horario");
+                    if (nombreEl) nombreEl.textContent = asignacion.instructorNombre;
+                    if (horarioEl) horarioEl.textContent = `${horaDesde} – ${horaHasta}`;
+                    dropContext.itemEl.title = `${asignacion.instructorNombre} • ${horaDesde} – ${horaHasta}`;
+
+                    dropContextGuardado = true;
+                } else {
+                    // Si no tiene datos mínimos, eliminar
+                    dropContext.itemEl?.remove();
+                    payload.asignaciones = payload.asignaciones.filter(a => a.id !== dropContext.asignacionId);
+                }
+            }
+
+            dropContext = null;
+        });
+
 
     /* =================== Estado =================== */
     let payload = { numeroFicha: "", nombreHorario: "Horario generado", trimestre: "", asignaciones: [] };
@@ -998,11 +1207,11 @@
             activarDragDropResultados();
         }
 
+        /* =================== CREAR / EDITAR / ELIMINAR =================== */
         function activarDragDropResultados() {
             const resultados = document.querySelectorAll(".resultado-item");
             const dias = document.querySelectorAll(".day-col");
 
-            // Al iniciar el arrastre
             resultados.forEach(r => {
                 r.addEventListener("dragstart", e => {
                     e.dataTransfer.setData("competencia", r.dataset.competencia);
@@ -1010,23 +1219,18 @@
                     e.dataTransfer.effectAllowed = "move";
                     r.classList.add("dragging");
                 });
-                r.addEventListener("dragend", () => {
-                    r.classList.remove("dragging");
-                });
+                r.addEventListener("dragend", () => r.classList.remove("dragging"));
             });
 
-            // Permitir que los días reciban drops
             dias.forEach(dia => {
                 dia.addEventListener("dragover", e => {
                     e.preventDefault();
+                    e.dataTransfer.dropEffect = "move";
                     dia.classList.add("drag-over");
                 });
+                dia.addEventListener("dragleave", () => dia.classList.remove("drag-over"));
 
-                dia.addEventListener("dragleave", () => {
-                    dia.classList.remove("drag-over");
-                });
-
-                dia.addEventListener("drop", e => {
+                dia.addEventListener("drop", async e => {
                     e.preventDefault();
                     dia.classList.remove("drag-over");
 
@@ -1034,30 +1238,126 @@
                     const resultado = decodeURIComponent(e.dataTransfer.getData("resultado"));
                     const diaSemana = dia.dataset.day;
 
-                    // ✅ Mostrar SOLO el resultado (sin la competencia)
+                    const asignacionId = nextId();
                     const item = document.createElement("div");
-                    item.className = "asignacion bg-success-subtle border rounded p-1 mb-1 text-start";
-                    item.textContent = resultado;           // ← Solo se ve el resultado
-                    // (opcional) guarda datos por si luego quieres editar/eliminar
+                    item.className = "asignacion bg-success-subtle border rounded p-2 mb-1 text-start";
+                    item.dataset.asignacionId = String(asignacionId);
                     item.dataset.competencia = competencia;
                     item.dataset.resultado = resultado;
                     item.dataset.dia = diaSemana;
 
-                    dia.appendChild(item);
+                    item.innerHTML = `
+        <div class="d-flex align-items-start justify-content-between gap-2">
+          <div class="fw-semibold flex-grow-1">${resultado}</div>
+          <div class="btn-group btn-group-sm">
+            <button type="button" class="btn btn-link text-success p-0 edit-asig" title="Editar">
+              <i class="bi bi-pencil-square"></i>
+            </button>
+            <button type="button" class="btn btn-link text-danger p-0 delete-asig" title="Eliminar">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+        </div>
+        <div class="meta mt-1">
+          <i class="bi bi-mortarboard"></i>
+          <span class="instructor">Seleccione instructor…</span>
+          <span class="sep">•</span>
+          <i class="bi bi-clock"></i>
+          <span class="horario">--:-- – --:--</span>
+        </div>
+      `;
 
-                    // Guardar en memoria (payload) — se conserva la competencia para persistencia
+                    dia.appendChild(item);
+                    updateDropHint(dia);
+
+                    // Base en memoria
                     payload.asignaciones.push({
-                        id: nextId(),
-                        competencia: competencia,
-                        resultado: resultado,
-                        dia: diaSemana
+                        id: asignacionId,
+                        competencia, resultado, dia: diaSemana,
+                        instructorId: null, instructorNombre: null,
+                        horaDesde: null, horaHasta: null
                     });
 
-                    console.log("Asignaciones actuales:", payload.asignaciones);
+                    // acciones
+                    item.querySelector(".edit-asig")?.addEventListener("click", () => editarAsignacion(item));
+                    item.querySelector(".delete-asig")?.addEventListener("click", () => eliminarAsignacion(item));
+
+                    await abrirModalAsignar({ asignacionId, itemEl: item });
                 });
             });
         }
 
+        function editarAsignacion(item) {
+            const id = parseInt(item.dataset.asignacionId, 10);
+            const a = payload.asignaciones.find(x => x.id === id);
+            const preset = {
+                instructorId: a?.instructorId ? String(a.instructorId) : "",
+                horaDesde: a?.horaDesde || "06:00",
+                horaHasta: a?.horaHasta || "09:00"
+            };
+            abrirModalAsignar({ asignacionId: id, itemEl: item }, preset);
+        }
+
+        function eliminarAsignacion(item) {
+            const id = parseInt(item.dataset.asignacionId, 10);
+            const col = item.closest(".day-col");
+            payload.asignaciones = payload.asignaciones.filter(a => a.id !== id);
+            item.remove();
+            if (col) updateDropHint(col);
+        }
+
+        /* =================== UTIL: placeholders "Suelta aquí" =================== */
+        function initDropHints() {
+            document.querySelectorAll(".day-col").forEach(col => {
+                const hint = col.querySelector("small.text-muted");
+                if (hint) hint.classList.add("drop-hint");
+                updateDropHint(col);
+            });
+        }
+        function updateDropHint(dayCol) {
+            const hint = dayCol.querySelector(".drop-hint");
+            if (!hint) return;
+            const hasItems = dayCol.querySelectorAll(".asignacion").length > 0;
+            hint.style.display = hasItems ? "none" : "";
+        }
+
+        /* =================== VALIDACIONES DE HORARIO =================== */
+        function parseHM(hhmm) {
+            // "06:00" → minutos desde 00:00
+            if (!hhmm || !/^\d{2}:\d{2}$/.test(hhmm)) return null;
+            const [h, m] = hhmm.split(":").map(n => parseInt(n, 10));
+            return h * 60 + m;
+        }
+        function rangosSePisan(aDesde, aHasta, bDesde, bHasta) {
+            return aDesde < bHasta && bDesde < aHasta; // intersección abierta
+        }
+        function tieneConflictoEnDia({ dia, instructorId, desde, hasta, ignoreId = null }) {
+            const d = parseHM(desde);
+            const h = parseHM(hasta);
+            if (d == null || h == null) return "Debes indicar un horario válido.";
+            if (d >= h) return "La hora inicial debe ser menor que la final.";
+
+            // 1) Ese instructor ya tiene algo que se pisa en el mismo día
+            const choqueInstructor = payload.asignaciones.some(a =>
+                a.dia === dia &&
+                a.id !== ignoreId &&
+                a.instructorId != null &&
+                String(a.instructorId) === String(instructorId) &&
+                rangosSePisan(parseHM(a.horaDesde), parseHM(a.horaHasta), d, h)
+            );
+            if (choqueInstructor) return "Ese instructor ya tiene una asignación en ese horario.";
+
+            // 2) Si no quieres permitir DOS asignaciones que se pisen en el mismo día, descomenta:
+            // const pisaCualquiera = payload.asignaciones.some(a =>
+            //   a.dia === dia &&
+            //   a.id !== ignoreId &&
+            //   a.horaDesde && a.horaHasta &&
+            //   rangosSePisan(parseHM(a.horaDesde), parseHM(a.horaHasta), d, h)
+            // );
+            // if (pisaCualquiera) return "No se permiten dos asignaciones que se solapen el mismo día.";
+
+            return null; // OK
+        }
 
 
     async function cargarCompetenciasFicha(idFicha) {
@@ -1085,9 +1385,12 @@
 
     } catch (err) {
         console.error(err);
-      
+
     }
-}
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+            initDropHints();
+        });      
 
     </script>
 }
