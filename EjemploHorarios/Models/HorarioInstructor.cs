@@ -12,24 +12,18 @@ namespace EjemploHorarios.Models
     using System;
     using System.Collections.Generic;
     
-    public partial class Asignacion_horario
+    public partial class HorarioInstructor
     {
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors")]
-        public Asignacion_horario()
-        {
-            this.Horario = new HashSet<Horario>();
-        }
-    
-        public int Id_Asignacion { get; set; }
+        public int IdHorarioInstructor { get; set; }
+        public int IdInstructor { get; set; }
+        public int IdFicha { get; set; }
+        public string Competencia { get; set; }
+        public string Resultado { get; set; }
         public string Dia { get; set; }
         public System.TimeSpan HoraDesde { get; set; }
         public System.TimeSpan HoraHasta { get; set; }
-        public int IdInstructor { get; set; }
-        public int IdFicha { get; set; }
     
         public virtual Ficha Ficha { get; set; }
         public virtual Instructor Instructor { get; set; }
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public virtual ICollection<Horario> Horario { get; set; }
     }
 }

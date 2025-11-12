@@ -82,8 +82,15 @@
         overflow-x: hidden;
     }
 
-    gradientShift {
-        0%,100%
+    @@keyframes gradientShift {
+        0%, 100% {
+            background-position: 0% 50%
+        }
+
+        50% {
+            background-position: 100% 50%
+        }
+    }
 
     {
         background-position: 0% 50%
@@ -128,8 +135,15 @@
         cursor: pointer;
     }
 
-    shimmer {
-        from
+    @@keyframes shimmer {
+        from {
+            transform: translate(-50%,-50%) rotate(0)
+        }
+
+        to {
+            transform: translate(-50%,-50%) rotate(360deg)
+        }
+    }
 
     {
         transform: translate(-50%,-50%) rotate(0)
@@ -421,8 +435,23 @@
             box-shadow: 0 0 10px rgba(0,168,89,.5);
         }
 
-    (max-width: 768px) {
-        .floating-alert
+    @@media (max-width: 768px) {
+        .floating-alert {
+            min-width: 320px;
+            right: 1rem;
+            left: 1rem;
+        }
+
+        .day-col {
+            min-height: 380px;
+        }
+
+        .table thead th {
+            min-width: 150px;
+            padding: 1rem;
+            font-size: .9rem;
+        }
+    }
 
     {
         min-width: 320px;
@@ -442,9 +471,6 @@
 
     }
 
-
-
-
     /* ===== Efectos visuales del acordeón de competencias ===== */
     .card-header.pointer {
         cursor: pointer;
@@ -462,6 +488,88 @@
     .collapse.show + .card-header .bi-chevron-down {
         transform: rotate(180deg);
     }
+
+    .day-col {
+        min-height: 120px;
+        border: 1px dashed #aaa;
+        border-radius: 8px;
+        padding: 4px;
+        background-color: #f8f9fa;
+        transition: background-color 0.2s ease;
+    }
+
+        .day-col.drag-over {
+            background-color: #d1e7dd;
+        }
+
+    .resultado-item.dragging {
+        opacity: 0.5;
+    }
+
+    .asignacion {
+        font-size: 0.85rem;
+    }
+
+        /* Meta de la asignación: instructor y horario */
+        .asignacion .meta {
+            display: flex;
+            align-items: center;
+            gap: .75rem;
+            margin-top: .15rem;
+            font-size: .85rem;
+            color: var(--sena-muted);
+            line-height: 1.2;
+        }
+
+            .asignacion .meta i {
+                font-size: 1rem;
+            }
+
+            .asignacion .meta .sep {
+                opacity: .5;
+            }
+
+        .asignacion .fw-semibold {
+            font-weight: 600;
+        }
+
+    /* El panel izquierdo puede crecer y hace que la página empuje al <section> */
+    aside.col-lg-3 {
+        align-self: flex-start;
+    }
+
+    /* Si tu lista de competencias es MUY larga, dale scroll interno en vez de empujar TODA la página */
+    #competenciasList {
+        max-height: calc(100vh - 320px); /* ajusta al gusto */
+        overflow: auto;
+    }
+
+    .rotate-180 {
+        transform: rotate(180deg);
+    }
+
+    .card-header .bi {
+        transition: transform .25s ease;
+    }
+
+    /* Asegurar que el modal esté siempre por encima de blur, alerts, autocompletes, etc. */
+    .modal {
+        z-index: 2000 !important;
+    }
+
+    .modal-backdrop {
+        z-index: 1990 !important;
+    }
+
+    /* Tu dropdown de autocomplete tenía z-index ~1055; mantenlo por debajo del modal */
+    .autocomplete-list {
+        z-index: 1200;
+    }
+    .asignacion[data-resultado="null"] {
+        background-color: #e7f5ef !important;
+        border-left: 4px solid var(--sena-green);
+    }
+
 </style>
 
 <main class="container-fluid p-3">
@@ -498,11 +606,30 @@
             <div id="fichaSugerencias" class="list-group autocomplete-list shadow-sm bg-white rounded d-none" role="listbox" aria-label="Sugerencias de ficha"></div>
         </div>
 
-        <!-- Trimestre de la Ficha -->
-        <div class="col-lg-3 col-md-3">
-            <label class="form-label fw-bold text-sena" for="txtTrimestreFicha">Trimestre de la Ficha</label>
-            <input id="txtTrimestreFicha" class="form-control" placeholder="1..7" readonly aria-readonly="true" />
+        <!-- Trimestre de la Ficha + Siguiente Trimestre -->
+        <div class="col-lg-3 col-md-4">
+            <label class="form-label fw-bold text-sena">Trimestres</label>
+            <div class="d-flex gap-2 align-items-center">
+                <input id="txtTrimestreFicha"
+                       type="number"
+                       class="form-control text-center"
+                       placeholder="1–7"
+                       min="1" max="7"
+                       readonly
+                       style="width: 80px;"
+                       aria-readonly="true" />
+                <span class="fw-bold">→</span>
+                <input id="txtSiguienteTrimestre"
+                       type="number"
+                       class="form-control text-center"
+                       placeholder="Siguiente"
+                       readonly
+                       style="width: 100px;"
+                       aria-readonly="true" />
+            </div>
         </div>
+
+
     </section>
 
     @using (Html.BeginForm("GuardarHorario", "Home", FormMethod.Post, new { id = "formGuardarHorario", autocomplete = "off" }))
@@ -552,7 +679,7 @@
                 <div class="card border-sena shadow-sm">
                     <div class="card-header bg-sena fw-bold d-flex justify-content-between align-items-center">
                         <span>Días de formación</span>
-                        <small class="opacity-75">Arrastra las competencias hacia un día para crear asignaciones</small>
+                        <small class="opacity-75">Arrastra los resultados de aprendizaje hacia un día para crear asignaciones</small>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
@@ -611,6 +738,7 @@
                     <button id="btnGuardarHorario" type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalGuardarHorario" title="Guarda el horario actual">
                         <i class="bi bi-save me-2"></i>Guardar Todo
                     </button>
+
                     <button type="button" class="btn btn-success" onclick="location.href='@Url.Action("ListaHorarios", "Home")'" title="Ver horarios guardados">
                         <i class="bi bi-calendar-check me-2"></i>Ver Horarios
                     </button>
@@ -670,48 +798,33 @@
     </div>
 </div>
 
-<!-- Modal Guardar Horario -->
-<div class="modal fade" id="modalGuardarHorario" tabindex="-1" aria-hidden="true" role="dialog" aria-labelledby="modalGuardarLabel" aria-describedby="modalGuardarDesc">
-    <div class="modal-dialog">
+<!-- Modal Confirmar Competencia Completa -->
+<div class="modal fade" id="modalConfirmCompetencia" tabindex="-1" aria-hidden="true" role="dialog">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-sena">
             <div class="modal-header bg-sena text-white">
-                <h5 class="modal-title" id="modalGuardarLabel">Guardar Horario</h5>
+                <h5 class="modal-title">Agregar Competencia Completa</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
-            <div class="modal-body" id="modalGuardarDesc">
-                <div class="mb-3">
-                    <label class="form-label" for="inputNumeroFicha">Número de Ficha</label>
-                    <input type="text" id="inputNumeroFicha" class="form-control" placeholder="Ej: 12345" autocomplete="off" spellcheck="false" />
+            <div class="modal-body text-center">
+                <p class="fw-semibold mb-3">
+                    ¿Deseas agregar la competencia
+                    <span id="nombreCompetenciaConfirm" class="text-success"></span>
+                    completa (con todos sus resultados de aprendizaje)?
+                </p>
+                <p class="text-muted small">
+                    Esta competencia contiene <span id="totalResultadosConfirm" class="fw-bold text-dark"></span> resultados
+                    que se agregarán automáticamente al día
+                    <span id="nombreDiaConfirm" class="text-primary fw-bold"></span>.
+                </p>
+                <div class="d-flex justify-content-center gap-3 mt-3">
+                    <button type="button" class="btn btn-success" id="btnConfirmAgregarCompetencia">Sí, agregar</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
                 </div>
-
-                <div class="mb-3">
-                    <label class="form-label" for="inputNombreHorario">Nombre del Horario</label>
-                    <input type="text" id="inputNombreHorario" class="form-control" placeholder="Ej: Horario Mañana" autocomplete="off" spellcheck="false" />
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label" for="selectTrimestre">Trimestre</label>
-                    <select id="selectTrimestre" class="form-select" aria-label="Selecciona el trimestre de la ficha">
-                        <option value="" disabled selected>Seleccione un trimestre</option>
-                        <option value="1">Trimestre 1</option>
-                        <option value="2">Trimestre 2</option>
-                        <option value="3">Trimestre 3</option>
-                        <option value="4">Trimestre 4</option>
-                        <option value="5">Trimestre 5</option>
-                        <option value="6">Trimestre 6</option>
-                        <option value="7">Trimestre 7</option>
-                    </select>
-                </div>
-
-                <button id="btnConfirmarGuardar" type="button" class="btn btn-success w-100" data-bs-toggle="tooltip" title="Confirmar y guardar el horario">
-                    <i class="bi bi-cloud-upload me-2"></i>Confirmar y Guardar
-                </button>
             </div>
         </div>
     </div>
 </div>
-
-
 
 
 
@@ -765,234 +878,910 @@
     const txtTrimestreFicha = document.getElementById("txtTrimestreFicha");
     const inputPrograma = document.getElementById("inputPrograma");
 
-    /* =================== Estado =================== */
-    let payload = { numeroFicha: "", nombreHorario: "Horario generado", trimestre: "", asignaciones: [] };
-    const nextId = (()=>{ let c=1; return ()=>c++; })();
 
-    /* Cache de fichas para autocompletar */
-    let fichasCache = []; // [{ IdFicha, CodigoFicha, TrimestreDeLaFicha, IdPrograma, ProgramaNombre }]
+    // ======= Referencias del modal =======
+    const modalAsignarEl = document.getElementById("modalAsignar");
+    const selInstructorEl = document.getElementById("selInstructor");
+    const horaDesdeEl = document.getElementById("horaDesde");
+    const horaHastaEl = document.getElementById("horaHasta");
+    const btnGuardarAsig = document.getElementById("btnGuardarAsignacion");
 
-    /* =================== Cargar Fichas (unificado) =================== */
-    async function cargarFichas() {
-        const anio = selAnio.value.trim();
-        const tri  = selTrimestreAnio.value;
+    // Contexto temporal para saber a qué asignación (recién creada) se está editando
+    let dropContext = null;
+    let dropContextGuardado = false;
 
-        // Limpia valores actuales
-        inputFicha.value = "";
-        hfFichaId.value = "";
-        txtTrimestreFicha.value = "";
-        inputPrograma.value = "";
-        fichasCache = [];
-        ocultarSugerencias();
+    // Cache simple para mapear id → nombre (nos sirve para pintar luego)
+    const INSTRUCTORES_BY_ID = new Map();
 
-        if (!anio || !tri) return;
+    // Carga instructores desde el backend y llena el <select>
+    async function loadInstructores(q = "") {
+      try {
+        const url = '@Url.Action("GetInstructores","Home")' + (q ? ('?q=' + encodeURIComponent(q)) : '');
+        const resp = await fetch(url, { headers: { "Accept": "application/json" }, credentials: "same-origin" });
 
+        let json;
         try {
-            const url = `@Url.Action("GetFichasEnFormacion","Home")?anio=${encodeURIComponent(anio)}&trimestre=${encodeURIComponent(tri)}`;
-            const resp = await fetch(url, { headers: { "Accept": "application/json" }});
-            const json = await resp.json();
-            if (!resp.ok || !json?.ok) throw new Error(json?.msg || "No fue posible obtener las fichas.");
-
-            const fichas = Array.isArray(json.data) ? json.data : [];
-            // Normaliza y guarda en caché
-            fichasCache = fichas.map(f => ({
-                IdFicha: f.IdFicha,
-                CodigoFicha: (f.CodigoFicha ?? "").toString().trim(),
-                TrimestreDeLaFicha: f.TrimestreDeLaFicha ?? "",
-                IdPrograma: f.IdPrograma ?? "",
-                ProgramaNombre: f.ProgramaNombre ?? ""
-            }));
-        } catch (err) {
-            console.error(err);
-            showAlert(err.message || "Error cargando fichas.", "danger");
+          json = await resp.json();
+        } catch {
+          const text = await resp.text();
+          throw new Error("Respuesta no-JSON del servidor.\n" + text.substring(0, 400));
         }
+
+        if (!resp.ok || !json?.ok) throw new Error(json?.msg || "No se pudieron cargar los instructores.");
+
+        const lista = Array.isArray(json.data) ? json.data : [];
+
+        // 🔹 Reset y llenado del <select> + cache de ids → nombres
+        INSTRUCTORES_BY_ID.clear();
+        selInstructorEl.innerHTML = "";
+        selInstructorEl.appendChild(new Option("Seleccione un instructor…", "", true, false));
+        lista.forEach(i => {
+          INSTRUCTORES_BY_ID.set(String(i.id), i.nombre);
+          selInstructorEl.appendChild(new Option(i.nombre, i.id));
+        });
+      } catch (err) {
+        showAlert("Error cargando instructores: " + err.message, "danger");
+        selInstructorEl.innerHTML = "";
+        selInstructorEl.appendChild(new Option("Seleccione un instructor…", "", true, false));
+      }
     }
 
-    /* =================== Set Programa en textbox =================== */
-    function setPrograma(programaNombre) { if (!inputPrograma) return; inputPrograma.value = programaNombre || ""; }
 
-    /* =================== Listeners base =================== */
-    selAnio.addEventListener("input", cargarFichas);
-    selTrimestreAnio.addEventListener("change", cargarFichas);
+     // Abre el modal y (opcional) pre-carga valores para edición
+async function abrirModalAsignar(ctx, preset = null) {
+    try {
+        // 🔹 1. Obtener el resultado de aprendizaje del contexto
+        const resultado = decodeURIComponent(ctx.itemEl.dataset.resultado || "");
+        let instructorAsignado = null;
 
-    /* =================== Autocompletado Ficha (unificado) =================== */
-    function ocultarSugerencias() { fichaSugerencias.classList.add("d-none"); fichaSugerencias.innerHTML = ""; }
-    function mostrarSugerencias(items) {
-        fichaSugerencias.innerHTML = "";
-        if (!items || items.length === 0) {
-            const item = document.createElement("div");
-            item.className = "list-group-item small text-muted";
-            item.textContent = "Sin coincidencias…";
-            fichaSugerencias.appendChild(item);
+        if (resultado) {
+            const url = `@Url.Action("GetInstructorPorResultado", "Home")?resultado=${encodeURIComponent(resultado)}`;
+
+            let json;
+            try {
+                const resp = await fetch(url, { headers: { "Accept": "application/json" } });
+                const text = await resp.text();
+
+                // 🔹 Logs de diagnóstico
+                console.log("🔎 Consultando instructor para resultado:", resultado);
+                console.log("📄 Respuesta cruda del servidor:", text);
+
+                try {
+                    json = JSON.parse(text);
+                } catch {
+                    console.warn("Respuesta no JSON:", text);
+                    throw new Error("El servidor devolvió una respuesta inesperada (no JSON).");
+                }
+
+                if (!json.ok) console.warn("⚠️ Backend reporta error:", json.msg);
+            } catch (err) {
+                console.error("Error consultando instructor:", err);
+                showAlert("⚠️ Error consultando instructor: " + err.message, "danger");
+                json = { ok: false };
+            }
+
+            if (json.ok && json.data) {
+                instructorAsignado = {
+                    id: String(json.data.IdInstructor),
+                    nombre: json.data.Nombre
+                };
+            }
+        }
+
+        // 🔹 2. Cargar instructores disponibles
+        await loadInstructores();
+
+        // 🔹 3. Asignar el instructor predeterminado o el del resultado
+        if (instructorAsignado && instructorAsignado.id) {
+            selInstructorEl.value = instructorAsignado.id;
+        } else if (preset?.instructorId) {
+            selInstructorEl.value = preset.instructorId;
         } else {
-            items.forEach(f => {
-                const btn = document.createElement("button");
-                btn.type = "button"; btn.className = "list-group-item list-group-item-action";
-                const progTxt = f.ProgramaNombre ? ` (${f.ProgramaNombre})` : "";
-                const codigo  = f.CodigoFicha || "—";
-                btn.textContent = `${codigo} — ${progTxt}`.trim();
-                btn.addEventListener("click", () => {
-                    inputFicha.value = f.CodigoFicha || f.ProgramaNombre || "";
-                    hfFichaId.value = f.IdFicha;
-                    txtTrimestreFicha.value = f.TrimestreDeLaFicha || "";
-                    setPrograma(f.ProgramaNombre);
-                    ocultarSugerencias();
+            selInstructorEl.value = "";
+        }
 
-                    // 🔹 Cargar automáticamente las competencias de esta ficha
-                    cargarCompetenciasFicha(f.IdFicha);
+        // 🔹 4. Establecer horas por defecto
+        horaDesdeEl.value = preset?.horaDesde ?? "06:00";
+        horaHastaEl.value = preset?.horaHasta ?? "09:00";
+
+        // 🔹 5. Contexto para la asignación actual
+        dropContext = ctx;
+        dropContextGuardado = false;
+
+        // 🔹 6. Mostrar modal
+        const modal = new bootstrap.Modal(modalAsignarEl);
+        modal.show();
+
+    } catch (err) {
+        showAlert("Error al abrir el modal: " + err.message, "danger");
+    }
+}
+
+
+
+
+
+
+        /* =================== MODAL: guardar con validaciones fuertes =================== */
+        let SAVE_WIRED = false;
+
+        function wireGuardarAsignacion() {
+            // Asegura que el botón NO cierre solo el modal
+            if (SAVE_WIRED) return;     // ← evita que se duplique el click
+            SAVE_WIRED = true;
+
+            btnGuardarAsig?.removeAttribute("data-bs-dismiss");
+            btnGuardarAsig?.addEventListener("click", () => {
+                if (!dropContext) return;
+
+                const instructorId = selInstructorEl.value || null;
+                const horaDesde = horaDesdeEl.value || "";
+                const horaHasta = horaHastaEl.value || "";
+
+                // Requeridos
+                if (!instructorId) { showAlert("Debes seleccionar un instructor.", "warning"); return; }
+                if (!horaDesde || !horaHasta) { showAlert("Debes indicar el horario completo.", "warning"); return; }
+
+                // Conflictos
+                const asignacion = payload.asignaciones.find(a => a.id === dropContext.asignacionId);
+                const dia = asignacion?.dia || dropContext.itemEl.dataset.dia;
+
+                const conflicto = tieneConflictoEnDia({
+                    dia, instructorId, desde: horaDesde, hasta: horaHasta, ignoreId: dropContext.asignacionId
                 });
+                if (conflicto) { showAlert(conflicto, "danger"); return; }
 
-                fichaSugerencias.appendChild(btn);
+                // OK → aplicar cambios
+                const instructorNombre = INSTRUCTORES_BY_ID.get(String(instructorId)) || "—";
+
+                if (asignacion) {
+                    asignacion.instructorId = parseInt(instructorId, 10);
+                    asignacion.instructorNombre = instructorNombre;
+                    asignacion.horaDesde = horaDesde;
+                    asignacion.horaHasta = horaHasta;
+                }
+
+                // Actualizar DOM
+                const nombreEl = dropContext.itemEl.querySelector(".instructor");
+                const horarioEl = dropContext.itemEl.querySelector(".horario");
+                if (nombreEl) nombreEl.textContent = instructorNombre;
+                if (horarioEl) horarioEl.textContent = `${horaDesde} – ${horaHasta}`;
+                dropContext.itemEl.title = `${instructorNombre} • ${horaDesde} – ${horaHasta}`;
+
+                dropContextGuardado = true;
+
+                // Cerrar modal manualmente SOLO si todo fue válido
+                const modal = bootstrap.Modal.getInstance(modalAsignarEl) || new bootstrap.Modal(modalAsignarEl);
+                modal.hide();
+
+                dropContext = null;
             });
         }
+        wireGuardarAsignacion();
+
+        /* =================== BUSCADOR DE COMPETENCIAS =================== */
+        const txtSearch = document.getElementById("txtSearch");
+        txtSearch?.addEventListener("input", () => {
+            const q = (txtSearch.value || "").toLowerCase().trim();
+            const cards = document.querySelectorAll("#competenciasList > .card");
+            cards.forEach(card => {
+                const hayTexto = card.textContent.toLowerCase().includes(q);
+                card.style.display = hayTexto ? "" : "none";
+            });
+        });
+
+        /* =================== DOM READY: inicializaciones =================== */
+        document.addEventListener("DOMContentLoaded", () => {
+            initDropHints();      // muestra/oculta "Suelta aquí"
+            wireDayDropZones();   // zonas de drop una sola vez
+        });
+
+        let DAYS_WIRED = false;
+
+        function wireDayDropZones() {
+            if (DAYS_WIRED) return;
+            DAYS_WIRED = true;
+
+            document.querySelectorAll(".day-col").forEach(dia => {
+                dia.addEventListener("dragover", e => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = "move";
+                    dia.classList.add("drag-over");
+                });
+
+                dia.addEventListener("dragleave", () => dia.classList.remove("drag-over"));
+
+                // 🔹 Evento principal: DROP
+                dia.addEventListener("drop", async e => {
+                    e.preventDefault();
+                    dia.classList.remove("drag-over");
+
+                    const competenciaCompletaData = e.dataTransfer.getData("competenciaCompleta");
+                    const competenciaData = e.dataTransfer.getData("competencia");
+                    const resultadoData = e.dataTransfer.getData("resultado");
+                    const diaSemana = dia.dataset.day;
+
+                    // 🟢 Si suelta una competencia completa → mostrar modal de confirmación
+                    if (competenciaCompletaData && COMP_DRAGGING) {
+                        const competencia = COMP_DRAGGING;
+                        mostrarModalConfirmacionCompetencia(competencia, diaSemana);
+                        return;
+                    }
+
+                    // 🟢 Si suelta un resultado individual → lo agrega directamente
+                    if (competenciaData && resultadoData) {
+                        const competencia = decodeURIComponent(competenciaData);
+                        const resultado = decodeURIComponent(resultadoData);
+                        const asignacionId = nextId();
+
+                        const item = document.createElement("div");
+                        item.className = "asignacion bg-success-subtle border rounded p-2 mb-1 text-start";
+                        item.dataset.asignacionId = String(asignacionId);
+                        item.dataset.competencia = competencia;
+                        item.dataset.resultado = resultado;
+                        item.dataset.dia = diaSemana;
+
+                        item.innerHTML = `
+                    <div class="d-flex align-items-start justify-content-between gap-2">
+                        <div class="fw-semibold flex-grow-1">${resultado}</div>
+                        <div class="btn-group btn-group-sm">
+                            <button type="button" class="btn btn-link text-success p-0 edit-asig" title="Editar">
+                                <i class="bi bi-pencil-square"></i>
+                            </button>
+                            <button type="button" class="btn btn-link text-danger p-0 delete-asig" title="Eliminar">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="meta mt-1">
+                        <i class="bi bi-mortarboard"></i><span class="instructor">Seleccione instructor…</span>
+                        <span class="sep">•</span>
+                        <i class="bi bi-clock"></i><span class="horario">--:-- – --:--</span>
+                    </div>`;
+
+                        dia.appendChild(item);
+                        updateDropHint(dia);
+
+                        payload.asignaciones.push({
+                            id: asignacionId,
+                            competencia,
+                            resultado,
+                            dia: diaSemana,
+                            instructorId: null,
+                            instructorNombre: null,
+                            horaDesde: null,
+                            horaHasta: null
+                        });
+
+                        item.querySelector(".edit-asig")?.addEventListener("click", () => editarAsignacion(item));
+                        item.querySelector(".delete-asig")?.addEventListener("click", () => eliminarAsignacion(item));
+
+                        await abrirModalAsignar({ asignacionId, itemEl: item });
+                    }
+                });
+            });
+
+        }
+
+        /* =================== MODAL DE CONFIRMACIÓN DE COMPETENCIA COMPLETA =================== */
+function mostrarModalConfirmacionCompetencia(competencia, diaSemana) {
+    if (!competencia) return;
+
+    // 🔹 Rellenar datos en el modal de confirmación
+    document.getElementById("nombreCompetenciaConfirm").textContent = competencia.Competencia;
+    document.getElementById("totalResultadosConfirm").textContent = competencia.Resultados?.length || 0;
+    document.getElementById("nombreDiaConfirm").textContent = diaSemana;
+
+    // 🔹 Guardar temporalmente contexto global
+    window._competenciaPendiente = competencia;
+    window._diaPendiente = diaSemana;
+
+    // 🔹 Mostrar modal
+    const modal = new bootstrap.Modal(document.getElementById("modalConfirmCompetencia"));
+    modal.show();
+}
+
+// Al confirmar la adición de competencia completa
+document.getElementById("btnConfirmAgregarCompetencia")?.addEventListener("click", async () => {
+    const competencia = window._competenciaPendiente;
+    const diaSemana = window._diaPendiente;
+    if (!competencia || !diaSemana) return;
+
+    const asignacionId = nextId();
+
+    // Crear elemento DOM de asignación general
+    const item = document.createElement("div");
+    item.className = "asignacion bg-success-subtle border rounded p-2 mb-1 text-start";
+    item.dataset.asignacionId = String(asignacionId);
+    item.dataset.competencia = encodeURIComponent(competencia.Competencia);
+    item.dataset.resultado = "null";
+    item.dataset.dia = diaSemana;
+
+    item.innerHTML = `
+    <div class="d-flex align-items-start justify-content-between gap-2">
+        <div class="fw-semibold flex-grow-1">
+            <i class="bi bi-bookmark-star text-success me-1"></i>
+            ${competencia.Competencia}
+        </div>
+        <div class="btn-group btn-group-sm">
+            <button type="button" class="btn btn-link text-success p-0 edit-asig" title="Editar">
+                <i class="bi bi-pencil-square"></i>
+            </button>
+            <button type="button" class="btn btn-link text-danger p-0 delete-asig" title="Eliminar">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+    </div>
+    <div class="meta mt-1">
+        <i class="bi bi-mortarboard"></i><span class="instructor">Seleccione instructor…</span>
+        <span class="sep">•</span>
+        <i class="bi bi-clock"></i><span class="horario">--:-- – --:--</span>
+    </div>`;
+
+    // Insertar en el día correspondiente
+    const diaEl = document.querySelector(`.day-col[data-day="${diaSemana}"]`);
+    if (diaEl) {
+        diaEl.appendChild(item);
+        updateDropHint(diaEl);
+    }
+
+    // Guardar en payload
+    payload.asignaciones.push({
+        id: asignacionId,
+        competencia: competencia.Competencia,
+        resultado: null,
+        dia: diaSemana,
+        instructorId: null,
+        instructorNombre: null,
+        horaDesde: null,
+        horaHasta: null
+    });
+
+    // Vincular botones de acción
+    item.querySelector(".edit-asig")?.addEventListener("click", () => editarAsignacion(item));
+    item.querySelector(".delete-asig")?.addEventListener("click", () => eliminarAsignacion(item));
+
+    // Cerrar el modal de confirmación
+    const modalConfirm = bootstrap.Modal.getInstance(document.getElementById("modalConfirmCompetencia"));
+    modalConfirm.hide();
+
+    // 🟢 Abrir modal de instructor inmediatamente
+    await abrirModalAsignar({ asignacionId, itemEl: item });
+
+    // Limpiar variables temporales
+    window._competenciaPendiente = null;
+    window._diaPendiente = null;
+});
+
+
+
+        function wireResultadosDrag() {
+            document.querySelectorAll(".resultado-item").forEach(r => {
+                if (r.dataset.wired === "1") return;   // ← evita duplicados
+                r.dataset.wired = "1";
+
+                r.addEventListener("dragstart", e => {
+                    e.dataTransfer.setData("competencia", r.dataset.competencia);
+                    e.dataTransfer.setData("resultado", r.dataset.resultado);
+                    e.dataTransfer.effectAllowed = "move";
+                    r.classList.add("dragging");
+                });
+                r.addEventListener("dragend", () => r.classList.remove("dragging"));
+            });
+        }
+        /* =================== DRAG & DROP: Competencias completas =================== */
+        let COMP_DRAGGING = null; // competencia que se está arrastrando
+
+        function wireCompetenciaDrag() {
+            document.querySelectorAll(".card-header .fw-bold.text-sena").forEach((span, idx) => {
+                if (span.dataset.wired === "1") return;
+                span.dataset.wired = "1";
+
+                // 🔹 Hacemos que el título sea arrastrable
+                span.draggable = true;
+                span.title = "Arrastra la competencia completa";
+
+                span.addEventListener("dragstart", e => {
+                    const comp = COMPETENCIAS[idx];
+                    if (!comp) return;
+                    COMP_DRAGGING = comp;
+                    e.dataTransfer.effectAllowed = "move";
+                    e.dataTransfer.setData("competenciaCompleta", encodeURIComponent(comp.Competencia));
+                    span.classList.add("opacity-50");
+                });
+
+                span.addEventListener("dragend", () => {
+                    COMP_DRAGGING = null;
+                    span.classList.remove("opacity-50");
+                });
+            });
+        }
+
+
+
+    // Si el usuario cierra el modal SIN guardar, elimina el bloque
+        modalAsignarEl?.addEventListener("hidden.bs.modal", () => {
+            if (!dropContext) return;
+
+            const asignacion = payload.asignaciones.find(a => a.id === dropContext.asignacionId);
+
+            // Si no se guardó manualmente, intenta guardar automático
+            if (!dropContextGuardado && asignacion) {
+                const instructorId = selInstructorEl.value?.trim() || null;
+                const horaDesde = horaDesdeEl.value?.trim() || "06:00";
+                const horaHasta = horaHastaEl.value?.trim() || "09:00";
+
+                // Si instructor y horas válidos → guardar
+                if (instructorId) {
+                    asignacion.instructorId = parseInt(instructorId, 10);
+                    asignacion.horaDesde = horaDesde;
+                    asignacion.horaHasta = horaHasta;
+                    asignacion.instructorNombre = INSTRUCTORES_BY_ID.get(String(instructorId)) || "—";
+
+                    const nombreEl = dropContext.itemEl.querySelector(".instructor");
+                    const horarioEl = dropContext.itemEl.querySelector(".horario");
+                    if (nombreEl) nombreEl.textContent = asignacion.instructorNombre;
+                    if (horarioEl) horarioEl.textContent = `${horaDesde} – ${horaHasta}`;
+                    dropContext.itemEl.title = `${asignacion.instructorNombre} • ${horaDesde} – ${horaHasta}`;
+
+                    dropContextGuardado = true;
+                } else {
+                    // Si no tiene datos mínimos, eliminar
+                    dropContext.itemEl?.remove();
+                    payload.asignaciones = payload.asignaciones.filter(a => a.id !== dropContext.asignacionId);
+                }
+            }
+
+            dropContext = null;
+        });
+
+
+  /* =================== Estado =================== */
+let payload = { numeroFicha: "", nombreHorario: "Horario generado", trimestre: "", asignaciones: [] };
+const nextId = (() => { let c = 1; return () => c++; })();
+
+/* Cache de fichas para autocompletar */
+let fichasCache = []; // [{ IdFicha, CodigoFicha, TrimestreDeLaFicha, IdPrograma, ProgramaNombre }]
+
+/* =================== Cargar Fichas (unificado) =================== */
+async function cargarFichas() {
+    const anio = selAnio.value.trim();
+    const tri = selTrimestreAnio.value;
+
+    // Limpia valores actuales
+    inputFicha.value = "";
+    hfFichaId.value = "";
+    txtTrimestreFicha.value = "";
+    inputPrograma.value = "";
+    fichasCache = [];
+    ocultarSugerencias();
+
+    if (!anio || !tri) return;
+
+    try {
+        const url = `@Url.Action("GetFichasEnFormacion","Home")?anio=${encodeURIComponent(anio)}&trimestre=${encodeURIComponent(tri)}`;
+        const resp = await fetch(url, { headers: { "Accept": "application/json" } });
+        const json = await resp.json();
+        if (!resp.ok || !json?.ok) throw new Error(json?.msg || "No fue posible obtener las fichas.");
+
+        const fichas = Array.isArray(json.data) ? json.data : [];
+        // Normaliza y guarda en caché
+        fichasCache = fichas.map(f => ({
+            IdFicha: f.IdFicha,
+            CodigoFicha: (f.CodigoFicha ?? "").toString().trim(),
+            TrimestreDeLaFicha: f.TrimestreDeLaFicha ?? "",
+            IdPrograma: f.IdPrograma ?? "",
+            ProgramaNombre: f.ProgramaNombre ?? ""
+        }));
+
+        console.log("✅ Fichas cargadas:", fichasCache.length);
+    } catch (err) {
+        console.error(err);
+        showAlert(err.message || "Error cargando fichas.", "danger");
+    }
+}
+
+/* =================== AUTOCOMPLETADO DE FICHAS LECTIVAS (Optimizado y Reactivo) =================== */
+async function buscarFichasLectivas(term = "") {
+    const anio = selAnio?.value?.trim();
+    const trimestre = selTrimestreAnio?.value?.trim();
+
+    fichaSugerencias.innerHTML = "";
+    if (!anio || !trimestre) {
+        fichaSugerencias.innerHTML = `
+            <div class="list-group-item small text-muted">
+                ⚠️ Selecciona año y trimestre antes de buscar.
+            </div>`;
+        fichaSugerencias.classList.remove("d-none");
+        return;
+    }
+
+    try {
+        const url = '@Url.Action("GetFichasEnFormacion", "Home")'
+            + `?term=${encodeURIComponent(term)}`
+            + `&anio=${encodeURIComponent(anio)}`
+            + `&trimestre=${encodeURIComponent(trimestre)}`;
+
+        console.log("🔎 Buscando fichas en:", url);
+
+        const resp = await fetch(url, { headers: { "Accept": "application/json" } });
+        if (!resp.ok) throw new Error(`Error HTTP ${resp.status}`);
+
+        const json = await resp.json();
+        if (!json?.ok) throw new Error(json.msg || "No se pudieron obtener las fichas.");
+
+        let fichas = json.data || [];
+
+        // 🧩 FILTRO LOCAL: si el backend no filtra por 'term', lo hacemos aquí
+        if (term && fichas.length > 0) {
+            const termLower = term.toLowerCase();
+            fichas = fichas.filter(f =>
+                (f.CodigoFicha?.toString().toLowerCase().includes(termLower)) ||
+                (f.ProgramaNombre?.toLowerCase().includes(termLower))
+            );
+        }
+
+        if (!fichas.length) {
+            fichaSugerencias.innerHTML = `
+                <div class="list-group-item small text-muted">
+                    Sin coincidencias…
+                </div>`;
+            fichaSugerencias.classList.remove("d-none");
+            return;
+        }
+
+        // 🟢 Render dinámico de coincidencias
+        fichaSugerencias.innerHTML = "";
+        fichas.forEach(f => {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "list-group-item list-group-item-action";
+
+            btn.innerHTML = `
+                <div><strong>${f.CodigoFicha}</strong> — ${f.ProgramaNombre}</div>
+                <small class="text-muted">
+                    Trimestre ${f.TrimestreDeLaFicha ?? "?"} • ${f.FechaInicio?.split("T")[0] ?? ""} - ${f.FechaFin?.split("T")[0] ?? ""}
+                </small>
+            `;
+
+            btn.addEventListener("click", () => {
+                // ✅ Rellenar datos base de la ficha seleccionada
+                inputFicha.value = f.CodigoFicha;
+                hfFichaId.value = f.IdFicha;
+                inputPrograma.value = f.ProgramaNombre;
+                txtTrimestreFicha.value = f.TrimestreDeLaFicha ?? "";
+
+                // Calcular siguiente trimestre
+                actualizarSiguienteTrimestre();
+
+                // Ocultar sugerencias
+                ocultarSugerencias();
+
+                // Cargar competencias del trimestre actual
+                if (typeof cargarCompetenciasFicha === "function") {
+                    cargarCompetenciasFicha(f.IdFicha);
+                }
+            });
+            fichaSugerencias.appendChild(btn);
+        });
+
+        fichaSugerencias.classList.remove("d-none");
+    } catch (err) {
+        console.error("💥 Error general al buscar fichas:", err);
+        fichaSugerencias.innerHTML = `
+            <div class="list-group-item small text-danger">
+                Error: ${err.message}
+            </div>`;
         fichaSugerencias.classList.remove("d-none");
     }
-    async function asegurarFichasCargadasSiHaceFalta() { if (!fichasCache.length) { await cargarFichas(); } }
+}
 
-    inputFicha.addEventListener("input", async () => {
-        const q = inputFicha.value.trim().toLowerCase();
-        hfFichaId.value = "";                 // al escribir, se limpia la selección
-        txtTrimestreFicha.value = "";
-        setPrograma("");                      // limpia programa si cambian el texto
+/* =================== AUXILIARES =================== */
+function ocultarSugerencias() {
+    fichaSugerencias.classList.add("d-none");
+    fichaSugerencias.innerHTML = "";
+}
+
+function debounce(fn, ms = 250) {
+    let t;
+    return (...args) => {
+        clearTimeout(t);
+        t = setTimeout(() => fn.apply(this, args), ms);
+    };
+}
+
+/* =================== EVENTOS =================== */
+
+// 🔹 Buscar fichas mientras el usuario escribe (mínimo 2 caracteres)
+inputFicha?.addEventListener("input", debounce(async () => {
+    const q = inputFicha.value.trim();
+    hfFichaId.value = "";
+    txtTrimestreFicha.value = "";
+    inputPrograma.value = "";
+
+    if (q.length < 2) {
         ocultarSugerencias();
+        return;
+    }
 
-        // Requiere año y trimestre
-        const anio = selAnio.value.trim();
-        const tri  = selTrimestreAnio.value;
-        if (!anio || !tri) return;
+    console.log("⌨️ Buscando coincidencias:", q);
+    await buscarFichasLectivas(q);
+}, 300));
 
-        await asegurarFichasCargadasSiHaceFalta();
-        if (!q) return;
+// 🔹 Mostrar fichas al enfocar (si hay año/trimestre)
+inputFicha?.addEventListener("focus", async () => {
+    if (!selAnio.value || !selTrimestreAnio.value) {
+        showAlert("⚠️ Selecciona el año y trimestre antes de buscar fichas.", "warning");
+        return;
+    }
+    console.log("🟢 Mostrando fichas disponibles...");
+    await buscarFichasLectivas(inputFicha.value.trim());
+});
 
-        // Filtra por código o nombre de programa
-        const matches = fichasCache.filter(f => {
-            const codigo = (f.CodigoFicha || "").toLowerCase();
-            const prog   = (f.ProgramaNombre || "").toLowerCase();
-            return codigo.includes(q) || prog.includes(q);
-        }).slice(0, 30);
+// 🔹 Cerrar sugerencias si hace click fuera
+document.addEventListener("click", e => {
+    if (!fichaSugerencias.contains(e.target) && !inputFicha.contains(e.target)) {
+        ocultarSugerencias();
+    }
+});
 
-        mostrarSugerencias(matches);
-    });
+// 🔹 Recargar fichas si cambia año o trimestre
+selAnio?.addEventListener("change", async () => {
+    console.log("🔄 Año cambiado, recargando fichas...");
+    await buscarFichasLectivas(inputFicha.value.trim());
+});
 
-    // Cerrar dropdown al clicar fuera
-    document.addEventListener("click", (e) => {
-        const dentro = fichaSugerencias.contains(e.target) || inputFicha.contains(e.target);
-        if (!dentro) ocultarSugerencias();
-    });
+selTrimestreAnio?.addEventListener("change", async () => {
+    console.log("🔄 Trimestre cambiado, recargando fichas...");
+    await buscarFichasLectivas(inputFicha.value.trim());
+});
+
+
 
 
 
         /* =================== EVENTOS DE CARGA DE EXCEL =================== */
-const btnCargarExcel = document.getElementById("btnCargarExcel");
-const inputExcel = document.getElementById("inputExcel");
+        const btnCargarExcel = document.getElementById("btnCargarExcel");
+        const inputExcel = document.getElementById("inputExcel");
 
-/* 🔹 Paso 1: al hacer clic en el botón visible, abrimos el input oculto */
-btnCargarExcel?.addEventListener("click", () => {
-    inputExcel.click();
-});
+        /* 🔹 Paso 1: al hacer clic en el botón visible, abrimos el input oculto */
+        btnCargarExcel?.addEventListener("click", () => {
+            inputExcel.click();
+        });
 
-/* 🔹 Paso 2: cuando se selecciona un archivo, procesamos la carga */
-inputExcel?.addEventListener("change", async function (e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+        /* 🔹 Paso 2: cuando se selecciona un archivo, procesamos la carga */
+        inputExcel?.addEventListener("change", async function (e) {
+            const file = e.target.files?.[0];
+            if (!file) return;
 
-    const anio = selAnio.value;
-    const trimestre = selTrimestreAnio.value;
-    const idFicha = hfFichaId.value;
+            const anio = selAnio.value;
+            const trimestre = selTrimestreAnio.value;
+            const idFicha = hfFichaId.value;
 
-    if (!anio || !trimestre || !idFicha) {
-        showAlert("⚠️ Debes seleccionar un Año, un Trimestre y una Ficha antes de importar.", "warning");
-        e.target.value = "";
-        return;
-    }
+            if (!anio || !trimestre || !idFicha) {
+                showAlert("⚠️ Debes seleccionar un Año, un Trimestre y una Ficha antes de importar.", "warning");
+                e.target.value = "";
+                return;
+            }
 
-    btnCargarExcel.innerHTML = `<i class="bi bi-hourglass-split me-1"></i> Cargando...`;
-    btnCargarExcel.disabled = true;
+            btnCargarExcel.innerHTML = `<i class="bi bi-hourglass-split me-1"></i> Cargando...`;
+            btnCargarExcel.disabled = true;
 
-    try {
-        const fd = new FormData();
-        fd.append("archivoExcel", file);
-        fd.append("anio", anio);
-        fd.append("trimestre", trimestre);
-        fd.append("idFicha", idFicha);
+            try {
+                const fd = new FormData();
+                fd.append("archivoExcel", file);
+                fd.append("anio", anio);
+                fd.append("trimestre", trimestre);
+                fd.append("idFicha", idFicha);
 
-        const resp = await fetch('@Url.Action("ImportarExcel","Home")', { method: "POST", body: fd });
-        const data = await resp.json();
+                const resp = await fetch('@Url.Action("ImportarExcel","Home")', { method: "POST", body: fd });
+                const data = await resp.json();
 
-        if (!data.ok) throw new Error(data.msg || "Error al importar la planeación.");
+                if (!data.ok) throw new Error(data.msg || "Error al importar la planeación.");
 
-        showAlert(data.msg, "success");
+                showAlert(data.msg, "success");
 
-        // ✅ Mostrar las competencias cargadas después de importar
-        mostrarCompetenciasCargadas(data.competencias);
+                // ✅ Mostrar las competencias cargadas después de importar
+                mostrarCompetenciasCargadas(data.competencias);
 
-    } catch (err) {
-        showAlert("❌ " + err.message, "danger");
-    } finally {
-        btnCargarExcel.disabled = false;
-        btnCargarExcel.innerHTML = `<i class="bi bi-file-earmark-excel-fill me-1"></i> Cargar Planeación`;
-        e.target.value = ""; // limpia el input
-    }
-});
-            /* =================== RENDERIZAR COMPETENCIAS CON ACORDEÓN =================== */
-            function mostrarCompetenciasCargadas(competencias) {
-                const contenedor = document.getElementById("competenciasList");
-                contenedor.innerHTML = "";
+            } catch (err) {
+                showAlert("❌ " + err.message, "danger");
+            } finally {
+                btnCargarExcel.disabled = false;
+                btnCargarExcel.innerHTML = `<i class="bi bi-file-earmark-excel-fill me-1"></i> Cargar Planeación`;
+                e.target.value = ""; // limpia el input
+            }
+        });
 
-                if (!competencias || !competencias.length) {
-                    contenedor.innerHTML = `<div class="text-muted text-center py-2">No hay competencias en este archivo.</div>`;
-                    return;
-                }
+        // =================== Estado en memoria ===================
+        let COMPETENCIAS = [];              // [{ Competencia, Resultados: [...] }]
+        let OPEN_COMP_IDS = new Set();      // ids de acordeones abiertos (para recordar estado)
 
-                competencias.forEach((c, index) => {
-                    const bloque = document.createElement("div");
-                    bloque.className = "card mb-2 border-0 shadow-sm";
+        // =================== Render con acordeón (desplegar) ===================
+        function renderCompetencias(list) {
+            const cont = document.getElementById("competenciasList");
+            cont.innerHTML = "";
 
-                    const competenciaId = `competencia_${index}`;
+            if (!list || !list.length) {
+                cont.innerHTML = `<div class="text-muted text-center py-2">Sin competencias para mostrar.</div>`;
+                return;
+            }
 
-                    // Encabezado con botón que expande/colapsa
-                    bloque.innerHTML = `
-            <div class="card-header d-flex justify-content-between align-items-center bg-white border-start border-4 border-success pointer"
-                 data-bs-toggle="collapse" data-bs-target="#${competenciaId}" aria-expanded="false" aria-controls="${competenciaId}">
-                <span class="fw-bold text-sena">${c.Competencia}</span>
-                <i class="bi bi-chevron-down text-success fs-5 transition"></i>
-            </div>
+            list.forEach((c, idx) => {
+                const compId = `comp_${idx}`;
+                const isOpen = OPEN_COMP_IDS.has(compId);
 
-            <div id="${competenciaId}" class="collapse">
-                <div class="card-body pt-2 pb-2 ps-4">
-                    ${Array.isArray(c.Resultados) && c.Resultados.length > 0
-                            ? `
-                                <ul class="mb-0">
-                                    ${c.Resultados.map(r => `<li class="small text-muted mb-1">${r}</li>`).join("")}
-                                </ul>
-                              `
-                            : `<small class="text-muted fst-italic">Sin resultados de aprendizaje</small>`
-                        }
-                </div>
-            </div>
-        `;
+                const card = document.createElement("div");
+                card.className = "card mb-2 border-0 shadow-sm";
 
+                card.innerHTML = `
+      <div class="card-header d-flex justify-content-between align-items-center bg-white border-start border-4 border-success pointer"
+           role="button" data-bs-toggle="collapse" data-bs-target="#${compId}" aria-expanded="${isOpen}"
+           aria-controls="${compId}">
+        <span class="fw-bold text-sena">${c.Competencia}</span>
+        <i class="bi bi-chevron-down text-success fs-5 transition ${isOpen ? 'rotate-180' : ''}"></i>
+      </div>
 
+      <div id="${compId}" class="collapse ${isOpen ? 'show' : ''}">
+        <div class="card-body pt-2 pb-2 ps-4">
+          ${Array.isArray(c.Resultados) && c.Resultados.length
+                        ? `
+                <ul class="list-unstyled mb-0">
+                  ${c.Resultados.map(r => `
+                    <li class="resultado-item small text-muted border p-1 mb-1 rounded bg-light"
+                        draggable="true"
+                        data-competencia="${encodeURIComponent(c.Competencia)}"
+                        data-resultado="${encodeURIComponent(r)}">
+                      <i class="bi bi-arrows-move me-1 text-success"></i> ${r}
+                    </li>
+                  `).join("")}
+                </ul>
+              `
+                        : `<small class="text-muted fst-italic">Sin resultados de aprendizaje</small>`
+                    }
+        </div>
+      </div>
+    `;
 
-                    contenedor.appendChild(bloque);
-
-                    // Animación del ícono de flecha
-                    const header = bloque.querySelector(".card-header");
-                    const icon = header.querySelector("i");
-                    header.addEventListener("click", () => {
-                        const isExpanded = header.getAttribute("aria-expanded") === "true";
-                        icon.classList.toggle("bi-chevron-up", !isExpanded);
-                        icon.classList.toggle("bi-chevron-down", isExpanded);
-                    });
+                // recordar estado abierto/cerrado
+                const header = card.querySelector(".card-header");
+                const chevron = card.querySelector(".bi-chevron-down");
+                const collapseEl = card.querySelector(`#${compId}`);
+                collapseEl.addEventListener("shown.bs.collapse", () => {
+                    OPEN_COMP_IDS.add(compId);
+                    chevron.classList.add("rotate-180");
                 });
+                collapseEl.addEventListener("hidden.bs.collapse", () => {
+                    OPEN_COMP_IDS.delete(compId);
+                    chevron.classList.remove("rotate-180");
+                });
+
+                cont.appendChild(card);
+            });
+
+            // re-activar drag&drop sobre los <li> recién pintados
+            wireResultadosDrag();
+            wireCompetenciaDrag(); // NO llames a activarDragDropResultados aquí
+        }
+
+        // =================== Cargar (desde backend) y dejar base para filtrar ===================
+        function mostrarCompetenciasCargadas(competencias) {
+            // guardamos copia “maestra” para el filtro
+            COMPETENCIAS = Array.isArray(competencias) ? competencias : [];
+            // reseteamos el estado abierto (si quieres conservarlo entre cargas, quita la siguiente línea)
+            OPEN_COMP_IDS = new Set();
+            renderCompetencias(COMPETENCIAS);
+        }
+
+        // =================== Filtro que conserva estructura de acordeón ===================
+        const txtSearchEl = document.getElementById("txtSearch");
+        txtSearchEl?.addEventListener("input", debounce(() => {
+            const q = (txtSearchEl.value || "").trim().toLowerCase();
+            if (!q) {
+                renderCompetencias(COMPETENCIAS);
+                return;
+            }
+
+            // filtra por texto en nombre de competencia o en resultados
+            const filtered = COMPETENCIAS
+                .map(c => {
+                    const matchComp = (c.Competencia || "").toLowerCase().includes(q);
+                    const resFiltrados = (c.Resultados || []).filter(r => (r || "").toLowerCase().includes(q));
+                    if (matchComp) {
+                        // si coincide el título, mostramos todos sus resultados
+                        return { Competencia: c.Competencia, Resultados: c.Resultados || [] };
+                    }
+                    if (resFiltrados.length) {
+                        // si no coincide el título pero sí algunos resultados, mostramos solo esos
+                        return { Competencia: c.Competencia, Resultados: resFiltrados };
+                    }
+                    return null;
+                })
+                .filter(Boolean);
+
+            // abre todo por comodidad cuando hay búsqueda
+            OPEN_COMP_IDS = new Set(filtered.map((_, i) => `comp_${i}`));
+            renderCompetencias(filtered);
+        }, 180));
+
+        // =================== Utilidad: debounce sencillo ===================
+        function debounce(fn, ms = 200) {
+            let t;
+            return (...args) => { clearTimeout(t); t = setTimeout(() => fn.apply(this, args), ms); };
+        }
+
+        /* =================== CREAR / EDITAR / ELIMINAR =================== */
+        function activarDragDropResultados() {
+            wireDayDropZones();   // ← se ejecuta una vez
+            wireResultadosDrag(); // ← se puede llamar tras cada render de competencias
         }
 
 
+        function editarAsignacion(item) {
+            const id = parseInt(item.dataset.asignacionId, 10);
+            const a = payload.asignaciones.find(x => x.id === id);
+            const preset = {
+                instructorId: a?.instructorId ? String(a.instructorId) : "",
+                horaDesde: a?.horaDesde || "06:00",
+                horaHasta: a?.horaHasta || "09:00"
+            };
+            abrirModalAsignar({ asignacionId: id, itemEl: item }, preset);
+        }
+
+        function eliminarAsignacion(item) {
+            const id = parseInt(item.dataset.asignacionId, 10);
+            const col = item.closest(".day-col");
+            payload.asignaciones = payload.asignaciones.filter(a => a.id !== id);
+            item.remove();
+            if (col) updateDropHint(col);
+        }
+
+        /* =================== UTIL: placeholders "Suelta aquí" =================== */
+        function initDropHints() {
+            document.querySelectorAll(".day-col").forEach(col => {
+                const hint = col.querySelector("small.text-muted");
+                if (hint) hint.classList.add("drop-hint");
+                updateDropHint(col);
+            });
+        }
+        function updateDropHint(dayCol) {
+            const hint = dayCol.querySelector(".drop-hint");
+            if (!hint) return;
+            const hasItems = dayCol.querySelectorAll(".asignacion").length > 0;
+            hint.style.display = hasItems ? "none" : "";
+        }
+
+        /* =================== VALIDACIONES DE HORARIO =================== */
+        function parseHM(hhmm) {
+            // "06:00" → minutos desde 00:00
+            if (!hhmm || !/^\d{2}:\d{2}$/.test(hhmm)) return null;
+            const [h, m] = hhmm.split(":").map(n => parseInt(n, 10));
+            return h * 60 + m;
+        }
+        function rangosSePisan(aDesde, aHasta, bDesde, bHasta) {
+            return aDesde < bHasta && bDesde < aHasta; // intersección abierta
+        }
+        function tieneConflictoEnDia({ dia, instructorId, desde, hasta, ignoreId = null }) {
+            const d = parseHM(desde);
+            const h = parseHM(hasta);
+            if (d == null || h == null) return "Debes indicar un horario válido.";
+            if (d >= h) return "La hora inicial debe ser menor que la final.";
+
+            // 1) Ese instructor ya tiene algo que se pisa en el mismo día
+            const choqueInstructor = payload.asignaciones.some(a =>
+                a.dia === dia &&
+                a.id !== ignoreId &&
+                a.instructorId != null &&
+                String(a.instructorId) === String(instructorId) &&
+                rangosSePisan(parseHM(a.horaDesde), parseHM(a.horaHasta), d, h)
+            );
+            if (choqueInstructor) return "Ese instructor ya tiene una asignación en ese horario.";
+
+            return null; // OK
+        }
 
 
-
-        
-        async function cargarCompetenciasFicha(idFicha) {
+async function cargarCompetenciasFicha(idFicha) {
     const trimestreFicha = document.getElementById("txtTrimestreFicha").value.trim();
 
     if (!idFicha || !trimestreFicha) {
@@ -1008,7 +1797,7 @@ inputExcel?.addEventListener("change", async function (e) {
         if (!json.ok) {
             showAlert(json.msg || "No hay competencias en este trimestre.", "info");
             document.getElementById("competenciasList").innerHTML =
-                `<div class="text-muted text-center py-2">Sin competencias para este trimestre.</div>`;
+                `<div class="text-muted text-center py-2"> Sin competencias para este trimestre.</div>`;
             return;
         }
 
@@ -1017,9 +1806,84 @@ inputExcel?.addEventListener("change", async function (e) {
 
     } catch (err) {
         console.error(err);
-      
     }
-}
+        }
+
+        /* =================== GUARDAR HORARIO COMPLETO =================== */
+document.getElementById("btnGuardarHorario")?.addEventListener("click", async () => {
+    try {
+        // 1️⃣ Validar datos base
+        const anio = selAnio.value.trim();
+        const trimestre = selTrimestreAnio.value.trim();
+        const fichaCodigo = inputFicha.value.trim();
+        const trimestreFicha = txtTrimestreFicha.value.trim();
+
+        if (!anio || !trimestre || !fichaCodigo || !trimestreFicha) {
+            showAlert("⚠️ Debes seleccionar el año, trimestre y ficha antes de guardar.", "warning");
+            return;
+        }
+
+        if (!payload.asignaciones.length) {
+            showAlert("⚠️ No hay asignaciones creadas para guardar.", "warning");
+            return;
+        }
+
+        // 2️⃣ Actualizar datos base del payload
+        payload.numeroFicha = fichaCodigo;
+        payload.trimestre = trimestre;
+        payload.nombreHorario = `Horario ${fichaCodigo} - T${trimestre}`;
+
+        // 3️⃣ Preparar datos para enviar
+        const fd = new FormData();
+        fd.append("__RequestVerificationToken", getAntiForgeryToken());
+        fd.append("AsignacionesJson", JSON.stringify(payload.asignaciones));
+        fd.append("numeroFicha", payload.numeroFicha);
+        fd.append("nombreHorario", payload.nombreHorario);
+        fd.append("trimestre", payload.trimestre);
+
+        // 4️⃣ Enviar al backend
+        const resp = await fetch('@Url.Action("GuardarHorario", "Home")', {
+            method: "POST",
+            body: fd
+        });
+        const json = await resp.json();
+
+        if (json.ok) {
+            showAlert(json.msg || "✅ Horario guardado correctamente.", "success");
+
+            // 5️⃣ Redirigir automáticamente después de 1.5 segundos
+            setTimeout(() => {
+                window.location.href = '@Url.Action("ListaHorarios", "Home")';
+            }, 1500);
+        } else {
+            showAlert(json.msg || "❌ Error al guardar el horario.", "danger");
+        }
+    } catch (err) {
+        console.error(err);
+        showAlert("💥 Error inesperado: " + err.message, "danger");
+    }
+});
+
+
+        // ====== Calcular siguiente trimestre automáticamente ======
+        const txtSiguienteTrimestre = document.getElementById("txtSiguienteTrimestre");
+
+        // Cada vez que se llene la ficha, calculamos el siguiente trimestre
+        function actualizarSiguienteTrimestre() {
+            const actual = parseInt(txtTrimestreFicha.value || "0");
+            if (!actual || isNaN(actual)) {
+                txtSiguienteTrimestre.value = "";
+                return;
+            }
+
+            // Si llega al 7, el siguiente vuelve a 1
+            const siguiente = actual >= 7 ? 1 : actual + 1;
+            txtSiguienteTrimestre.value = siguiente;
+        }
+
+        // Vinculamos este cálculo al flujo actual
+        txtTrimestreFicha.addEventListener("change", actualizarSiguienteTrimestre);
+
 
     </script>
 }

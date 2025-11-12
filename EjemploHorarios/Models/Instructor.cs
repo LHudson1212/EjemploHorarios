@@ -18,9 +18,10 @@ namespace EjemploHorarios.Models
         public Instructor()
         {
             this.Asignacion_horario = new HashSet<Asignacion_horario>();
+            this.Diseño_Curricular = new HashSet<Diseño_Curricular>();
+            this.HorarioInstructor = new HashSet<HorarioInstructor>();
             this.Resultado_aprendizaje = new HashSet<Resultado_aprendizaje>();
             this.Area_Conocimiento = new HashSet<Area_Conocimiento>();
-            this.Diseño_Curricular = new HashSet<Diseño_Curricular>();
         }
     
         public int IdInstructor { get; set; }
@@ -48,10 +49,12 @@ namespace EjemploHorarios.Models
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<Asignacion_horario> Asignacion_horario { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<Diseño_Curricular> Diseño_Curricular { get; set; }
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<HorarioInstructor> HorarioInstructor { get; set; }
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<Resultado_aprendizaje> Resultado_aprendizaje { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<Area_Conocimiento> Area_Conocimiento { get; set; }
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public virtual ICollection<Diseño_Curricular> Diseño_Curricular { get; set; }
     }
 }

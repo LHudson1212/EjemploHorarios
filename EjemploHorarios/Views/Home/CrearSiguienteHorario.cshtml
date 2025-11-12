@@ -1,100 +1,188 @@
-﻿@model EjemploHorarios.Models.ViewModels.PlanificacionVM
-@using System.Web.Helpers
-
-@{
-    ViewBag.Title = "Crear Siguiente Horario - SENA";
+﻿@{
+    ViewBag.Title = "Siguiente Horario - SENA";
     Layout = "~/Views/Shared/_Layout.cshtml";
-
-    var selectedProg = Model?.Programas?.FirstOrDefault();
-    var selectedProgId = selectedProg != null ? selectedProg.Id_Programa : 0;
+    // Valores que puede enviar el controlador
+    var vIdFicha = ViewBag.IdFicha as int? ?? 0;
+    var vCodigoFicha = (ViewBag.CodigoFicha as string ?? "").Trim();
+    var vPrograma = (ViewBag.ProgramaNombre as string ?? "").Trim();
+    var vTriActual = ViewBag.TrimestreActual as int? ?? 0;
+    var vTriSig = ViewBag.TrimestreSiguiente as int? ?? ((vTriActual >= 1 && vTriActual < 7) ? vTriActual + 1 : 7);
+    var vAnio = ViewBag.Anio as int? ?? DateTime.Now.Year;
+    var vTriAnio = ViewBag.TrimestreAnio as int? ?? ((DateTime.Now.Month - 1) / 3 + 1);
 }
 
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet" />
+
 <style>
+    /* ====== Mismos estilos base del Index (recortado a lo necesario) ====== */
     :root {
         --sena-green: #008037;
-        --sena-green-2: #00a859;
+        --sena-green-light: #00a859;
+        --sena-green-dark: #006028;
+        --sena-ink: #1f2937;
+        --sena-muted: #6b7280;
+        --sena-light: #9ca3af;
     }
 
-    .border-sena {
-        border-color: var(--sena-green) !important;
+    body {
+        background: linear-gradient(135deg,#f0fdf4 0%,#dcfce7 50%,#f0fdf4 100%);
+        color: var(--sena-ink);
     }
 
     .bg-sena {
-        background-color: var(--sena-green) !important;
+        background: linear-gradient(135deg,var(--sena-green),var(--sena-green-light)) !important;
         color: #fff;
     }
 
     .text-sena {
         color: var(--sena-green) !important;
+        font-weight: 600;
     }
 
-    .res-dictado {
-        text-decoration: underline;
-        text-decoration-color: var(--sena-green);
-        text-decoration-thickness: 2px;
-        color: #6c757d;
-        font-style: italic;
+    .form-label {
+        font-weight: 700;
+        color: var(--sena-green)
     }
+
+    .form-control, .form-select {
+        border-radius: .85rem;
+        border: 2px solid #e5e7eb
+    }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--sena-green);
+            box-shadow: 0 0 0 .15rem rgba(0,128,55,.15)
+        }
+
+    .card {
+        border-radius: 1.25rem;
+        box-shadow: 0 6px 16px rgba(0,0,0,.08)
+    }
+
+    .btn {
+        border-radius: .85rem;
+        font-weight: 600
+    }
+
+    .btn-success {
+        background: linear-gradient(135deg,var(--sena-green),var(--sena-green-light));
+        border: none
+    }
+
+        .btn-success:hover {
+            background: linear-gradient(135deg,var(--sena-green-dark),var(--sena-green))
+        }
 
     .day-col {
-        min-height: 350px;
-        background: #f8fff8;
-        border: 2px dashed #8fd19e;
-        border-radius: .5rem;
-        padding: .5rem;
-        transition: .2s;
+        min-height: 460px;
+        border: 3px dashed #b6e4c3;
+        border-radius: 1.25rem;
+        padding: 1rem;
+        background: #fff
     }
 
         .day-col.dragover {
-            background: #eaffea;
+            background: #ecfdf5;
+            border-color: var(--sena-green)
         }
 
-    .event-card {
-        border-left: 5px solid var(--sena-green);
-        background: #fff;
-        padding: .5rem;
-        border-radius: .5rem;
-        box-shadow: 0 1px 2px rgba(0,0,0,.06);
-        margin-bottom: .5rem;
-        font-size: .9rem;
-        text-align: left;
+    .asignacion {
+        background: #dcfce7;
+        border: 1px solid #b6e4c3;
+        border-radius: 12px;
+        padding: .6rem;
+        margin: .5rem 0;
+        font-size: .92rem
     }
 
-    .chip {
-        display: inline-flex;
-        align-items: center;
-        gap: .35rem;
-        padding: .25rem .5rem;
-        border-radius: 999px;
-        border: 1px solid #dee2e6;
-        background: #f8f9fa;
-        font-size: .85rem;
-        margin: .25rem .35rem .25rem 0;
-        cursor: grab;
+        .asignacion .meta {
+            color: var(--sena-muted);
+            font-size: .86rem
+        }
+
+    #competenciasList {
+        max-height: calc(100vh - 320px);
+        overflow: auto
     }
 
-    .pointer {
-        cursor: pointer;
+    .autocomplete-list {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: calc(100% + .4rem);
+        z-index: 1055;
+        max-height: 320px;
+        overflow: auto;
+        border: 2px solid #b6e4c3;
+        border-radius: 12px;
+        background: #fff
     }
 </style>
 
 <main class="container-fluid p-3">
-    <h2 class="text-center text-sena mb-3">
-        Crear Siguiente Horario — Ficha: @Model?.NumeroFicha
-    </h2>
+    <header class="mb-3 text-center">
+        <h2 class="text-sena mb-1">Sistema de Gestión de Horarios</h2>
+        <p class="text-muted mb-0">Crear <strong>siguiente</strong> horario con arrastrar y soltar.</p>
+    </header>
 
-    @using (Html.BeginForm("GuardarHorario", "Home", FormMethod.Post, new { id = "formGuardarHorario" }))
+    <!-- Filtros principales (idénticos al Index) -->
+    <section class="row align-items-end mb-4 g-3" aria-label="Filtros de búsqueda">
+        <div class="col-lg-2 col-md-3">
+            <label class="form-label" for="selAnio">Año del Horario</label>
+            <input id="selAnio" type="number" min="2000" max="2100" class="form-control" placeholder="Ej: 2025" />
+        </div>
+
+        <div class="col-lg-2 col-md-3">
+            <label class="form-label" for="selTrimestreAnio">Trimestre del Año</label>
+            <select id="selTrimestreAnio" class="form-select">
+                <option value="">-- Selecciona un trimestre --</option>
+                <option value="1">Trimestre 1</option>
+                <option value="2">Trimestre 2</option>
+                <option value="3">Trimestre 3</option>
+                <option value="4">Trimestre 4</option>
+            </select>
+        </div>
+
+        <!-- Ficha (texto + sugerencias) -->
+        <div class="col-lg-4 col-md-6 position-relative">
+            <label class="form-label" for="inputFicha">Ficha</label>
+            <input id="inputFicha" class="form-control" placeholder="Escribe el código o programa..." autocomplete="off" />
+            <input type="hidden" id="hfFichaId" />
+            <div id="fichaSugerencias" class="list-group autocomplete-list d-none"></div>
+        </div>
+
+        <!-- Trimestre de la Ficha (actual) -->
+        <div class="col-lg-2 col-md-3">
+            <label class="form-label" for="txtTrimestreFicha">Trimestre de la Ficha</label>
+            <input id="txtTrimestreFicha" class="form-control" placeholder="1..7" readonly />
+        </div>
+
+        <!-- Trimestre siguiente (readonly) -->
+        <div class="col-lg-2 col-md-3">
+            <label class="form-label" for="txtTrimestreSiguiente">Siguiente Trimestre</label>
+            <input id="txtTrimestreSiguiente" class="form-control" placeholder="2..7" readonly />
+        </div>
+    </section>
+
+    @using (Html.BeginForm("GuardarHorario", "Home", FormMethod.Post, new { id = "formGuardarHorario", autocomplete = "off" }))
     {
+        @Html.AntiForgeryToken()
         <input type="hidden" id="hfAsignaciones" name="AsignacionesJson" />
 
         <div class="row g-3">
-            <!-- Columna izquierda -->
-            <div class="col-lg-3">
-                <div class="card border-sena shadow-sm mb-3">
-                    <div class="card-header bg-sena fw-bold d-flex justify-content-between align-items-center">
-                        <span>Competencias</span>
-                        <div class="input-group input-group-sm" style="width: 55%;">
-                            <input id="txtSearch" type="text" class="form-control" placeholder="Buscar...">
+            <!-- Lateral -->
+            <aside class="col-lg-3 d-flex flex-column" aria-label="Panel lateral">
+                <div class="mb-2">
+                    <label class="form-label" for="inputPrograma">Programa de Formación</label>
+                    <input id="inputPrograma" type="text" class="form-control" placeholder="Escribe o selecciona un programa..." />
+                </div>
+
+                <div class="card border-success mb-3">
+                    <div class="card-header bg-sena d-flex justify-content-between align-items-center">
+                        <span>Competencias (Trimestre siguiente)</span>
+                        <div class="input-group input-group-sm" style="width:48%;">
+                            <input id="txtSearch" type="text" class="form-control" placeholder="Buscar..." />
                             <span class="input-group-text bg-success text-white"><i class="bi bi-search"></i></span>
                         </div>
                     </div>
@@ -102,33 +190,29 @@
                         <div id="competenciasList" class="list-group list-group-flush"></div>
                     </div>
                 </div>
-            </div>
+            </aside>
 
-            <!-- Columna central -->
-            <div class="col-lg-9">
-                <div class="card border-sena shadow-sm">
-                    <div class="card-header bg-sena fw-bold">Días de formación</div>
+            <!-- Calendario -->
+            <section class="col-lg-9">
+                <div class="card border-success">
+                    <div class="card-header bg-sena d-flex justify-content-between align-items-center">
+                        <span>Días de formación</span>
+                        <small class="opacity-75">Arrastra los resultados hacia un día para crear asignaciones</small>
+                    </div>
                     <div class="card-body">
                         <div class="table-responsive">
                             <table class="table table-bordered align-middle text-center">
                                 <thead class="table-success">
-                                    <tr>
-                                        <th>Lunes</th>
-                                        <th>Martes</th>
-                                        <th>Miércoles</th>
-                                        <th>Jueves</th>
-                                        <th>Viernes</th>
-                                        <th>Sábado</th>
-                                    </tr>
+                                    <tr><th>Lunes</th><th>Martes</th><th>Miércoles</th><th>Jueves</th><th>Viernes</th><th>Sábado</th></tr>
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td><div class="day-col" id="day-lunes" data-day="Lunes"></div></td>
-                                        <td><div class="day-col" id="day-martes" data-day="Martes"></div></td>
-                                        <td><div class="day-col" id="day-miercoles" data-day="Miércoles"></div></td>
-                                        <td><div class="day-col" id="day-jueves" data-day="Jueves"></div></td>
-                                        <td><div class="day-col" id="day-viernes" data-day="Viernes"></div></td>
-                                        <td><div class="day-col" id="day-sabado" data-day="Sábado"></div></td>
+                                        <td><div class="day-col" id="day-lunes" data-day="Lunes"><small class="text-muted">Suelta aquí</small></div></td>
+                                        <td><div class="day-col" id="day-martes" data-day="Martes"><small class="text-muted">Suelta aquí</small></div></td>
+                                        <td><div class="day-col" id="day-miercoles" data-day="Miércoles"><small class="text-muted">Suelta aquí</small></div></td>
+                                        <td><div class="day-col" id="day-jueves" data-day="Jueves"><small class="text-muted">Suelta aquí</small></div></td>
+                                        <td><div class="day-col" id="day-viernes" data-day="Viernes"><small class="text-muted">Suelta aquí</small></div></td>
+                                        <td><div class="day-col" id="day-sabado" data-day="Sábado"><small class="text-muted">Suelta aquí</small></div></td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -139,287 +223,381 @@
 
                 <div class="mt-3 text-end">
                     <button id="btnGuardarHorario" type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalGuardarHorario">
-                        Guardar Todo
+                        <i class="bi bi-save me-2"></i>Guardar Todo
                     </button>
-                    <button type="button" class="btn btn-success" onclick="location.href='@Url.Action("ListaHorarios", "Home")'">
-                        Ver Horarios
+                    <button type="button" class="btn btn-outline-success" onclick="location.href='@Url.Action("ListaHorarios","Home")'">
+                        <i class="bi bi-calendar-check me-2"></i>Ver Horarios
                     </button>
                 </div>
-            </div>
+            </section>
         </div>
     }
-</main>
 
-<div id="modales-placeholder">
-    @* Inserta tus modales: modalAsignar, modalDetalles, modalGuardarHorario *@
-
-
-    <!-- Modal Asignar -->
+    <!-- Modal asignar -->
     <div class="modal fade" id="modalAsignar" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
-            <div class="modal-content border-sena">
+            <div class="modal-content border-success">
                 <div class="modal-header bg-sena text-white">
                     <h5 class="modal-title">Asignar Instructor y Horario</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                 </div>
                 <div class="modal-body">
                     <input type="hidden" id="hfResultadoId" />
-                    <input type="hidden" id="hfProgramaId" />
-                    <input type="hidden" id="hfCompetenciaId" />
-
                     <div class="mb-3">
-                        <label class="form-label">Instructor</label>
+                        <label class="form-label" for="selInstructor">Instructor</label>
                         <select id="selInstructor" class="form-select"></select>
                     </div>
-
                     <div class="row g-2 mb-3">
                         <div class="col-6">
-                            <label class="form-label">Desde</label>
-                            <input id="horaDesde" type="time" class="form-control" value="06:00" />
+                            <label class="form-label" for="horaDesde">Desde</label>
+                            <input id="horaDesde" type="time" class="form-control" value="06:00">
                         </div>
                         <div class="col-6">
-                            <label class="form-label">Hasta</label>
-                            <input id="horaHasta" type="time" class="form-control" value="09:00" />
+                            <label class="form-label" for="horaHasta">Hasta</label>
+                            <input id="horaHasta" type="time" class="form-control" value="09:00">
                         </div>
                     </div>
-
-                    <button id="btnGuardarAsignacion" type="button" class="btn btn-success w-100" data-bs-dismiss="modal">Guardar</button>
+                    <button id="btnGuardarAsignacion" type="button" class="btn btn-success w-100">
+                        <i class="bi bi-check-circle me-2"></i>Guardar
+                    </button>
                 </div>
             </div>
         </div>
     </div>
+</main>
 
-
-    <!-- Modal Detalles -->
-    <div class="modal fade" id="modalDetalles" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content border-sena">
-                <div class="modal-header bg-sena text-white">
-                    <h5 class="modal-title">Detalles de Asignación</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body" id="detallesBody"></div>
-            </div>
-        </div>
-    </div>
-
-
-
-    <!-- Modal Guardar Horario -->
-    <div class="modal fade" id="modalGuardarHorario" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content border-sena">
-                <div class="modal-header bg-sena text-white">
-                    <h5 class="modal-title">Guardar Horario</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Número de Ficha</label>
-                        <input type="text" id="inputNumeroFicha" class="form-control" placeholder="Ej: 12345" />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Nombre del Horario</label>
-                        <input type="text" id="inputNombreHorario" class="form-control" placeholder="Ej: Horario Mañana" />
-                    </div>
-                    <button id="btnConfirmarGuardar" type="button" class="btn btn-success w-100">Confirmar y Guardar</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-</div>
-
-@section Scripts {
+@section Scripts{
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-const PROGRAMAS = @Html.Raw(Json.Encode(Model?.Programas ?? new List<EjemploHorarios.Models.ViewModels.ProgramaVM>()));
-const INSTRUCTORES = @Html.Raw(Json.Encode(Model?.Instructores ?? new List<EjemploHorarios.Models.ViewModels.InstructorVM>()));
-const PROG_SELEC_ID = @selectedProgId;
+/* ================= Utilidades ================= */
+function showAlert(msg, type="danger", ms=3500){
+  const el=document.createElement("div");
+  el.className=`alert alert-${type}`;
+  el.style.position="fixed"; el.style.top="16px"; el.style.right="16px"; el.style.zIndex=2000;
+  el.innerHTML=`${msg}`;
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(), ms);
+}
+function getAntiForgeryToken(){
+  const el=document.querySelector('input[name="__RequestVerificationToken"]');
+  return el?el.value:null;
+}
 
+/* ================= Refs ================= */
+const selAnio = document.getElementById("selAnio");
+const selTrimestreAnio = document.getElementById("selTrimestreAnio");
+const inputFicha = document.getElementById("inputFicha");
+const fichaSugerencias = document.getElementById("fichaSugerencias");
+const hfFichaId = document.getElementById("hfFichaId");
+const txtTrimestreFicha = document.getElementById("txtTrimestreFicha");
+const txtTrimestreSiguiente = document.getElementById("txtTrimestreSiguiente");
+const inputPrograma = document.getElementById("inputPrograma");
 const competenciasList = document.getElementById("competenciasList");
 const selInstructor = document.getElementById("selInstructor");
-const hfAsignaciones = document.getElementById("hfAsignaciones");
+const horaDesde = document.getElementById("horaDesde");
+const horaHasta = document.getElementById("horaHasta");
+const modalAsignarEl = document.getElementById("modalAsignar");
+const btnGuardarAsig = document.getElementById("btnGuardarAsignacion");
 
-let payload = { numeroFicha: "@Model?.NumeroFicha", nombreHorario: "Horario generado", asignaciones: [] };
-const nextId = (() => { let c = 1; return () => c++; })();
+/* ================= Estado ================= */
+let payload = { numeroFicha:"", nombreHorario:"", trimestre:"", asignaciones:[] };
+const nextId = (()=>{let i=1;return ()=>i++;})();
+let fichasCache = [];             // {IdFicha,CodigoFicha,TrimestreDeLaFicha,IdPrograma,ProgramaNombre}
+let COMPETENCIAS = [];            // [{Competencia, Resultados:[]}]
+const INSTRUCTORES_BY_ID = new Map();
+let dropContext = null;
 
-const prog = PROGRAMAS.find(p => p.Id_Programa === PROG_SELEC_ID) || PROGRAMAS[0];
+/* ================= Prefill con ViewBag ================= */
+(function prefill(){
+  const _id=@vIdFicha;
+  const _cod=@Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(vCodigoFicha));
+  const _prog=@Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(vPrograma));
+  const _triAct=@vTriActual;
+  const _triSig=@vTriSig;
+  const _anio=@vAnio;
+  const _triAnio=@vTriAnio;
 
-function renderCompetencias(prog) {
-    competenciasList.innerHTML = "";
-    if (!prog) {
-        competenciasList.innerHTML = "<div class='text-muted'>No hay competencias para el programa seleccionado.</div>";
-        return;
-    }
+  if(_anio) selAnio.value=_anio;
+  if(_triAnio) selTrimestreAnio.value=String(_triAnio);
+  if(_cod){ inputFicha.value=_cod; }
+  if(_id){ hfFichaId.value=_id; }
+  if(_prog){ inputPrograma.value=_prog; }
+  if(_triAct){ txtTrimestreFicha.value=_triAct; }
+  txtTrimestreSiguiente.value = _triSig ? _triSig : Math.min(7, (parseInt(txtTrimestreFicha.value||"0")||0)+1);
 
-    prog.Competencias.forEach(c => {
-        const block = document.createElement("div");
-        block.className = "mb-2 border rounded";
+  // Si viene ficha -> cargar competencias del siguiente trimestre
+  if(hfFichaId.value){
+    cargarCompetenciasSiguiente(hfFichaId.value);
+  }
+})();
 
-        const resultadosHtml = c.Resultados.map(r => {
-            if (r.YaDictado) {
-                return `
-                  <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <span class="res-dictado">${r.Descripcion} <small class="text-muted">(ya dictado)</small></span>
-                    <i class="bi bi-check-circle-fill text-success"></i>
-                    <div class="mt-2 w-100" id="result-assignments-${r.Id_Resultado}"></div>
-                  </li>`;
-            } else {
-                return `
-                  <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <span>${r.Descripcion}</span>
-                    <i class="bi bi-plus-circle pointer text-success"
-                       data-open-assign
-                       data-resultado-id="${r.Id_Resultado}"
-                       data-programa-id="${prog.Id_Programa}"
-                       data-red-id="${c.RedConocimientoId}"
-                       data-bs-toggle="modal"
-                       data-bs-target="#modalAsignar"></i>
-                    <div class="mt-2 w-100" id="result-assignments-${r.Id_Resultado}"></div>
-                  </li>`;
-            }
-        }).join("");
+/* ================= Autocomplete de Fichas (reutiliza GetFichasEnFormacion) ================= */
+async function cargarFichas(){
+  const anio = selAnio.value.trim();
+  const tri  = selTrimestreAnio.value;
+  fichasCache = [];
+  if(!anio || !tri) return;
+  try{
+    const url='@Url.Action("GetFichasEnFormacion","Home")' + `?anio=${anio}&trimestre=${tri}`;
+    const r=await fetch(url,{headers:{"Accept":"application/json"}});
+    const j=await r.json();
+    if(!j.ok) throw new Error(j.msg||"No fue posible cargar fichas.");
+    fichasCache = (j.data||[]).map(f=>({
+      IdFicha:f.IdFicha, CodigoFicha:String(f.CodigoFicha||"").trim(),
+      TrimestreDeLaFicha:f.TrimestreDeLaFicha||"", IdPrograma:f.IdPrograma||"",
+      ProgramaNombre:f.ProgramaNombre||""
+    }));
+  }catch(e){ showAlert(e.message,"danger"); }
+}
+selAnio.addEventListener("input", cargarFichas);
+selTrimestreAnio.addEventListener("change", cargarFichas);
 
-        block.innerHTML = `
-            <div class="list-group-item d-flex justify-content-between align-items-center">
-                <span class="fw-semibold">${c.Nombre}</span>
-                <i class="bi bi-eye pointer text-sena" data-bs-toggle="collapse" data-bs-target="#comp-${c.Id_Competencias}"></i>
-            </div>
-            <div id="comp-${c.Id_Competencias}" class="collapse">
-                <ul class="list-group list-group-flush">
-                    ${resultadosHtml}
-                </ul>
-            </div>
-        `;
-        competenciasList.appendChild(block);
+function ocultarSugerencias(){ fichaSugerencias.classList.add("d-none"); fichaSugerencias.innerHTML=""; }
+function mostrarSugerencias(items){
+  fichaSugerencias.innerHTML="";
+  if(!items.length){
+    fichaSugerencias.innerHTML='<div class="list-group-item small text-muted">Sin coincidencias…</div>';
+  }else{
+    items.forEach(f=>{
+      const btn=document.createElement("button");
+      btn.type="button"; btn.className="list-group-item list-group-item-action";
+      btn.textContent=`${f.CodigoFicha} — ${f.ProgramaNombre}`;
+      btn.addEventListener("click", ()=>{
+        inputFicha.value=f.CodigoFicha;
+        hfFichaId.value=f.IdFicha;
+        inputPrograma.value=f.ProgramaNombre||"";
+        txtTrimestreFicha.value=f.TrimestreDeLaFicha||"";
+        txtTrimestreSiguiente.value = Math.min(7, (parseInt(txtTrimestreFicha.value||"0")||0)+1);
+        ocultarSugerencias();
+        cargarCompetenciasSiguiente(f.IdFicha);
+      });
+      fichaSugerencias.appendChild(btn);
     });
+  }
+  fichaSugerencias.classList.remove("d-none");
+}
+inputFicha.addEventListener("input", async ()=>{
+  const q=(inputFicha.value||"").toLowerCase().trim();
+  ocultarSugerencias();
+  const anio=selAnio.value.trim(), tri=selTrimestreAnio.value;
+  if(!anio||!tri||!q) return;
+  if(!fichasCache.length) await cargarFichas();
+  const matches=fichasCache.filter(f=>f.CodigoFicha.toLowerCase().includes(q) || (f.ProgramaNombre||"").toLowerCase().includes(q)).slice(0,30);
+  mostrarSugerencias(matches);
+});
+document.addEventListener("click",(e)=>{ if(!(fichaSugerencias.contains(e.target)||inputFicha.contains(e.target))) ocultarSugerencias(); });
 
-    wireAssignIcons();
+/* ================= Competencias desde Diseño_Curricular (trimestre siguiente) ================= */
+async function cargarCompetenciasSiguiente(idFicha){
+  const triAct = parseInt(txtTrimestreFicha.value||"0")||0;
+  const triSig = Math.min(7, triAct+1);
+  try{
+    const url='@Url.Action("GetCompetenciasPorTrimestre","Home")' + `?idFicha=${idFicha}&trimestre=${triSig}`;
+    const r=await fetch(url,{headers:{"Accept":"application/json"}});
+    const j=await r.json();
+    if(!j.ok){ competenciasList.innerHTML='<div class="text-muted text-center py-2">Sin competencias para el trimestre siguiente.</div>'; return; }
+    // j.data => [{Competencia, Resultados:[...]}]
+    renderCompetencias(j.data||[]);
+  }catch(e){
+    showAlert("Error cargando competencias: "+e.message,"danger");
+  }
 }
 
-function wireAssignIcons() {
-    document.querySelectorAll("[data-open-assign]").forEach(icon => {
-        icon.addEventListener("click", function () {
-            const resId = +this.dataset.resultadoId;
-            const progId = +this.dataset.programaId;
-            const redId = +this.dataset.redId;
-
-            if (selInstructor) {
-                selInstructor.innerHTML = "";
-                INSTRUCTORES.filter(i => i.RedConocimientoId === redId).forEach(i => {
-                    const opt = document.createElement("option");
-                    opt.value = i.Id_Instructor;
-                    opt.textContent = i.Nombre;
-                    selInstructor.appendChild(opt);
-                });
-            }
-
-            const hfRes = document.getElementById("hfResultadoId");
-            const hfProg = document.getElementById("hfProgramaId");
-            if (hfRes) hfRes.value = resId;
-            if (hfProg) hfProg.value = progId;
-        });
-    });
+function renderCompetencias(list){
+  COMPETENCIAS = list;
+  competenciasList.innerHTML="";
+  if(!list.length){
+    competenciasList.innerHTML='<div class="text-muted text-center py-2">Sin competencias.</div>'; return;
+  }
+  list.forEach(c=>{
+    const card=document.createElement("div");
+    card.className="card mb-2 border-0";
+    card.innerHTML=`
+      <div class="card-header bg-white border-start border-4 border-success">
+        <strong class="text-sena">${c.Competencia || ""}</strong>
+      </div>
+      <div class="card-body pt-2 pb-2">
+        ${
+          (Array.isArray(c.Resultados) && c.Resultados.length)
+          ? `<ul class="list-unstyled mb-0">
+               ${c.Resultados.map(r => `
+                 <li class="resultado-item small text-muted border p-1 mb-1 rounded bg-light"
+                     draggable="true"
+                     data-competencia="${encodeURIComponent(c.Competencia || "")}"
+                     data-resultado="${encodeURIComponent(r || "")}">
+                   <i class="bi bi-arrows-move me-1 text-success"></i> ${r || ""}
+                 </li>
+               `).join("")}
+             </ul>`
+          : `<small class="text-muted fst-italic">Sin resultados</small>`
+        }
+      </div>`;
+    competenciasList.appendChild(card);
+  });
+  wireResultadosDrag();
 }
 
-// Inicializamos
-renderCompetencias(prog);
+/* ================= Drag & Drop ================= */
+function wireResultadosDrag(){
+  document.querySelectorAll(".resultado-item").forEach(el=>{
+    if(el.dataset.wired==="1") return;
+    el.dataset.wired="1";
+    el.addEventListener("dragstart", e=>{
+      e.dataTransfer.setData("competencia", el.dataset.competencia);
+      e.dataTransfer.setData("resultado", el.dataset.resultado);
+      e.dataTransfer.effectAllowed="move";
+      el.classList.add("dragging");
+    });
+    el.addEventListener("dragend", ()=>el.classList.remove("dragging"));
+  });
+}
+(function wireDayDropZones(){
+  document.querySelectorAll(".day-col").forEach(dia=>{
+    dia.addEventListener("dragover", e=>{ e.preventDefault(); dia.classList.add("dragover"); e.dataTransfer.dropEffect="move"; });
+    dia.addEventListener("dragleave", ()=>dia.classList.remove("dragover"));
+    dia.addEventListener("drop", async e=>{
+      e.preventDefault(); dia.classList.remove("dragover");
+      const competencia = decodeURIComponent(e.dataTransfer.getData("competencia")||"");
+      const resultado   = decodeURIComponent(e.dataTransfer.getData("resultado")||"");
+      const diaSemana   = dia.dataset.day;
 
-// -------------------- Funciones de asignación, drag & drop, detalles y eliminar --------------------
+      const asignacionId = nextId();
+      const item = document.createElement("div");
+      item.className="asignacion";
+      item.dataset.asignacionId=String(asignacionId);
+      item.dataset.competencia=competencia;
+      item.dataset.resultado=resultado;
+      item.dataset.dia=diaSemana;
+      item.innerHTML = `
+        <div class="d-flex justify-content-between align-items-start">
+          <div class="fw-semibold flex-grow-1">${resultado}</div>
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-link text-success p-0 edit-asig" title="Editar"><i class="bi bi-pencil-square"></i></button>
+            <button class="btn btn-link text-danger  p-0 del-asig"  title="Eliminar"><i class="bi bi-trash"></i></button>
+          </div>
+        </div>
+        <div class="meta mt-1">
+          <i class="bi bi-mortarboard"></i> <span class="instructor">Seleccione instructor…</span>
+          <span class="mx-1">•</span>
+          <i class="bi bi-clock"></i> <span class="horario">--:-- – --:--</span>
+        </div>`;
+      dia.appendChild(item);
 
-document.getElementById("btnGuardarAsignacion")?.addEventListener("click", function () {
-    const resultadoId = +document.getElementById("hfResultadoId").value;
-    const programaId = +document.getElementById("hfProgramaId").value;
-    const instructorId = +selInstructor.value;
-    const desde = document.getElementById("horaDesde").value;
-    const hasta = document.getElementById("horaHasta").value;
+      payload.asignaciones.push({
+        id:asignacionId, competencia, resultado, dia:diaSemana,
+        instructorId:null, instructorNombre:null, horaDesde:null, horaHasta:null
+      });
 
-    if (!resultadoId || !instructorId) { alert("Completa los campos"); return; }
+      item.querySelector(".edit-asig")?.addEventListener("click", ()=>editarAsignacion(item));
+      item.querySelector(".del-asig")?.addEventListener("click", ()=>eliminarAsignacion(item));
 
-    const instructorNombre = INSTRUCTORES.find(i => i.Id_Instructor === instructorId)?.Nombre || "";
-    const resultadoDesc = PROGRAMAS.flatMap(p=>p.Competencias).flatMap(c=>c.Resultados).find(r=>r.Id_Resultado===resultadoId)?.Descripcion || "";
-    const competenciaNombre = PROGRAMAS.flatMap(p=>p.Competencias).find(c=>c.Resultados.some(r=>r.Id_Resultado===resultadoId))?.Nombre || "";
+      await abrirModalAsignar({ asignacionId, itemEl:item });
+    });
+  });
+})();
 
-    const asig = { id: nextId(), programaId, resultadoId, instructorId, dia: null, desde, hasta, instructorNombre, resultadoDesc, competenciaNombre };
-    payload.asignaciones.push(asig);
-    hfAsignaciones.value = JSON.stringify(payload);
+/* ================= Instructores (Ajax) ================= */
+async function loadInstructores(q=""){
+  try{
+    const url='@Url.Action("GetInstructores","Home")' + (q?`?q=${encodeURIComponent(q)}`:"");
+    const r=await fetch(url,{headers:{"Accept":"application/json"}});
+    const j=await r.json();
+    INSTRUCTORES_BY_ID.clear();
+    selInstructor.innerHTML="";
+    selInstructor.appendChild(new Option("Seleccione un instructor…","",true,false));
+    (j.data||[]).forEach(i=>{
+      INSTRUCTORES_BY_ID.set(String(i.id), i.nombre);
+      selInstructor.appendChild(new Option(i.nombre, i.id));
+    });
+  }catch(e){
+    selInstructor.innerHTML="";
+    selInstructor.appendChild(new Option("Seleccione un instructor…","",true,false));
+    showAlert("Error cargando instructores: "+e.message,"danger");
+  }
+}
+async function abrirModalAsignar(ctx, preset=null){
+  await loadInstructores();
+  selInstructor.value = preset?.instructorId ? String(preset.instructorId) : "";
+  horaDesde.value = preset?.horaDesde || "06:00";
+  horaHasta.value = preset?.horaHasta || "09:00";
+  dropContext = ctx;
+  (new bootstrap.Modal(modalAsignarEl)).show();
+}
+btnGuardarAsig.addEventListener("click", ()=>{
+  if(!dropContext) return;
+  const instructorId = selInstructor.value || null;
+  const desde = horaDesde.value || "";
+  const hasta = horaHasta.value || "";
+  if(!instructorId){ showAlert("Selecciona un instructor.","warning"); return; }
+  if(!/^\d{2}:\d{2}$/.test(desde) || !/^\d{2}:\d{2}$/.test(hasta)){ showAlert("Horas inválidas.","warning"); return; }
 
-    const host = document.getElementById(`result-assignments-${resultadoId}`);
-    if (host) {
-        const pill = document.createElement("span");
-        pill.className = "chip";
-        pill.draggable = true;
-        pill.dataset.asigId = asig.id;
-        pill.innerHTML = `<strong>${instructorNombre}</strong> <small>${desde} - ${hasta}</small>`;
-        pill.addEventListener("dragstart", ev => ev.dataTransfer.setData("text/plain", asig.id));
-        host.appendChild(pill);
-    }
+  const a = payload.asignaciones.find(x=>x.id===dropContext.asignacionId);
+  if(a){
+    a.instructorId = parseInt(instructorId,10);
+    a.instructorNombre = INSTRUCTORES_BY_ID.get(String(instructorId)) || "—";
+    a.horaDesde = desde; a.horaHasta = hasta;
+  }
+  dropContext.itemEl.querySelector(".instructor").textContent = a.instructorNombre;
+  dropContext.itemEl.querySelector(".horario").textContent = `${desde} – ${hasta}`;
+  bootstrap.Modal.getInstance(modalAsignarEl)?.hide();
+  dropContext = null;
+});
+function editarAsignacion(item){
+  const id = parseInt(item.dataset.asignacionId,10);
+  const a = payload.asignaciones.find(x=>x.id===id);
+  const preset = { instructorId:a?.instructorId||"", horaDesde:a?.horaDesde||"06:00", horaHasta:a?.horaHasta||"09:00" };
+  abrirModalAsignar({ asignacionId:id, itemEl:item }, preset);
+}
+function eliminarAsignacion(item){
+  const id=parseInt(item.dataset.asignacionId,10);
+  payload.asignaciones = payload.asignaciones.filter(a=>a.id!==id);
+  item.remove();
+}
+
+/* ================= Buscar dentro de competencias ================= */
+document.getElementById("txtSearch")?.addEventListener("input", ()=>{
+  const q = (document.getElementById("txtSearch").value||"").toLowerCase().trim();
+  const cards = document.querySelectorAll("#competenciasList .card");
+  cards.forEach(c=>{
+    const show = c.textContent.toLowerCase().includes(q);
+    c.style.display = show ? "" : "none";
+  });
 });
 
-// Drag & Drop
-document.querySelectorAll(".day-col").forEach(col => {
-    col.addEventListener("dragover", e => { e.preventDefault(); col.classList.add("dragover"); });
-    col.addEventListener("dragleave", () => col.classList.remove("dragover"));
-    col.addEventListener("drop", e => {
-        e.preventDefault(); col.classList.remove("dragover");
-        const asigId = +e.dataTransfer.getData("text/plain");
-        const original = payload.asignaciones.find(x => x.id === asigId);
-        if (!original) return;
+/* ================= Guardar ================= */
+document.getElementById("btnGuardarHorario")?.addEventListener("click", async ()=>{
+  try{
+    // Validaciones
+    const anio = selAnio.value.trim();
+    const triAnio = selTrimestreAnio.value.trim();
+    const fichaCod = inputFicha.value.trim();
+    const triFicha = txtTrimestreFicha.value.trim();
+    if(!anio || !triAnio || !fichaCod || !triFicha){ showAlert("Selecciona año, trimestre y ficha.","warning"); return; }
+    if(!payload.asignaciones.length){ showAlert("No hay asignaciones para guardar.","warning"); return; }
 
-        const copy = { ...original, id: nextId(), dia: col.dataset.day };
-        payload.asignaciones.push(copy);
+    // Datos base
+    payload.numeroFicha = fichaCod;
+    payload.trimestre   = triAnio;
+    payload.nombreHorario = `Horario ${fichaCod} - T${triAnio}`;
 
-        const card = document.createElement("div");
-        card.className = "event-card d-flex justify-content-between align-items-start";
-        card.dataset.asigId = copy.id;
-        card.innerHTML = `<div>
-                            <b>${copy.instructorNombre}</b>
-                            <small>${copy.desde} - ${copy.hasta}</small>
-                            <a href="#" class="text-sena" data-bs-toggle="modal" data-bs-target="#modalDetalles" data-ver-detalles="${copy.id}">Ver detalles</a>
-                          </div>
-                          <i class="bi bi-x-circle-fill text-danger pointer" data-eliminar-asig="${copy.id}"></i>`;
-        col.appendChild(card);
+    const fd = new FormData();
+    fd.append("__RequestVerificationToken", getAntiForgeryToken());
+    fd.append("AsignacionesJson", JSON.stringify(payload.asignaciones));
+    fd.append("numeroFicha", payload.numeroFicha);
+    fd.append("nombreHorario", payload.nombreHorario);
+    fd.append("trimestre", payload.trimestre);
 
-        hfAsignaciones.value = JSON.stringify(payload);
-        wireDetalles();
-        wireEliminar();
-    });
-});
-
-// Ver detalles
-function wireDetalles() {
-    document.querySelectorAll("[data-ver-detalles]").forEach(link => {
-        link.addEventListener("click", function () {
-            const id = +this.dataset.verDetalles;
-            const asig = payload.asignaciones.find(x => x.id === id);
-            if (!asig) return;
-            document.getElementById("modalDetallesBody").innerHTML = `
-                <p><b>Instructor:</b> ${asig.instructorNombre}</p>
-                <p><b>Resultado:</b> ${asig.resultadoDesc}</p>
-                <p><b>Competencia:</b> ${asig.competenciaNombre}</p>
-                <p><b>Día:</b> ${asig.dia || "No asignado"}</p>
-                <p><b>Hora:</b> ${asig.desde} - ${asig.hasta}</p>
-            `;
-        });
-    });
-}
-
-// Eliminar asignación
-function wireEliminar() {
-    document.querySelectorAll("[data-eliminar-asig]").forEach(icon => {
-        icon.addEventListener("click", function () {
-            const id = +this.dataset.eliminarAsig;
-            payload.asignaciones = payload.asignaciones.filter(a => a.id !== id);
-            hfAsignaciones.value = JSON.stringify(payload);
-            this.parentElement.remove();
-        });
-    });
-}
-
-// Guardar horario
-document.getElementById("btnGuardarHorario")?.addEventListener("click", () => {
-    if (payload.asignaciones.length === 0) { alert("No hay asignaciones para guardar"); return; }
-    // abrir modalGuardarHorario
+    const resp = await fetch('@Url.Action("GuardarHorario","Home")', { method:"POST", body:fd });
+    const json = await resp.json();
+    if(json.ok){
+      showAlert(json.msg || "Horario guardado.", "success");
+      setTimeout(()=>{ window.location='@Url.Action("ListaHorarios","Home")'; }, 1200);
+    }else{
+      showAlert(json.msg || "No se pudo guardar el horario.", "danger");
+    }
+  }catch(e){
+    showAlert("Error al guardar: "+e.message,"danger");
+  }
 });
     </script>
 }

@@ -1,139 +1,217 @@
-﻿@model List<EjemploHorarios.Models.ViewModels.ListaHorarioVM>
-
-@{
-    ViewBag.Title = "Lista de Horarios - SENA";
+﻿@{
+    ViewBag.Title = "Listado de Horarios - SENA";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
+
+<!-- Bootstrap -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
 
 <style>
     :root {
         --sena-green: #008037;
-        --sena-green-2: #00a859;
+        --sena-green-light: #00a859;
+        --sena-green-dark: #006028;
+        --sena-green-glow: rgba(0, 168, 89, 0.4);
     }
 
-    .border-sena {
-        border-color: var(--sena-green) !important;
+    body {
+        font-family: 'Segoe UI', sans-serif;
+        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 50%, #f0fdf4 100%);
+        min-height: 100vh;
     }
+
+    h2 {
+        font-weight: 800;
+        background: linear-gradient(135deg, var(--sena-green), var(--sena-green-light));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .card {
+        border-radius: 1.25rem;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, .08);
+        border: 1px solid rgba(0,128,55,.1);
+        background: #fff;
+    }
+
+    .table th {
+        background: linear-gradient(135deg, var(--sena-green), var(--sena-green-light));
+        color: #fff;
+        text-align: center;
+        font-weight: 600;
+    }
+
+    .btn-outline-sena {
+        border: 2px solid var(--sena-green);
+        color: var(--sena-green);
+        border-radius: .85rem;
+        font-weight: 600;
+        background: transparent;
+        transition: all .3s ease;
+    }
+
+        .btn-outline-sena:hover {
+            background: var(--sena-green);
+            color: #fff;
+            box-shadow: 0 4px 10px rgba(0,128,55,.3);
+        }
 
     .bg-sena {
-        background-color: var(--sena-green) !important;
-        color: #fff;
-    }
-
-    .text-sena {
-        color: var(--sena-green) !important;
-    }
-
-    .pointer {
-        cursor: pointer;
+        background: linear-gradient(135deg, var(--sena-green), var(--sena-green-light));
     }
 </style>
 
-<main class="container-fluid p-3">
-    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
-        <h2 class="text-sena mb-2 mb-md-0">Horarios Guardados</h2>
-        <div class="input-group input-group-sm" style="max-width: 340px;">
-            <input id="txtFilter" type="text" class="form-control" placeholder="Buscar por nombre o ficha...">
-            <span class="input-group-text bg-success text-white"><i class="bi bi-search"></i></span>
-        </div>
+<div class="container py-4">
+    <div class="text-center mb-4">
+        <h2>Gestión de Horarios</h2>
+        <p class="text-muted mb-0">Consulta los horarios creados por ficha o por instructor</p>
     </div>
 
-    <div class="card border-sena shadow-sm">
-        <div class="card-header bg-sena fw-bold d-flex justify-content-between align-items-center">
-            <span>Listado de horarios</span>
-            <small class="opacity-75">Total: @(Model != null ? Model.Count : 0)</small>
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table id="tblHorarios" class="table table-hover align-middle mb-0">
-                    <thead class="table-success">
-                        <tr>
-                            <th class="text-center" style="width: 50px;">#</th>
-                            <th>Nombre del Horario</th>
-                            <th style="width: 200px;">Número de Ficha</th>
-                            <th style="width: 250px;" class="text-center">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (Model != null && Model.Any())
-                        {
-                            var index = 1;
-                            foreach (var h in Model)
-                            {
-                                <tr>
-                                    <td class="text-center"><span class="badge bg-light text-dark border">@index</span></td>
-                                    <td>
-                                        <div class="fw-semibold">@h.NombreHorario</div>
-                                        <small class="text-muted">ID: @h.IdHorario</small>
-                                    </td>
-                                    <td>
-                                        <span class="badge text-bg-light border">
-                                            <i class="bi bi-hash"></i> @h.NumeroFicha
-                                        </span>
-                                    </td>
-                                    <td class="text-center">
-                                        @Html.ActionLink(
-                                            "Ver Horario",
-                                            "DetalleHorario",
-                                            "Home",
-                                            new { id = h.IdHorario },
-                                            new { @class = "btn btn-success btn-sm me-1" }
-                                        )
-                                        <button type="button" class="btn btn-outline-success btn-sm"
-                                                onclick="location.href='@Url.Action("CrearSiguienteHorario", "Home", new { idHorarioAnterior = h.IdHorario })'">
-                                            <i class="bi bi-plus-circle"></i> Proximo Horario
-                                        </button>
+    <ul class="nav nav-pills justify-content-center mb-4" id="horariosTabs" role="tablist">
+        <li class="nav-item">
+            <button class="nav-link active" id="fichas-tab" data-bs-toggle="pill" data-bs-target="#fichas" type="button">
+                <i class="bi bi-journal-text me-1"></i> Por Ficha
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" id="instructores-tab" data-bs-toggle="pill" data-bs-target="#instructores" type="button">
+                <i class="bi bi-person-badge me-1"></i> Por Instructor
+            </button>
+        </li>
+    </ul>
 
-                                    </td>
-                                </tr>
-                                index++;
-                            }
-                        }
-                        else
-                        {
+    <div class="tab-content" id="horariosTabsContent">
+        <!-- ================= TAB FICHAS ================= -->
+        <div class="tab-pane fade show active" id="fichas" role="tabpanel">
+            <div class="card mb-4">
+                <div class="card-header bg-sena text-white fw-bold d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-journal-text me-2"></i>Horarios por Ficha</span>
+                    <button class="btn btn-light btn-sm" onclick="window.location.href='@Url.Action("Index","Home")'">
+                        <i class="bi bi-plus-circle me-1"></i> Crear Nuevo
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-bordered align-middle mb-0">
+                        <thead>
                             <tr>
-                                <td colspan="4" class="text-center py-4">
-                                    <div class="text-muted">
-                                        <i class="bi bi-inbox"></i> No hay horarios guardados todavía.
-                                    </div>
-                                </td>
+                                <th>Ficha</th>
+                                <th>Programa</th>
+                                <th>Trimestre</th>
+                                <th>Acción</th>
                             </tr>
-                        }
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody id="tbodyFichas">
+                            <tr><td colspan="4" class="text-center text-muted py-3">Cargando horarios...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
-        <div class="card-footer d-flex justify-content-between align-items-center">
-            <button type="button" class="btn btn-success" onclick="location.href='@Url.Action("Index", "Home")'">
-                <i class="bi bi-plus-circle"></i> Crear Horario
-            </button>
-            <small class="text-muted">Sistema de Gestión de Horarios · SENA</small>
+        <!-- ================= TAB INSTRUCTORES ================= -->
+        <div class="tab-pane fade" id="instructores" role="tabpanel">
+            <div class="card mb-4">
+                <div class="card-header bg-sena text-white fw-bold">
+                    <i class="bi bi-person-badge me-2"></i>Horarios por Instructor
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-bordered align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Instructor</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodyInstructores">
+                            <tr><td colspan="2" class="text-center text-muted py-3">Cargando horarios...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
-</main>
+</div>
 
 @section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Filtro rápido por nombre de horario o ficha
-        (function () {
-            const input = document.getElementById("txtFilter");
-            const table = document.getElementById("tblHorarios");
-            if (!input || !table) return;
+document.addEventListener("DOMContentLoaded", () => {
+    cargarHorariosFicha();
+    cargarHorariosInstructor();
+});
 
-            input.addEventListener("input", function () {
-                const q = this.value.trim().toLowerCase();
-                const rows = table.querySelectorAll("tbody tr");
+/* ====================== HORARIOS POR FICHA ====================== */
+async function cargarHorariosFicha() {
+    const tbody = document.getElementById("tbodyFichas");
+    try {
+        const resp = await fetch('@Url.Action("GetHorariosFicha","Home")');
+        const json = await resp.json();
 
-                rows.forEach(row => {
-                    const nameCell = row.querySelector("td:nth-child(2)");
-                    const fichaCell = row.querySelector("td:nth-child(3)");
-                    if (!nameCell || !fichaCell) return;
+        if (!json.ok || !json.data.length) {
+            tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-3">No hay horarios registrados.</td></tr>`;
+            return;
+        }
 
-                    const txt = (nameCell.innerText + " " + fichaCell.innerText).toLowerCase();
-                    row.style.display = txt.includes(q) ? "" : "none";
-                });
-            });
-        })();
+        tbody.innerHTML = "";
+        json.data.forEach(h => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${h.CodigoFicha}</td>
+                <td>${h.ProgramaNombre ?? ""}</td>
+                <td>${h.Trimestre_Año}</td>
+                <td class="text-center">
+                    <button class="btn btn-outline-sena btn-sm" onclick="verHorarioFicha(${h.IdFicha})">
+                        <i class="bi bi-eye-fill"></i> Ver
+                    </button>
+                </td>`;
+            tbody.appendChild(tr);
+        });
+    } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger py-3">Error: ${err.message}</td></tr>`;
+    }
+}
+
+/* ====================== HORARIOS POR INSTRUCTOR ====================== */
+async function cargarHorariosInstructor() {
+    const tbody = document.getElementById("tbodyInstructores");
+    try {
+        // 🔹 ahora apunta al nuevo método
+        const resp = await fetch('@Url.Action("GetHorariosInstructores","Home")');
+        const json = await resp.json();
+
+        if (!json.ok || !json.data.length) {
+            tbody.innerHTML = `<tr><td colspan="2" class="text-center text-muted py-3">No hay horarios asignados.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = "";
+        json.data.forEach(h => {
+            const idInstructor = h.IdInstructor || 0;
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${h.NombreInstructor ?? "Sin nombre"}</td>
+                <td class="text-center">
+                    <button class="btn btn-outline-sena btn-sm" onclick="verHorarioInstructor(${idInstructor})">
+                        <i class="bi bi-eye-fill"></i> Ver
+                    </button>
+                </td>`;
+            tbody.appendChild(tr);
+        });
+    } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="2" class="text-center text-danger py-3">Error: ${err.message}</td></tr>`;
+    }
+}
+
+/* ====================== REDIRECCIONES ====================== */
+function verHorarioFicha(idFicha) {
+    const baseUrl = '@Url.Action("VerHorarioFicha", "Home")';
+    window.location.href = `${baseUrl}?idFicha=${idFicha}`;
+}
+
+function verHorarioInstructor(idInstructor) {
+    const baseUrl = '@Url.Action("VerHorarioInstructor", "Home")';
+    window.location.href = `${baseUrl}?idInstructor=${idInstructor}`;
+}
     </script>
 }

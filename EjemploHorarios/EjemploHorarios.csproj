@@ -176,6 +176,7 @@
     <Compile Include="Models\Area_Conocimiento.cs">
       <DependentUpon>Model1.tt</DependentUpon>
     </Compile>
+    <Compile Include="Models\AsignacionViewModel.cs" />
     <Compile Include="Models\Asignacion_horario.cs">
       <DependentUpon>Model1.tt</DependentUpon>
     </Compile>
@@ -191,6 +192,9 @@
     </Compile>
     <Compile Include="Models\GuardarHorario.cs" />
     <Compile Include="Models\Horario.cs">
+      <DependentUpon>Model1.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Models\HorarioInstructor.cs">
       <DependentUpon>Model1.tt</DependentUpon>
     </Compile>
     <Compile Include="Models\Instructor.cs">
@@ -335,6 +339,8 @@
     <Content Include="Views\RESULTADOS_DE_APRENDIZAJE\Edit.cshtml" />
     <Content Include="Views\RESULTADOS_DE_APRENDIZAJE\Index.cshtml" />
     <Content Include="Views\Home\CrearSiguienteHorario.cshtml" />
+    <Content Include="Views\Home\VerHorarioFicha.cshtml" />
+    <Content Include="Views\Home\VerHorarioInstructor.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />

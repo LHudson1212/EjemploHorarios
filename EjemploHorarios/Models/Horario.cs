@@ -21,11 +21,11 @@ namespace EjemploHorarios.Models
         }
     
         public int Id_Horario { get; set; }
-        public Nullable<int> Año_Horario { get; set; }
-        public Nullable<int> Trimestre_Año { get; set; }
+        public int Año_Horario { get; set; }
+        public int Trimestre_Año { get; set; }
         public Nullable<System.DateTime> Fecha_Creacion { get; set; }
-        public int Id_Asignacion { get; set; }
-        public Nullable<int> IdFicha { get; set; }
+        public int IdFicha { get; set; }
+        public Nullable<int> Id_Asignacion { get; set; }
     
         public virtual Asignacion_horario Asignacion_horario { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
