@@ -1,442 +1,461 @@
-﻿@model EjemploHorarios.Models.ViewModels.PlanificacionVM
-@using System.Web.Helpers
+﻿    @model EjemploHorarios.Models.ViewModels.PlanificacionVM
+    @using System.Web.Helpers
 
-@{
-    ViewBag.Title = "Gestión de Horarios - SENA";
-    Layout = "~/Views/Shared/_Layout.cshtml";
-}
-
-<!-- Bootstrap 5 -->
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
-
-<style>
-    /* ====================================================================
-               SISTEMA DE GESTIÓN DE HORARIOS SENA - ESTILOS ULTRA MEJORADOS
-               (Aplicados al código funcional existente)
-           ==================================================================== */
-
-    /* ====== Variables de tema ====== */
-    :root {
-        /* Colores principales SENA con más variantes */
-        --sena-green: #008037;
-        --sena-green-light: #00a859;
-        --sena-green-dark: #006028;
-        --sena-green-ultra-light: #e6f7ed;
-        --sena-green-glow: rgba(0, 168, 89, 0.4);
-        /* Colores de texto */
-        --sena-ink: #1f2937;
-        --sena-muted: #6b7280;
-        --sena-light: #9ca3af;
-        /* Colores por día */
-        --day-lunes: linear-gradient(135deg, #00a859 0%, #00c96d 100%);
-        --day-lunes-solid: #00a859;
-        --day-martes: linear-gradient(135deg, #0091ea 0%,#00b0ff 100%);
-        --day-martes-solid: #0091ea;
-        --day-miercoles: linear-gradient(135deg, #ff9800 0%, #ffb74d 100%);
-        --day-miercoles-solid: #ff9800;
-        --day-jueves: linear-gradient(135deg, #d81b60 0%, #f06292 100%);
-        --day-jueves-solid: #d81b60;
-        --day-viernes: linear-gradient(135deg, #8e24aa 0%, #ab47bc 100%);
-        --day-viernes-solid: #8e24aa;
-        --day-sabado: linear-gradient(135deg, #5d4037 0%, #795548 100%);
-        --day-sabado-solid: #5d4037;
-        /* Sombras */
-        --shadow-xs: 0 1px 4px rgba(0, 0, 0, 0.02);
-        --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
-        --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
-        --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
-        --shadow-xl: 0 12px 32px rgba(0, 0, 0, 0.16);
-        --shadow-2xl: 0 20px 48px rgba(0, 0, 0, 0.2);
-        --shadow-glow: 0 0 20px var(--sena-green-glow);
-        /* Efectos */
-        --ring: 0 0 0 4px rgba(0, 128, 55, 0.15);
-        --ring-success: 0 0 0 4px rgba(0, 168, 89, 0.25);
-        --backdrop-blur: blur(16px);
-        --backdrop-blur-strong: blur(24px);
-        /* Transiciones */
-        --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-        --transition-base: 300ms cubic-bezier(0.4, 0, 0.2, 1);
-        --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
-        --transition-bounce: 600ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    @{
+        ViewBag.Title = "Gestión de Horarios - SENA";
+        Layout = "~/Views/Shared/_Layout.cshtml";
     }
 
-    * {
-        box-sizing: border-box;
-    }
+    <!-- ========================= CSS / ESTILOS ========================= -->
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet" />
 
-    html {
-        scroll-behavior: smooth;
-        font-size: 16px;
-    }
+    <style>
+        /* ====================================================================
+                   SISTEMA DE GESTIÓN DE HORARIOS SENA - ESTILOS ULTRA MEJORADOS
+                   (Aplicados al código funcional existente)
+               ==================================================================== */
 
-    body {
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-        color: var(--sena-ink);
-        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 50%, #f0fdf4 100%);
-        background-size: 200% 200%;
-        animation: gradientShift 15s ease infinite;
-        min-height: 100vh;
-        position: relative;
-        overflow-x: hidden;
-    }
+        /* ====== Variables de tema ====== */
+        :root {
+            /* Colores principales SENA con más variantes */
+            --sena-green: #008037;
+            --sena-green-light: #00a859;
+            --sena-green-dark: #006028;
+            --sena-green-ultra-light: #e6f7ed;
+            --sena-green-glow: rgba(0, 168, 89, 0.4);
+            /* Colores de texto */
+            --sena-ink: #1f2937;
+            --sena-muted: #6b7280;
+            --sena-light: #9ca3af;
+            /* Colores por día */
+            --day-lunes: linear-gradient(135deg, #00a859 0%, #00c96d 100%);
+            --day-lunes-solid: #00a859;
+            --day-martes: linear-gradient(135deg, #0091ea 0%,#00b0ff 100%);
+            --day-martes-solid: #0091ea;
+            --day-miercoles: linear-gradient(135deg, #ff9800 0%, #ffb74d 100%);
+            --day-miercoles-solid: #ff9800;
+            --day-jueves: linear-gradient(135deg, #d81b60 0%, #f06292 100%);
+            --day-jueves-solid: #d81b60;
+            --day-viernes: linear-gradient(135deg, #8e24aa 0%, #ab47bc 100%);
+            --day-viernes-solid: #8e24aa;
+            --day-sabado: linear-gradient(135deg, #5d4037 0%, #795548 100%);
+            --day-sabado-solid: #5d4037;
+            /* Sombras */
+            --shadow-xs: 0 1px 4px rgba(0, 0, 0, 0.02);
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+            --shadow-xl: 0 12px 32px rgba(0, 0, 0, 0.16);
+            --shadow-2xl: 0 20px 48px rgba(0, 0, 0, 0.2);
+            --shadow-glow: 0 0 20px var(--sena-green-glow);
+            /* Efectos */
+            --ring: 0 0 0 4px rgba(0, 128, 55, 0.15);
+            --ring-success: 0 0 0 4px rgba(0, 168, 89, 0.25);
+            --backdrop-blur: blur(16px);
+            --backdrop-blur-strong: blur(24px);
+            /* Transiciones */
+            --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-base: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-bounce: 600ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
 
-    @@keyframes gradientShift {
-        0%, 100% {
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            font-size: 16px;
+        }
+
+        body {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            color: var(--sena-ink);
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 50%, #f0fdf4 100%);
+            background-size: 200% 200%;
+            animation: gradientShift 15s ease infinite;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        @@keyframes gradientShift {
+            0%, 100% {
+                background-position: 0% 50%
+            }
+
+            50% {
+                background-position: 100% 50%
+            }
+        }
+
+        {
             background-position: 0% 50%
         }
 
         50% {
             background-position: 100% 50%
         }
-    }
 
-    {
-        background-position: 0% 50%
-    }
-
-    50% {
-        background-position: 100% 50%
-    }
-
-    }
-
-    /* Utilitarios */
-    .border-sena {
-        border-color: var(--sena-green) !important;
-    }
-
-    .bg-sena {
-        background: linear-gradient(135deg, var(--sena-green) 0%, var(--sena-green-light) 100%) !important;
-        color: #fff;
-        box-shadow: var(--shadow-md);
-        position: relative;
-        overflow: hidden;
-    }
-
-        .bg-sena::before {
-            content: "";
-            position: absolute;
-            top: -50%;
-            right: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,.15) 0%, transparent 70%);
-            animation: shimmer 4s ease-in-out infinite;
         }
 
-    .text-sena {
-        color: var(--sena-green) !important;
-        font-weight: 600;
-    }
+        /* Utilitarios */
+        .border-sena {
+            border-color: var(--sena-green) !important;
+        }
 
-    .pointer {
-        cursor: pointer;
-    }
+        .bg-sena {
+            background: linear-gradient(135deg, var(--sena-green) 0%, var(--sena-green-light) 100%) !important;
+            color: #fff;
+            box-shadow: var(--shadow-md);
+            position: relative;
+            overflow: hidden;
+        }
 
-    @@keyframes shimmer {
-        from {
+            .bg-sena::before {
+                content: "";
+                position: absolute;
+                top: -50%;
+                right: -50%;
+                width: 200%;
+                height: 200%;
+                background: radial-gradient(circle, rgba(255,255,255,.15) 0%, transparent 70%);
+                animation: shimmer 4s ease-in-out infinite;
+            }
+
+        .text-sena {
+            color: var(--sena-green) !important;
+            font-weight: 600;
+        }
+
+        .pointer {
+            cursor: pointer;
+        }
+
+        @@keyframes shimmer {
+            from {
+                transform: translate(-50%,-50%) rotate(0)
+            }
+
+            to {
+                transform: translate(-50%,-50%) rotate(360deg)
+            }
+        }
+
+        {
             transform: translate(-50%,-50%) rotate(0)
         }
 
         to {
             transform: translate(-50%,-50%) rotate(360deg)
         }
-    }
 
-    {
-        transform: translate(-50%,-50%) rotate(0)
-    }
-
-    to {
-        transform: translate(-50%,-50%) rotate(360deg)
-    }
-
-    }
-
-    /* Tarjetas / contenedores */
-    .card {
-        border-radius: 1.25rem;
-        box-shadow: var(--shadow-md);
-        border: 1px solid rgba(0,128,55,.1);
-        background: rgba(255,255,255,.98);
-        backdrop-filter: var(--backdrop-blur);
-        transition: all var(--transition-base);
-        overflow: hidden;
-    }
-
-        .card:hover {
-            box-shadow: var(--shadow-xl), var(--shadow-glow);
-            transform: translateY(-4px) scale(1.01);
-            border-color: rgba(0,128,55,.2);
         }
 
-    .card-header {
-        border: 0;
-        font-weight: 700;
-        padding: 1.25rem 1.5rem;
-    }
+        /* Tarjetas / contenedores */
+        .card {
+            border-radius: 1.25rem;
+            box-shadow: var(--shadow-md);
+            border: 1px solid rgba(0,128,55,.1);
+            background: rgba(255,255,255,.98);
+            backdrop-filter: var(--backdrop-blur);
+            transition: all var(--transition-base);
+            overflow: hidden;
+        }
 
-    /* Header principal */
-    header {
-        position: relative;
-        padding: 1.5rem 0;
-        margin-bottom: .5rem;
-    }
+            .card:hover {
+                box-shadow: var(--shadow-xl), var(--shadow-glow);
+                transform: translateY(-4px) scale(1.01);
+                border-color: rgba(0,128,55,.2);
+            }
 
-        header h2 {
-            font-size: 2.2rem;
-            font-weight: 800;
+        .card-header {
+            border: 0;
+            font-weight: 700;
+            padding: 1.25rem 1.5rem;
+        }
+
+        /* Header principal */
+        header {
+            position: relative;
+            padding: 1.5rem 0;
+            margin-bottom: .5rem;
+        }
+
+            header h2 {
+                font-size: 2.2rem;
+                font-weight: 800;
+                background: linear-gradient(135deg, var(--sena-green) 0%, var(--sena-green-light) 100%);
+                -webkit-background-clip: text;
+                background-clip: text;
+                -webkit-text-fill-color: transparent;
+                margin-bottom: .25rem;
+            }
+
+        /* Controles */
+        .form-label {
+            font-weight: 700;
+            color: var(--sena-green);
+            margin-bottom: .55rem;
+            font-size: .95rem;
+            letter-spacing: .3px;
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+        }
+
+            .form-label::before {
+                content: '';
+                width: 4px;
+                height: 16px;
+                background: linear-gradient(180deg, var(--sena-green) 0%, var(--sena-green-light) 100%);
+                border-radius: 2px;
+            }
+
+        .form-control, .form-select {
+            border-radius: .85rem;
+            border: 2px solid #e5e7eb;
+            padding: .7rem 1rem;
+            transition: all var(--transition-base);
+            background: #fff;
+            font-size: .95rem;
+            box-shadow: var(--shadow-xs);
+        }
+
+            .form-control:focus, .form-select:focus {
+                border-color: var(--sena-green);
+                box-shadow: var(--ring), var(--shadow-md);
+                outline: none;
+                transform: translateY(-1px);
+            }
+
+        /* Botones */
+        .btn {
+            border-radius: .85rem;
+            padding: .7rem 1.5rem;
+            font-weight: 600;
+            transition: all var(--transition-base);
+            border: none;
+            letter-spacing: .4px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn-success {
             background: linear-gradient(135deg, var(--sena-green) 0%, var(--sena-green-light) 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: .25rem;
-        }
-
-    /* Controles */
-    .form-label {
-        font-weight: 700;
-        color: var(--sena-green);
-        margin-bottom: .55rem;
-        font-size: .95rem;
-        letter-spacing: .3px;
-        display: flex;
-        align-items: center;
-        gap: .5rem;
-    }
-
-        .form-label::before {
-            content: '';
-            width: 4px;
-            height: 16px;
-            background: linear-gradient(180deg, var(--sena-green) 0%, var(--sena-green-light) 100%);
-            border-radius: 2px;
-        }
-
-    .form-control, .form-select {
-        border-radius: .85rem;
-        border: 2px solid #e5e7eb;
-        padding: .7rem 1rem;
-        transition: all var(--transition-base);
-        background: #fff;
-        font-size: .95rem;
-        box-shadow: var(--shadow-xs);
-    }
-
-        .form-control:focus, .form-select:focus {
-            border-color: var(--sena-green);
-            box-shadow: var(--ring), var(--shadow-md);
-            outline: none;
-            transform: translateY(-1px);
-        }
-
-    /* Botones */
-    .btn {
-        border-radius: .85rem;
-        padding: .7rem 1.5rem;
-        font-weight: 600;
-        transition: all var(--transition-base);
-        border: none;
-        letter-spacing: .4px;
-        box-shadow: var(--shadow-sm);
-    }
-
-    .btn-success {
-        background: linear-gradient(135deg, var(--sena-green) 0%, var(--sena-green-light) 100%);
-        color: #fff;
-    }
-
-        .btn-success:hover {
-            background: linear-gradient(135deg, var(--sena-green-dark) 0%, var(--sena-green) 100%);
-            box-shadow: var(--shadow-lg), var(--shadow-glow);
-            transform: translateY(-3px) scale(1.02);
-        }
-
-    .btn-outline-success {
-        border: 2px solid var(--sena-green);
-        color: var(--sena-green);
-        background: transparent;
-    }
-
-        .btn-outline-success:hover {
-            background: var(--sena-green);
             color: #fff;
         }
 
-    /* Zona de días */
-    .day-col {
-        min-height: 500px;
-        background: linear-gradient(180deg, rgba(246, 255, 246, .9) 0%, rgba(255,255,255,.95) 100%);
-        border: 3px dashed #b6e4c3;
-        border-radius: 1.25rem;
-        padding: 1.25rem;
-        transition: all var(--transition-base);
-        position: relative;
-        backdrop-filter: var(--backdrop-blur);
-        box-shadow: var(--shadow-xs);
-    }
+            .btn-success:hover {
+                background: linear-gradient(135deg, var(--sena-green-dark) 0%, var(--sena-green) 100%);
+                box-shadow: var(--shadow-lg), var(--shadow-glow);
+                transform: translateY(-3px) scale(1.02);
+            }
 
-        .day-col.dragover {
-            background: linear-gradient(180deg, rgba(234,255,234,.98) 0%, rgba(246,255,246,.98) 100%);
-            transform: scale(1.02);
-            border-color: var(--sena-green);
-            border-style: solid;
-            box-shadow: var(--ring-success), var(--shadow-xl), var(--shadow-glow);
-        }
-
-        .day-col small.text-muted {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%,-50%);
-            color: var(--sena-light);
-            font-size: .9rem;
-            text-align: center;
-            pointer-events: none;
-            opacity: .6;
-            font-weight: 600;
-        }
-
-    /* Tarjeta de evento */
-    .event-card {
-        border-left: 5px solid var(--sena-green);
-        background: #fff;
-        padding: 1rem;
-        border-radius: 1rem;
-        box-shadow: var(--shadow-sm);
-        margin-bottom: 1rem;
-        font-size: .95rem;
-        text-align: left;
-        transition: all var(--transition-base);
-        position: relative;
-    }
-
-        .event-card:hover {
-            transform: translateY(-4px) translateX(3px) scale(1.01);
-            box-shadow: var(--shadow-lg);
-        }
-
-        .event-card small {
-            display: block;
-            color: var(--sena-muted);
-            font-size: .86rem;
-        }
-
-        .event-card .btn {
-            opacity: 0;
-            transform: scale(.9) translateY(5px);
-            transition: all var(--transition-bounce);
-        }
-
-        .event-card:hover .btn {
-            opacity: 1;
-            transform: scale(1) translateY(0);
-        }
-
-    /* Chips (competencias) */
-    .chip {
-        display: inline-flex;
-        align-items: center;
-        gap: .6rem;
-        padding: .5rem 1rem;
-        border-radius: 999px;
-        border: 2px solid #e5e7eb;
-        background: linear-gradient(135deg, #fff 0%, #f9fafb 100%);
-        font-size: .9rem;
-        margin: .35rem .45rem .35rem 0;
-        cursor: grab;
-        transition: all var(--transition-base);
-        font-weight: 500;
-        box-shadow: var(--shadow-sm);
-    }
-
-        .chip:hover {
-            box-shadow: var(--shadow-md), var(--shadow-glow);
-            transform: translateY(-3px) scale(1.03);
-            border-color: var(--sena-green-light);
-        }
-
-        .chip small {
-            color: var(--sena-muted);
-            font-weight: 600;
-            font-size: .82rem;
-        }
-
-    /* Autocomplete */
-    .autocomplete-list {
-        position: absolute;
-        left: 0;
-        right: 0;
-        top: calc(100% + .6rem);
-        z-index: 1055;
-        max-height: 320px;
-        overflow-y: auto;
-        border-radius: 1rem;
-        border: 2px solid var(--sena-green-light);
-        background: rgba(255,255,255,.98);
-        box-shadow: var(--shadow-2xl);
-    }
-
-    .list-group-item-action {
-        padding: .85rem 1.25rem;
-        border: none;
-        border-bottom: 1px solid #f3f4f6;
-    }
-
-        .list-group-item-action:hover {
-            background: linear-gradient(90deg, rgba(234,255,234,.9) 0%, rgba(246,255,246,.5) 100%);
+        .btn-outline-success {
+            border: 2px solid var(--sena-green);
             color: var(--sena-green);
-            font-weight: 600;
-            padding-left: 1.5rem;
+            background: transparent;
         }
 
-    #fichaSugerencias.d-none {
-        display: none;
-    }
+            .btn-outline-success:hover {
+                background: var(--sena-green);
+                color: #fff;
+            }
 
-    /* Tabla */
-    .table thead th {
-        position: sticky;
-        top: 0;
-        z-index: 10;
-        background: linear-gradient(135deg, var(--sena-green) 0%, var(--sena-green-light) 100%);
-        color: #fff;
-        font-weight: 700;
-        padding: 1.25rem;
-        border: none;
-        letter-spacing: 1px;
-    }
-
-    /* Alertas */
-    .floating-alert {
-        position: fixed;
-        top: 2rem;
-        right: 2rem;
-        z-index: 1080;
-        min-width: 360px;
-        max-width: 480px;
-        box-shadow: var(--shadow-2xl);
-        border-radius: 1.25rem;
-        overflow: hidden;
-        border: none;
-    }
-
-        .floating-alert .progress {
-            height: 4px;
-            background: rgba(0,0,0,.08);
-            border-radius: 0;
+        /* Zona de días */
+        .day-col {
+            min-height: 500px;
+            background: linear-gradient(180deg, rgba(246, 255, 246, .9) 0%, rgba(255,255,255,.95) 100%);
+            border: 3px dashed #b6e4c3;
+            border-radius: 1.25rem;
+            padding: 1.25rem;
+            transition: all var(--transition-base);
+            position: relative;
+            backdrop-filter: var(--backdrop-blur);
+            box-shadow: var(--shadow-xs);
         }
 
-        .floating-alert .progress-bar {
-            background: linear-gradient(90deg, var(--sena-green) 0%, var(--sena-green-light) 100%);
-            transition: width 100ms linear;
-            box-shadow: 0 0 10px rgba(0,168,89,.5);
+            .day-col.dragover {
+                background: linear-gradient(180deg, rgba(234,255,234,.98) 0%, rgba(246,255,246,.98) 100%);
+                transform: scale(1.02);
+                border-color: var(--sena-green);
+                border-style: solid;
+                box-shadow: var(--ring-success), var(--shadow-xl), var(--shadow-glow);
+            }
+
+            .day-col small.text-muted {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%,-50%);
+                color: var(--sena-light);
+                font-size: .9rem;
+                text-align: center;
+                pointer-events: none;
+                opacity: .6;
+                font-weight: 600;
+            }
+
+        /* Tarjeta de evento */
+        .event-card {
+            border-left: 5px solid var(--sena-green);
+            background: #fff;
+            padding: 1rem;
+            border-radius: 1rem;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 1rem;
+            font-size: .95rem;
+            text-align: left;
+            transition: all var(--transition-base);
+            position: relative;
         }
 
-    @@media (max-width: 768px) {
+            .event-card:hover {
+                transform: translateY(-4px) translateX(3px) scale(1.01);
+                box-shadow: var(--shadow-lg);
+            }
+
+            .event-card small {
+                display: block;
+                color: var(--sena-muted);
+                font-size: .86rem;
+            }
+
+            .event-card .btn {
+                opacity: 0;
+                transform: scale(.9) translateY(5px);
+                transition: all var(--transition-bounce);
+            }
+
+            .event-card:hover .btn {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+
+        /* Chips (competencias) */
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: .6rem;
+            padding: .5rem 1rem;
+            border-radius: 999px;
+            border: 2px solid #e5e7eb;
+            background: linear-gradient(135deg, #fff 0%, #f9fafb 100%);
+            font-size: .9rem;
+            margin: .35rem .45rem .35rem 0;
+            cursor: grab;
+            transition: all var(--transition-base);
+            font-weight: 500;
+            box-shadow: var(--shadow-sm);
+        }
+
+            .chip:hover {
+                box-shadow: var(--shadow-md), var(--shadow-glow);
+                transform: translateY(-3px) scale(1.03);
+                border-color: var(--sena-green-light);
+            }
+
+            .chip small {
+                color: var(--sena-muted);
+                font-weight: 600;
+                font-size: .82rem;
+            }
+
+        /* Autocomplete */
+        .autocomplete-list {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: calc(100% + .6rem);
+            z-index: 1055;
+            max-height: 320px;
+            overflow-y: auto;
+            border-radius: 1rem;
+            border: 2px solid var(--sena-green-light);
+            background: rgba(255,255,255,.98);
+            box-shadow: var(--shadow-2xl);
+        }
+
+        .list-group-item-action {
+            padding: .85rem 1.25rem;
+            border: none;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+            .list-group-item-action:hover {
+                background: linear-gradient(90deg, rgba(234,255,234,.9) 0%, rgba(246,255,246,.5) 100%);
+                color: var(--sena-green);
+                font-weight: 600;
+                padding-left: 1.5rem;
+            }
+
+        #fichaSugerencias.d-none {
+            display: none;
+        }
+
+        /* Tabla */
+        .table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: linear-gradient(135deg, var(--sena-green) 0%, var(--sena-green-light) 100%);
+            color: #fff;
+            font-weight: 700;
+            padding: 1.25rem;
+            border: none;
+            letter-spacing: 1px;
+        }
+
+        /* Alertas */
         .floating-alert {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            z-index: 3000 !important; /* 🔥 Ahora siempre encima del modal */
+            min-width: 360px;
+            max-width: 480px;
+            box-shadow: var(--shadow-2xl);
+            border-radius: 1.25rem;
+            overflow: hidden;
+            border: none;
+        }
+
+
+            .floating-alert .progress {
+                height: 4px;
+                background: rgba(0,0,0,.08);
+                border-radius: 0;
+            }
+
+            .floating-alert .progress-bar {
+                background: linear-gradient(90deg, var(--sena-green) 0%, var(--sena-green-light) 100%);
+                transition: width 100ms linear;
+                box-shadow: 0 0 10px rgba(0,168,89,.5);
+            }
+
+        @@media (max-width: 768px) {
+            .floating-alert {
+                min-width: 320px;
+                right: 1rem;
+                left: 1rem;
+            }
+
+            .day-col {
+                min-height: 380px;
+            }
+
+            .table thead th {
+                min-width: 150px;
+                padding: 1rem;
+                font-size: .9rem;
+            }
+        }
+
+        {
             min-width: 320px;
             right: 1rem;
             left: 1rem;
@@ -451,1439 +470,1521 @@
             padding: 1rem;
             font-size: .9rem;
         }
-    }
 
-    {
-        min-width: 320px;
-        right: 1rem;
-        left: 1rem;
-    }
-
-    .day-col {
-        min-height: 380px;
-    }
-
-    .table thead th {
-        min-width: 150px;
-        padding: 1rem;
-        font-size: .9rem;
-    }
-
-    }
-
-    /* ===== Efectos visuales del acordeón de competencias ===== */
-    .card-header.pointer {
-        cursor: pointer;
-        transition: all 0.25s ease;
-    }
-
-        .card-header.pointer:hover {
-            background: rgba(0, 128, 55, 0.05);
         }
 
-    .card-header .bi {
-        transition: transform 0.3s ease;
-    }
-
-    .collapse.show + .card-header .bi-chevron-down {
-        transform: rotate(180deg);
-    }
-
-    .day-col {
-        min-height: 120px;
-        border: 1px dashed #aaa;
-        border-radius: 8px;
-        padding: 4px;
-        background-color: #f8f9fa;
-        transition: background-color 0.2s ease;
-    }
-
-        .day-col.drag-over {
-            background-color: #d1e7dd;
+        /* ===== Efectos visuales del acordeón de competencias ===== */
+        .card-header.pointer {
+            cursor: pointer;
+            transition: all 0.25s ease;
         }
 
-    .resultado-item.dragging {
-        opacity: 0.5;
-    }
-
-    .asignacion {
-        font-size: 0.85rem;
-    }
-
-        /* Meta de la asignación: instructor y horario */
-        .asignacion .meta {
-            display: flex;
-            align-items: center;
-            gap: .75rem;
-            margin-top: .15rem;
-            font-size: .85rem;
-            color: var(--sena-muted);
-            line-height: 1.2;
-        }
-
-            .asignacion .meta i {
-                font-size: 1rem;
+            .card-header.pointer:hover {
+                background: rgba(0, 128, 55, 0.05);
             }
 
-            .asignacion .meta .sep {
-                opacity: .5;
+        .card-header .bi {
+            transition: transform 0.3s ease;
+        }
+
+        .collapse.show + .card-header .bi-chevron-down {
+            transform: rotate(180deg);
+        }
+
+        .day-col {
+            min-height: 120px;
+            border: 1px dashed #aaa;
+            border-radius: 8px;
+            padding: 4px;
+            background-color: #f8f9fa;
+            transition: background-color 0.2s ease;
+        }
+
+            .day-col.drag-over {
+                background-color: #d1e7dd;
             }
 
-        .asignacion .fw-semibold {
-            font-weight: 600;
+        .resultado-item.dragging {
+            opacity: 0.5;
         }
 
-    /* El panel izquierdo puede crecer y hace que la página empuje al <section> */
-    aside.col-lg-3 {
-        align-self: flex-start;
-    }
-
-    /* Si tu lista de competencias es MUY larga, dale scroll interno en vez de empujar TODA la página */
-    #competenciasList {
-        max-height: calc(100vh - 320px); /* ajusta al gusto */
-        overflow: auto;
-    }
-
-    .rotate-180 {
-        transform: rotate(180deg);
-    }
-
-    .card-header .bi {
-        transition: transform .25s ease;
-    }
-
-    /* Asegurar que el modal esté siempre por encima de blur, alerts, autocompletes, etc. */
-    .modal {
-        z-index: 2000 !important;
-    }
-
-    .modal-backdrop {
-        z-index: 1990 !important;
-    }
-
-    /* Tu dropdown de autocomplete tenía z-index ~1055; mantenlo por debajo del modal */
-    .autocomplete-list {
-        z-index: 1200;
-    }
-    .asignacion[data-resultado="null"] {
-        background-color: #e7f5ef !important;
-        border-left: 4px solid var(--sena-green);
-    }
-
-</style>
-
-<main class="container-fluid p-3">
-    <header class="mb-3 text-center">
-        <h2 class="text-sena mb-1">Sistema de Gestión de Horarios</h2>
-        <p class="text-muted mb-0">Planifica y organiza la formación por días con arrastrar y soltar.</p>
-    </header>
-
-    <!-- Filtros principales -->
-    <section class="row align-items-end mb-4 g-3" aria-label="Filtros de búsqueda">
-        <!-- Año del Horario -->
-        <div class="col-lg-2 col-md-3">
-            <label class="form-label fw-bold text-sena" for="selAnio">Año del Horario</label>
-            <input id="selAnio" type="number" min="2000" max="2100" class="form-control" placeholder="Ej: 2025" autocomplete="off" spellcheck="false" />
-        </div>
-
-        <!-- Trimestre del Año -->
-        <div class="col-lg-2 col-md-3">
-            <label class="form-label fw-bold text-sena" for="selTrimestreAnio">Trimestre del Año</label>
-            <select id="selTrimestreAnio" class="form-select" aria-label="Selecciona trimestre del año">
-                <option value="">-- Selecciona un trimestre --</option>
-                <option value="1">Trimestre 1</option>
-                <option value="2">Trimestre 2</option>
-                <option value="3">Trimestre 3</option>
-                <option value="4">Trimestre 4</option>
-            </select>
-        </div>
-
-        <!-- Ficha (UNIFICADO: digitar + seleccionar) -->
-        <div class="col-lg-4 col-md-6 position-relative">
-            <label class="form-label fw-bold text-sena" for="inputFicha">Ficha</label>
-            <input id="inputFicha" class="form-control" placeholder="Escribe el código o programa..." autocomplete="off" spellcheck="false" aria-autocomplete="list" aria-expanded="false" aria-controls="fichaSugerencias" />
-            <input type="hidden" id="hfFichaId" />
-            <div id="fichaSugerencias" class="list-group autocomplete-list shadow-sm bg-white rounded d-none" role="listbox" aria-label="Sugerencias de ficha"></div>
-        </div>
-
-        <!-- Trimestre de la Ficha + Siguiente Trimestre -->
-        <div class="col-lg-3 col-md-4">
-            <label class="form-label fw-bold text-sena">Trimestres</label>
-            <div class="d-flex gap-2 align-items-center">
-                <input id="txtTrimestreFicha"
-                       type="number"
-                       class="form-control text-center"
-                       placeholder="1–7"
-                       min="1" max="7"
-                       readonly
-                       style="width: 80px;"
-                       aria-readonly="true" />
-                <span class="fw-bold">→</span>
-                <input id="txtSiguienteTrimestre"
-                       type="number"
-                       class="form-control text-center"
-                       placeholder="Siguiente"
-                       readonly
-                       style="width: 100px;"
-                       aria-readonly="true" />
-            </div>
-        </div>
-
-
-    </section>
-
-    @using (Html.BeginForm("GuardarHorario", "Home", FormMethod.Post, new { id = "formGuardarHorario", autocomplete = "off" }))
-    {
-        @Html.AntiForgeryToken()
-        <input type="hidden" id="hfAsignaciones" name="AsignacionesJson" />
-
-        <div class="row g-3">
-            <!-- Columna izquierda -->
-            <aside class="col-lg-3 d-flex flex-column" aria-label="Panel lateral">
-                <!-- Botón Excel -->
-                <div class="col-lg-12 col-md-12 mb-2">
-                    <label class="form-label fw-bold text-sena">Importar Excel</label>
-                    <div class="d-flex align-items-center gap-2">
-                        <button type="button" id="btnCargarExcel" class="btn btn-success btn-sm w-150" data-bs-toggle="tooltip" title="Importa la planeación desde un archivo Excel">
-                            <i class="bi bi-file-earmark-excel-fill me-1" aria-hidden="true"></i>
-                            <span> Cargar Planeación</span>
-                        </button>
-                        <input type="file" id="inputExcel" accept=".xlsx,.xls" class="d-none" />
-                    </div>
-                </div>
-
-                <div class="mb-2">
-                    <label class="form-label fw-bold text-sena" for="inputPrograma">Programa de Formación</label>
-                    <input id="inputPrograma" type="text" class="form-control" placeholder="Escribe o selecciona un programa..." autocomplete="off" spellcheck="false" />
-                </div>
-
-                <div class="card border-sena shadow-sm mb-3">
-                    <div class="card-header bg-sena fw-bold d-flex justify-content-between align-items-center">
-                        <span>Competencias</span>
-                        <div class="input-group input-group-sm" style="width:55%;">
-                            <input id="txtSearch" type="text" class="form-control" placeholder="Buscar..." autocomplete="off" spellcheck="false" aria-label="Buscar competencia">
-                            <span class="input-group-text bg-success text-white" data-bs-toggle="tooltip" title="Buscar">
-                                <i class="bi bi-search" aria-hidden="true"></i>
-                            </span>
-                        </div>
-                    </div>
-                    <div class="card-body p-2">
-                        <div id="competenciasList" class="list-group list-group-flush" aria-live="polite" aria-label="Listado de competencias"></div>
-                    </div>
-                </div>
-
-            </aside>
-
-            <!-- Columna central -->
-            <section class="col-lg-9">
-                <div class="card border-sena shadow-sm">
-                    <div class="card-header bg-sena fw-bold d-flex justify-content-between align-items-center">
-                        <span>Días de formación</span>
-                        <small class="opacity-75">Arrastra los resultados de aprendizaje hacia un día para crear asignaciones</small>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-bordered align-middle text-center" aria-label="Calendario semanal de formación">
-                                <thead class="table-success">
-                                    <tr>
-                                        <th scope="col">Lunes</th>
-                                        <th scope="col">Martes</th>
-                                        <th scope="col">Miércoles</th>
-                                        <th scope="col">Jueves</th>
-                                        <th scope="col">Viernes</th>
-                                        <th scope="col">Sábado</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>
-                                            <div class="day-col" id="day-lunes" data-day="Lunes" role="list" aria-label="Lunes">
-                                                <small class="text-muted d-block">Suelta aquí</small>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="day-col" id="day-martes" data-day="Martes" role="list" aria-label="Martes">
-                                                <small class="text-muted d-block">Suelta aquí</small>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="day-col" id="day-miercoles" data-day="Miércoles" role="list" aria-label="Miércoles">
-                                                <small class="text-muted d-block">Suelta aquí</small>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="day-col" id="day-jueves" data-day="Jueves" role="list" aria-label="Jueves">
-                                                <small class="text-muted d-block">Suelta aquí</small>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="day-col" id="day-viernes" data-day="Viernes" role="list" aria-label="Viernes">
-                                                <small class="text-muted d-block">Suelta aquí</small>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div class="day-col" id="day-sabado" data-day="Sábado" role="list" aria-label="Sábado">
-                                                <small class="text-muted d-block">Suelta aquí</small>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <small class="text-muted">Arrastra aquí las asignaciones creadas desde la sección de competencias.</small>
-                    </div>
-                </div>
-
-                <div class="mt-3 text-end">
-                    <button id="btnGuardarHorario" type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalGuardarHorario" title="Guarda el horario actual">
-                        <i class="bi bi-save me-2"></i>Guardar Todo
-                    </button>
-
-                    <button type="button" class="btn btn-success" onclick="location.href='@Url.Action("ListaHorarios", "Home")'" title="Ver horarios guardados">
-                        <i class="bi bi-calendar-check me-2"></i>Ver Horarios
-                    </button>
-                </div>
-            </section>
-        </div>
-    }
-</main>
-
-<!-- Modal Asignar -->
-<div class="modal fade" id="modalAsignar" tabindex="-1" aria-hidden="true" role="dialog" aria-labelledby="modalAsignarLabel">
-    <div class="modal-dialog">
-        <div class="modal-content border-sena">
-            <div class="modal-header bg-sena text-white">
-                <h5 class="modal-title" id="modalAsignarLabel">Asignar Instructor y Horario</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-            </div>
-            <div class="modal-body">
-                <input type="hidden" id="hfResultadoId" />
-                <input type="hidden" id="hfProgramaId" />
-                <input type="hidden" id="hfCompetenciaId" />
-
-                <div class="mb-3">
-                    <label class="form-label" for="selInstructor">Instructor</label>
-                    <select id="selInstructor" class="form-select" aria-label="Selecciona instructor"></select>
-                </div>
-
-                <div class="row g-2 mb-3">
-                    <div class="col-6">
-                        <label class="form-label" for="horaDesde">Desde</label>
-                        <input id="horaDesde" type="time" class="form-control" value="06:00" />
-                    </div>
-                    <div class="col-6">
-                        <label class="form-label" for="horaHasta">Hasta</label>
-                        <input id="horaHasta" type="time" class="form-control" value="09:00" />
-                    </div>
-                </div>
-
-                <button id="btnGuardarAsignacion" type="button" class="btn btn-success w-100" data-bs-dismiss="modal" data-bs-toggle="tooltip" title="Guardar asignación">
-                    <i class="bi bi-check-circle me-2"></i>Guardar
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal Detalles -->
-<div class="modal fade" id="modalDetalles" tabindex="-1" aria-hidden="true" role="dialog" aria-labelledby="modalDetallesLabel">
-    <div class="modal-dialog">
-        <div class="modal-content border-sena">
-            <div class="modal-header bg-sena text-white">
-                <h5 class="modal-title" id="modalDetallesLabel">Detalles de Asignación</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-            </div>
-            <div class="modal-body" id="detallesBody" aria-live="polite"></div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal Confirmar Competencia Completa -->
-<div class="modal fade" id="modalConfirmCompetencia" tabindex="-1" aria-hidden="true" role="dialog">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-sena">
-            <div class="modal-header bg-sena text-white">
-                <h5 class="modal-title">Agregar Competencia Completa</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-            </div>
-            <div class="modal-body text-center">
-                <p class="fw-semibold mb-3">
-                    ¿Deseas agregar la competencia
-                    <span id="nombreCompetenciaConfirm" class="text-success"></span>
-                    completa (con todos sus resultados de aprendizaje)?
-                </p>
-                <p class="text-muted small">
-                    Esta competencia contiene <span id="totalResultadosConfirm" class="fw-bold text-dark"></span> resultados
-                    que se agregarán automáticamente al día
-                    <span id="nombreDiaConfirm" class="text-primary fw-bold"></span>.
-                </p>
-                <div class="d-flex justify-content-center gap-3 mt-3">
-                    <button type="button" class="btn btn-success" id="btnConfirmAgregarCompetencia">Sí, agregar</button>
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-
-
-@section Scripts {
-    <!-- Bootstrap 5 JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-    <script>
-    /* =================== Utilidades =================== */
-    function showAlert(message, type = "danger", ms = 4500) {
-        const wrap = document.createElement("div");
-        wrap.className = `alert alert-${type} floating-alert`;
-        wrap.role = "alert";
-        wrap.innerHTML = `
-            <div class="d-flex align-items-start gap-2 p-3">
-                <i class="bi ${type === "success" ? "bi-check-circle-fill" : "bi-exclamation-triangle-fill"} fs-5 mt-1"></i>
-                <div class="flex-grow-1">${message}</div>
-                <button type="button" class="btn-close" aria-label="Close"></button>
-            </div>
-            <div class="progress"><div class="progress-bar" style="width:100%"></div></div>`;
-        document.body.appendChild(wrap);
-
-        const bar = wrap.querySelector(".progress-bar");
-        const closeBtn = wrap.querySelector(".btn-close");
-        let start = performance.now();
-        const tick = (t) => {
-            const elapsed = t - start; const pct = Math.max(0, 100 - (elapsed / ms) * 100);
-            bar.style.width = pct + "%";
-            if (elapsed >= ms) { wrap.classList.add("hide"); setTimeout(() => wrap.remove(), 220); }
-            else { wrap._raf = requestAnimationFrame(tick); }
-        };
-        wrap._raf = requestAnimationFrame(tick);
-        closeBtn.addEventListener("click", () => { cancelAnimationFrame(wrap._raf); wrap.classList.add("hide"); setTimeout(() => wrap.remove(), 200); });
-    }
-    function getAntiForgeryToken() {
-        const el = document.querySelector('input[name="__RequestVerificationToken"]');
-        return el ? el.value : null;
-    }
-
-    /* =================== Referencias =================== */
-    const competenciasList = document.getElementById("competenciasList");
-    const selInstructor = document.getElementById("selInstructor");
-    const hfAsignaciones = document.getElementById("hfAsignaciones");
-
-    /* ======== referencias filtro y autocompletados unificados ======== */
-    const selAnio = document.getElementById("selAnio");
-    const selTrimestreAnio = document.getElementById("selTrimestreAnio");
-    const inputFicha = document.getElementById("inputFicha");
-    const fichaSugerencias = document.getElementById("fichaSugerencias");
-    const hfFichaId = document.getElementById("hfFichaId");
-    const txtTrimestreFicha = document.getElementById("txtTrimestreFicha");
-    const inputPrograma = document.getElementById("inputPrograma");
-
-
-    // ======= Referencias del modal =======
-    const modalAsignarEl = document.getElementById("modalAsignar");
-    const selInstructorEl = document.getElementById("selInstructor");
-    const horaDesdeEl = document.getElementById("horaDesde");
-    const horaHastaEl = document.getElementById("horaHasta");
-    const btnGuardarAsig = document.getElementById("btnGuardarAsignacion");
-
-    // Contexto temporal para saber a qué asignación (recién creada) se está editando
-    let dropContext = null;
-    let dropContextGuardado = false;
-
-    // Cache simple para mapear id → nombre (nos sirve para pintar luego)
-    const INSTRUCTORES_BY_ID = new Map();
-
-    // Carga instructores desde el backend y llena el <select>
-    async function loadInstructores(q = "") {
-      try {
-        const url = '@Url.Action("GetInstructores","Home")' + (q ? ('?q=' + encodeURIComponent(q)) : '');
-        const resp = await fetch(url, { headers: { "Accept": "application/json" }, credentials: "same-origin" });
-
-        let json;
-        try {
-          json = await resp.json();
-        } catch {
-          const text = await resp.text();
-          throw new Error("Respuesta no-JSON del servidor.\n" + text.substring(0, 400));
+        .asignacion {
+            font-size: 0.85rem;
         }
 
-        if (!resp.ok || !json?.ok) throw new Error(json?.msg || "No se pudieron cargar los instructores.");
+            /* Meta de la asignación: instructor y horario */
+            .asignacion .meta {
+                display: flex;
+                align-items: center;
+                gap: .75rem;
+                margin-top: .15rem;
+                font-size: .85rem;
+                color: var(--sena-muted);
+                line-height: 1.2;
+            }
 
-        const lista = Array.isArray(json.data) ? json.data : [];
-
-        // 🔹 Reset y llenado del <select> + cache de ids → nombres
-        INSTRUCTORES_BY_ID.clear();
-        selInstructorEl.innerHTML = "";
-        selInstructorEl.appendChild(new Option("Seleccione un instructor…", "", true, false));
-        lista.forEach(i => {
-          INSTRUCTORES_BY_ID.set(String(i.id), i.nombre);
-          selInstructorEl.appendChild(new Option(i.nombre, i.id));
-        });
-      } catch (err) {
-        showAlert("Error cargando instructores: " + err.message, "danger");
-        selInstructorEl.innerHTML = "";
-        selInstructorEl.appendChild(new Option("Seleccione un instructor…", "", true, false));
-      }
-    }
-
-
-     // Abre el modal y (opcional) pre-carga valores para edición
-async function abrirModalAsignar(ctx, preset = null) {
-    try {
-        // 🔹 1. Obtener el resultado de aprendizaje del contexto
-        const resultado = decodeURIComponent(ctx.itemEl.dataset.resultado || "");
-        let instructorAsignado = null;
-
-        if (resultado) {
-            const url = `@Url.Action("GetInstructorPorResultado", "Home")?resultado=${encodeURIComponent(resultado)}`;
-
-            let json;
-            try {
-                const resp = await fetch(url, { headers: { "Accept": "application/json" } });
-                const text = await resp.text();
-
-                // 🔹 Logs de diagnóstico
-                console.log("🔎 Consultando instructor para resultado:", resultado);
-                console.log("📄 Respuesta cruda del servidor:", text);
-
-                try {
-                    json = JSON.parse(text);
-                } catch {
-                    console.warn("Respuesta no JSON:", text);
-                    throw new Error("El servidor devolvió una respuesta inesperada (no JSON).");
+                .asignacion .meta i {
+                    font-size: 1rem;
                 }
 
-                if (!json.ok) console.warn("⚠️ Backend reporta error:", json.msg);
-            } catch (err) {
-                console.error("Error consultando instructor:", err);
-                showAlert("⚠️ Error consultando instructor: " + err.message, "danger");
-                json = { ok: false };
+                .asignacion .meta .sep {
+                    opacity: .5;
+                }
+
+            .asignacion .fw-semibold {
+                font-weight: 600;
             }
 
-            if (json.ok && json.data) {
-                instructorAsignado = {
-                    id: String(json.data.IdInstructor),
-                    nombre: json.data.Nombre
+        /* El panel izquierdo puede crecer y hace que la página empuje al <section> */
+        aside.col-lg-3 {
+            align-self: flex-start;
+        }
+
+        /* Si tu lista de competencias es MUY larga, dale scroll interno en vez de empujar TODA la página */
+        #competenciasList {
+            max-height: calc(100vh - 320px); /* ajusta al gusto */
+            overflow: auto;
+        }
+
+        .rotate-180 {
+            transform: rotate(180deg);
+        }
+
+        .card-header .bi {
+            transition: transform .25s ease;
+        }
+
+        /* Asegurar que el modal esté siempre por encima de blur, alerts, autocompletes, etc. */
+        .modal {
+            z-index: 2000 !important;
+        }
+
+        .modal-backdrop {
+            z-index: 1990 !important;
+        }
+
+        /* Tu dropdown de autocomplete tenía z-index ~1055; mantenlo por debajo del modal */
+        .autocomplete-list {
+            z-index: 1200;
+        }
+
+        .asignacion[data-resultado="null"] {
+            background-color: #e7f5ef !important;
+            border-left: 4px solid var(--sena-green);
+        }
+    </style>
+
+
+    <!-- ========================= HTML / VISTA ========================= -->
+
+    <main class="container-fluid p-3">
+        <header class="mb-3 text-center">
+            <h2 class="text-sena mb-1">Sistema de Gestión de Horarios</h2>
+            <p class="text-muted mb-0">Planifica y organiza la formación por días con arrastrar y soltar.</p>
+        </header>
+
+        <!-- Filtros -->
+        <section class="row align-items-end mb-4 g-3" aria-label="Filtros de búsqueda">
+            <!-- Año -->
+            <div class="col-lg-2 col-md-3">
+                <label class="form-label fw-bold text-sena" for="selAnio">Año del Horario</label>
+                <input id="selAnio" type="number" min="2000" max="2100" class="form-control" placeholder="Ej: 2025" autocomplete="off" />
+            </div>
+
+            <!-- Trimestre del año -->
+            <div class="col-lg-2 col-md-3">
+                <label class="form-label fw-bold text-sena" for="selTrimestreAnio">Trimestre del Año</label>
+                <select id="selTrimestreAnio" class="form-select">
+                    <option value="">-- Selecciona un trimestre --</option>
+                    <option value="1">Trimestre 1</option>
+                    <option value="2">Trimestre 2</option>
+                    <option value="3">Trimestre 3</option>
+                    <option value="4">Trimestre 4</option>
+                </select>
+            </div>
+
+            <!-- Ficha -->
+            <div class="col-lg-4 col-md-6 position-relative">
+                <label class="form-label fw-bold text-sena" for="inputFicha">Ficha</label>
+                <input id="inputFicha"
+                       class="form-control"
+                       placeholder="Escribe el código o programa..."
+                       autocomplete="off"
+                       aria-autocomplete="list"
+                       aria-expanded="false"
+                       aria-controls="fichaSugerencias" />
+                <input type="hidden" id="hfFichaId" />
+                <div id="fichaSugerencias"
+                     class="list-group autocomplete-list d-none"
+                     role="listbox"
+                     aria-label="Sugerencias de ficha">
+                </div>
+            </div>
+
+            <!-- Trimestres ficha -->
+            <div class="col-lg-3 col-md-4">
+                <label class="form-label fw-bold text-sena">Trimestres</label>
+                <div class="d-flex gap-2 align-items-center">
+                    <input id="txtTrimestreFicha"
+                           type="number"
+                           class="form-control text-center"
+                           placeholder="1–7"
+                           min="1" max="7"
+                           readonly
+                           style="width: 80px;" />
+                    <span class="fw-bold">→</span>
+                    <input id="txtSiguienteTrimestre"
+                           type="number"
+                           class="form-control text-center"
+                           placeholder="Siguiente"
+                           readonly
+                           style="width: 100px;" />
+                </div>
+            </div>
+        </section>
+
+        @using (Html.BeginForm("GuardarHorario", "Home", FormMethod.Post, new { id = "formGuardarHorario", autocomplete = "off" }))
+        {
+            @Html.AntiForgeryToken()
+            <input type="hidden" id="hfAsignaciones" name="AsignacionesJson" />
+
+            <div class="row g-3">
+                <!-- Panel izquierdo -->
+                <aside class="col-lg-3 d-flex flex-column" aria-label="Panel lateral">
+                    <!-- Importar Excel -->
+                    <div class="col-lg-12 col-md-12 mb-2">
+                        <label class="form-label fw-bold text-sena">Importar Excel</label>
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="button"
+                                    id="btnCargarExcel"
+                                    class="btn btn-success btn-sm"
+                                    data-bs-toggle="tooltip"
+                                    title="Importa la planeación desde un archivo Excel">
+                                <i class="bi bi-file-earmark-excel-fill me-1"></i> Cargar Planeación
+                            </button>
+                            <input type="file" id="inputExcel" accept=".xlsx,.xls" class="d-none" />
+                        </div>
+                    </div>
+
+                    <!-- Programa -->
+                    <div class="mb-2">
+                        <label class="form-label fw-bold text-sena" for="inputPrograma">Programa de Formación</label>
+                        <input id="inputPrograma"
+                               type="text"
+                               class="form-control"
+                               placeholder="Escribe o selecciona un programa..."
+                               autocomplete="off" />
+                    </div>
+
+                    <!-- Competencias -->
+                    <div class="card border-sena shadow-sm mb-3">
+                        <div class="card-header bg-sena fw-bold d-flex justify-content-between align-items-center">
+                            <span>Competencias</span>
+                            <div class="input-group input-group-sm" style="width:55%;">
+                                <input id="txtSearch"
+                                       type="text"
+                                       class="form-control"
+                                       placeholder="Buscar..."
+                                       autocomplete="off"
+                                       aria-label="Buscar competencia" />
+                                <span class="input-group-text bg-success text-white" title="Buscar">
+                                    <i class="bi bi-search"></i>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="card-body p-2">
+                            <div id="competenciasList"
+                                 class="list-group list-group-flush"
+                                 aria-live="polite"
+                                 aria-label="Listado de competencias">
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- Panel central -->
+                <section class="col-lg-9">
+                    <div class="card border-sena shadow-sm">
+                        <div class="card-header bg-sena fw-bold d-flex justify-content-between align-items-center">
+                            <span>Días de formación</span>
+                            <small class="opacity-75">
+                                Arrastra los resultados de aprendizaje hacia un día para crear asignaciones
+                            </small>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-bordered align-middle text-center"
+                                       aria-label="Calendario semanal de formación">
+                                    <thead class="table-success">
+                                        <tr>
+                                            <th scope="col">Lunes</th>
+                                            <th scope="col">Martes</th>
+                                            <th scope="col">Miércoles</th>
+                                            <th scope="col">Jueves</th>
+                                            <th scope="col">Viernes</th>
+                                            <th scope="col">Sábado</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            @foreach (var d in new[] { "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado" })
+                                            {
+                                                <td>
+                                                    <div class="day-col"
+                                                         id="day-@d.ToLower()"
+                                                         data-day="@d"
+                                                         role="list"
+                                                         aria-label="@d">
+                                                        <small class="text-muted drop-hint">Suelta aquí</small>
+                                                    </div>
+                                                </td>
+                                            }
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <small class="text-muted">
+                                Arrastra aquí las asignaciones creadas desde la sección de competencias.
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="mt-3 text-end">
+                        <button id="btnGuardarHorario"
+                                type="button"
+                                class="btn btn-success"
+                                title="Guarda el horario actual">
+                            <i class="bi bi-save me-2"></i>Guardar Todo
+                        </button>
+
+                        <button type="button"
+                                class="btn btn-success"
+                                onclick="location.href='@Url.Action("ListaHorarios", "Home")'"
+                                title="Ver horarios guardados">
+                            <i class="bi bi-calendar-check me-2"></i>Ver Horarios
+                        </button>
+                    </div>
+                </section>
+            </div>
+        }
+    </main>
+
+    <!-- Modal Asignar -->
+    <div class="modal fade" id="modalAsignar" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content border-sena">
+                <div class="modal-header bg-sena text-white">
+                    <h5 class="modal-title">Asignar Instructor y Horario</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+
+                    <div id="alertChoque"
+                         class="alert alert-danger d-none text-center fw-bold"
+                         style="font-size: 1rem; border-radius: 10px;">
+                    </div>
+                    <input type="hidden" id="hfResultadoId" />
+                    <input type="hidden" id="hfProgramaId" />
+                    <input type="hidden" id="hfCompetenciaId" />
+
+                    <div class="mb-3">
+                        <label class="form-label" for="selInstructor">Instructor</label>
+                        <select id="selInstructor" class="form-select"></select>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label" for="horaDesde">Desde</label>
+                            <input id="horaDesde" type="time" class="form-control" value="06:00" />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label" for="horaHasta">Hasta</label>
+                            <input id="horaHasta" type="time" class="form-control" value="09:00" />
+                        </div>
+                    </div>
+
+
+
+                    <button id="btnGuardarAsignacion"
+                            type="button"
+                            class="btn btn-success w-100"
+                            title="Guardar asignación">
+                        <i class="bi bi-check-circle me-2"></i>Guardar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Detalles (si luego quieres usarlo) -->
+    <div class="modal fade" id="modalDetalles" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content border-sena">
+                <div class="modal-header bg-sena text-white">
+                    <h5 class="modal-title">Detalles de Asignación</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="detallesBody" aria-live="polite"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Confirmar Competencia Completa -->
+    <div class="modal fade" id="modalConfirmCompetencia" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-sena">
+                <div class="modal-header bg-sena text-white">
+                    <h5 class="modal-title">Agregar Competencia Completa</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <p class="fw-semibold mb-3">
+                        ¿Deseas agregar la competencia
+                        <span id="nombreCompetenciaConfirm" class="text-success"></span>
+                        completa (con todos sus resultados de aprendizaje)?
+                    </p>
+                    <p class="text-muted small">
+                        Esta competencia contiene
+                        <span id="totalResultadosConfirm" class="fw-bold text-dark"></span>
+                        resultados que se agregarán automáticamente al día
+                        <span id="nombreDiaConfirm" class="text-primary fw-bold"></span>.
+                    </p>
+                    <div class="d-flex justify-content-center gap-3 mt-3">
+                        <button type="button" class="btn btn-success" id="btnConfirmAgregarCompetencia">Sí, agregar</button>
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Instructor Líder -->
+    <div class="modal fade" id="modalLider" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-sena">
+                <div class="modal-header bg-sena text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-person-badge me-2"></i> Asignar Instructor Líder
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="selInstructorLider" class="form-label fw-bold">Instructor Líder</label>
+                        <select id="selInstructorLider" class="form-select">
+                            <option value="">Cargando instructores...</option>
+                        </select>
+                    </div>
+                    <button id="btnConfirmarLider"
+                            type="button"
+                            class="btn btn-success w-100">
+                        <i class="bi bi-check-circle me-2"></i>Guardar Horario
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================= JS / LÓGICA ========================= -->
+    @section Scripts {
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+        <script>
+            // ========== UTILIDADES ==========
+            function showAlert(message, type = "danger", ms = 4500) {
+                const wrap = document.createElement("div");
+                wrap.className = `alert alert-${type} floating-alert`;
+                wrap.role = "alert";
+                wrap.innerHTML = `
+                    <div class="d-flex align-items-start gap-2 p-3">
+                        <i class="bi ${type === "success" ? "bi-check-circle-fill" : "bi-exclamation-triangle-fill"} fs-5 mt-1"></i>
+                        <div class="flex-grow-1">${message}</div>
+                        <button type="button" class="btn-close" aria-label="Close"></button>
+                    </div>
+                    <div class="progress"><div class="progress-bar" style="width:100%"></div></div>`;
+                document.body.appendChild(wrap);
+
+                const bar = wrap.querySelector(".progress-bar");
+                const closeBtn = wrap.querySelector(".btn-close");
+                let start = performance.now();
+
+                const tick = (t) => {
+                    const elapsed = t - start;
+                    const pct = Math.max(0, 100 - (elapsed / ms) * 100);
+                    bar.style.width = pct + "%";
+                    if (elapsed >= ms) {
+                        wrap.classList.add("hide");
+                        setTimeout(() => wrap.remove(), 220);
+                    } else {
+                        wrap._raf = requestAnimationFrame(tick);
+                    }
+                };
+                wrap._raf = requestAnimationFrame(tick);
+
+                closeBtn.addEventListener("click", () => {
+                    cancelAnimationFrame(wrap._raf);
+                    wrap.classList.add("hide");
+                    setTimeout(() => wrap.remove(), 200);
+                });
+            }
+
+            function getAntiForgeryToken() {
+                const el = document.querySelector('input[name="__RequestVerificationToken"]');
+                return el ? el.value : null;
+            }
+
+            function debounce(fn, ms = 250) {
+                let t;
+                return (...args) => {
+                    clearTimeout(t);
+                    t = setTimeout(() => fn.apply(this, args), ms);
                 };
             }
-        }
 
-        // 🔹 2. Cargar instructores disponibles
-        await loadInstructores();
+            // ========== ESTADO GLOBAL ==========
+            let payload = {
+                numeroFicha: "",
+                nombreHorario: "Horario generado",
+                trimestre: "",
+                asignaciones: []
+            };
 
-        // 🔹 3. Asignar el instructor predeterminado o el del resultado
-        if (instructorAsignado && instructorAsignado.id) {
-            selInstructorEl.value = instructorAsignado.id;
-        } else if (preset?.instructorId) {
-            selInstructorEl.value = preset.instructorId;
-        } else {
-            selInstructorEl.value = "";
-        }
+            let COMPETENCIAS = [];                 // [{ Competencia, Resultados: [] }]
+            let OPEN_COMP_IDS = new Set();        // ids de acordeones abiertos
+            let COMP_DRAGGING = null;             // competencia que se arrastra completa
 
-        // 🔹 4. Establecer horas por defecto
-        horaDesdeEl.value = preset?.horaDesde ?? "06:00";
-        horaHastaEl.value = preset?.horaHasta ?? "09:00";
+            const INSTRUCTORES_BY_ID = new Map(); // cache id → nombre
 
-        // 🔹 5. Contexto para la asignación actual
-        dropContext = ctx;
-        dropContextGuardado = false;
+            let dropContext = null;              // contexto de asignación que se está editando
+            let dropContextGuardado = false;
 
-        // 🔹 6. Mostrar modal
-        const modal = new bootstrap.Modal(modalAsignarEl);
-        modal.show();
+            const nextId = (() => { let c = 1; return () => c++; })();
+            // 🔥 NECESARIA: almacena horarios reales de otras fichas
+            let HORARIOS_GLOBAL = [];
 
-    } catch (err) {
-        showAlert("Error al abrir el modal: " + err.message, "danger");
-    }
-}
+            // ========== REFERENCIAS DOM ==========
+            const selAnio             = document.getElementById("selAnio");
+            const selTrimestreAnio    = document.getElementById("selTrimestreAnio");
+            const inputFicha          = document.getElementById("inputFicha");
+            const fichaSugerencias    = document.getElementById("fichaSugerencias");
+            const hfFichaId           = document.getElementById("hfFichaId");
+            const txtTrimestreFicha   = document.getElementById("txtTrimestreFicha");
+            const txtSiguienteTrimestre = document.getElementById("txtSiguienteTrimestre");
+            const inputPrograma       = document.getElementById("inputPrograma");
 
+            const competenciasList    = document.getElementById("competenciasList");
+            const txtSearch           = document.getElementById("txtSearch");
 
+            const btnCargarExcel      = document.getElementById("btnCargarExcel");
+            const inputExcel          = document.getElementById("inputExcel");
 
+            const modalAsignarEl      = document.getElementById("modalAsignar");
+            const selInstructorEl     = document.getElementById("selInstructor");
+            const horaDesdeEl         = document.getElementById("horaDesde");
+            const horaHastaEl         = document.getElementById("horaHasta");
+            const btnGuardarAsig      = document.getElementById("btnGuardarAsignacion");
 
+            const btnGuardarHorario   = document.getElementById("btnGuardarHorario");
+            const selInstructorLider  = document.getElementById("selInstructorLider");
+            const btnConfirmarLider   = document.getElementById("btnConfirmarLider");
 
+            // ========== INSTRUCTORES ==========
+            async function loadInstructores(q = "") {
+                try {
+                    const url = '@Url.Action("GetInstructores", "Home")' + (q ? ('?q=' + encodeURIComponent(q)) : '');
+                    const resp = await fetch(url, {
+                        headers: { "Accept": "application/json" },
+                        credentials: "same-origin"
+                    });
 
-        /* =================== MODAL: guardar con validaciones fuertes =================== */
-        let SAVE_WIRED = false;
+                    let json = await resp.json();
+                    if (!resp.ok || !json?.ok) {
+                        throw new Error(json?.msg || "No se pudieron cargar los instructores.");
+                    }
 
-        function wireGuardarAsignacion() {
-            // Asegura que el botón NO cierre solo el modal
-            if (SAVE_WIRED) return;     // ← evita que se duplique el click
-            SAVE_WIRED = true;
+                    const lista = Array.isArray(json.data) ? json.data : [];
+                    INSTRUCTORES_BY_ID.clear();
 
-            btnGuardarAsig?.removeAttribute("data-bs-dismiss");
-            btnGuardarAsig?.addEventListener("click", () => {
-                if (!dropContext) return;
+                    selInstructorEl.innerHTML = "";
+                    selInstructorEl.appendChild(new Option("Seleccione un instructor…", "", true, false));
 
-                const instructorId = selInstructorEl.value || null;
-                const horaDesde = horaDesdeEl.value || "";
-                const horaHasta = horaHastaEl.value || "";
+                    lista.forEach(i => {
+                        INSTRUCTORES_BY_ID.set(String(i.id), i.nombre);
+                        selInstructorEl.appendChild(new Option(i.nombre, String(i.id)));
+                    });
+                } catch (err) {
+                    showAlert("Error cargando instructores: " + err.message, "danger");
+                    selInstructorEl.innerHTML = "";
+                    selInstructorEl.appendChild(new Option("Seleccione un instructor…", "", true, false));
+                }
+            }
 
-                // Requeridos
-                if (!instructorId) { showAlert("Debes seleccionar un instructor.", "warning"); return; }
-                if (!horaDesde || !horaHasta) { showAlert("Debes indicar el horario completo.", "warning"); return; }
+            async function cargarInstructoresLider() {
+                selInstructorLider.innerHTML = `<option value="">Cargando...</option>`;
+                try {
+                    const resp = await fetch('@Url.Action("GetInstructores", "Home")');
+                    const json = await resp.json();
 
-                // Conflictos
-                const asignacion = payload.asignaciones.find(a => a.id === dropContext.asignacionId);
-                const dia = asignacion?.dia || dropContext.itemEl.dataset.dia;
+                    selInstructorLider.innerHTML = `<option value="">Seleccione...</option>`;
+                    (json.data || []).forEach(i => {
+                        selInstructorLider.innerHTML += `<option value="${i.id}">${i.nombre}</option>`;
+                    });
+                } catch (error) {
+                    selInstructorLider.innerHTML = `<option value="">Error al cargar instructores</option>`;
+                }
+            }
 
-                const conflicto = tieneConflictoEnDia({
-                    dia, instructorId, desde: horaDesde, hasta: horaHasta, ignoreId: dropContext.asignacionId
-                });
-                if (conflicto) { showAlert(conflicto, "danger"); return; }
+            // ========== MODAL ASIGNAR ==========
+    async function abrirModalAsignar(ctx, preset = null) {
+        try {
+            const resultado = decodeURIComponent(ctx.itemEl.dataset.resultado || "");
+            let instructorAsignado = null;
 
-                // OK → aplicar cambios
-                const instructorNombre = INSTRUCTORES_BY_ID.get(String(instructorId)) || "—";
+            // 🔥🔥 Recargar horarios globales SIEMPRE ANTES DE VALIDAR
+            await cargarHorariosGlobales();
 
-                if (asignacion) {
-                    asignacion.instructorId = parseInt(instructorId, 10);
-                    asignacion.instructorNombre = instructorNombre;
-                    asignacion.horaDesde = horaDesde;
-                    asignacion.horaHasta = horaHasta;
+            if (resultado) {
+                const url = '@Url.Action("GetInstructorPorResultado", "Home")' +
+                    '?resultado=' + encodeURIComponent(resultado);
+
+                let json;
+                try {
+                    const resp = await fetch(url, { headers: { "Accept": "application/json" } });
+                    json = await resp.json();
+                    if (!json.ok) console.warn("Backend error:", json.msg);
+                } catch (err) {
+                    console.error("Error consultando instructor:", err);
+                    showAlert("Error consultando instructor: " + err.message, "danger");
+                    json = { ok: false };
                 }
 
-                // Actualizar DOM
-                const nombreEl = dropContext.itemEl.querySelector(".instructor");
-                const horarioEl = dropContext.itemEl.querySelector(".horario");
-                if (nombreEl) nombreEl.textContent = instructorNombre;
-                if (horarioEl) horarioEl.textContent = `${horaDesde} – ${horaHasta}`;
-                dropContext.itemEl.title = `${instructorNombre} • ${horaDesde} – ${horaHasta}`;
+                if (json.ok && json.data) {
+                    instructorAsignado = {
+                        id: String(json.data.IdInstructor),
+                        nombre: json.data.Nombre
+                    };
+                }
+            }
 
-                dropContextGuardado = true;
+            await loadInstructores();
 
-                // Cerrar modal manualmente SOLO si todo fue válido
-                const modal = bootstrap.Modal.getInstance(modalAsignarEl) || new bootstrap.Modal(modalAsignarEl);
-                modal.hide();
+            if (instructorAsignado?.id) {
+                selInstructorEl.value = instructorAsignado.id;
+            } else if (preset?.instructorId) {
+                selInstructorEl.value = preset.instructorId;
+            } else {
+                selInstructorEl.value = "";
+            }
 
-                dropContext = null;
-            });
+            horaDesdeEl.value = preset?.horaDesde ?? "06:00";
+            horaHastaEl.value = preset?.horaHasta ?? "09:00";
+
+            dropContext = ctx;
+            dropContextGuardado = false;
+
+            // ficha actual
+            payload.idFichaActual = hfFichaId.value || null;
+
+            const modal = new bootstrap.Modal(modalAsignarEl);
+            modal.show();
+
+            // 🔥 Validar apenas se abra
+            setTimeout(() => validarEnVivo(), 150);
+
+        } catch (err) {
+            showAlert("Error al abrir el modal: " + err.message, "danger");
         }
-        wireGuardarAsignacion();
+    }
 
-        /* =================== BUSCADOR DE COMPETENCIAS =================== */
-        const txtSearch = document.getElementById("txtSearch");
-        txtSearch?.addEventListener("input", () => {
-            const q = (txtSearch.value || "").toLowerCase().trim();
-            const cards = document.querySelectorAll("#competenciasList > .card");
-            cards.forEach(card => {
-                const hayTexto = card.textContent.toLowerCase().includes(q);
-                card.style.display = hayTexto ? "" : "none";
-            });
-        });
 
-        /* =================== DOM READY: inicializaciones =================== */
-        document.addEventListener("DOMContentLoaded", () => {
-            initDropHints();      // muestra/oculta "Suelta aquí"
-            wireDayDropZones();   // zonas de drop una sola vez
-        });
 
-        let DAYS_WIRED = false;
+            async function cargarHorariosGlobales() {
+                try {
+                    const resp = await fetch("/Home/GetAsignacionesInstructor");
+                    const json = await resp.json();
 
-        function wireDayDropZones() {
-            if (DAYS_WIRED) return;
-            DAYS_WIRED = true;
+                    if (json.ok) {
+                        HORARIOS_GLOBAL = json.data;   // ← GUARDA TODOS LOS HORARIOS REALES
+                    }
+                } catch (err) {
+                    console.error("Error cargando horarios globales:", err);
+                }
+            }
 
-            document.querySelectorAll(".day-col").forEach(dia => {
-                dia.addEventListener("dragover", e => {
-                    e.preventDefault();
-                    e.dataTransfer.dropEffect = "move";
-                    dia.classList.add("drag-over");
-                });
 
-                dia.addEventListener("dragleave", () => dia.classList.remove("drag-over"));
 
-                // 🔹 Evento principal: DROP
-                dia.addEventListener("drop", async e => {
-                    e.preventDefault();
-                    dia.classList.remove("drag-over");
 
-                    const competenciaCompletaData = e.dataTransfer.getData("competenciaCompleta");
-                    const competenciaData = e.dataTransfer.getData("competencia");
-                    const resultadoData = e.dataTransfer.getData("resultado");
-                    const diaSemana = dia.dataset.day;
+            // Guardar desde el modal
+            // =============================================================
+            //  GUARDAR ASIGNACIÓN DESDE EL MODAL  (CORREGIDO Y OPTIMIZADO)
+            // =============================================================
+            (function wireGuardarAsignacion() {
+                let wired = false;
+                if (wired) return;
+                wired = true;
 
-                    // 🟢 Si suelta una competencia completa → mostrar modal de confirmación
-                    if (competenciaCompletaData && COMP_DRAGGING) {
-                        const competencia = COMP_DRAGGING;
-                        mostrarModalConfirmacionCompetencia(competencia, diaSemana);
+                btnGuardarAsig.addEventListener("click", () => {
+                    if (!dropContext) return;
+
+                    const instructorId = selInstructorEl.value || null;
+                    const horaDesde = horaDesdeEl.value || "";
+                    const horaHasta = horaHastaEl.value || "";
+
+                    if (!instructorId) {
+                        showAlert("Debes seleccionar un instructor.", "warning");
+                        return;
+                    }
+                    if (!horaDesde || !horaHasta) {
+                        showAlert("Debes indicar el horario completo.", "warning");
                         return;
                     }
 
-                    // 🟢 Si suelta un resultado individual → lo agrega directamente
-                    if (competenciaData && resultadoData) {
-                        const competencia = decodeURIComponent(competenciaData);
-                        const resultado = decodeURIComponent(resultadoData);
-                        const asignacionId = nextId();
+                    const asignacion = payload.asignaciones.find(a => a.id === dropContext.asignacionId);
+                    const dia = asignacion?.dia || dropContext.itemEl.dataset.dia;
 
-                        const item = document.createElement("div");
-                        item.className = "asignacion bg-success-subtle border rounded p-2 mb-1 text-start";
-                        item.dataset.asignacionId = String(asignacionId);
-                        item.dataset.competencia = competencia;
-                        item.dataset.resultado = resultado;
-                        item.dataset.dia = diaSemana;
+                    // =============== VALIDACIÓN LOCAL ===============
+                    const conflictoLocal = tieneConflictoEnDia({
+                        dia,
+                        instructorId,
+                        desde: horaDesde,
+                        hasta: horaHasta,
+                        ignoreId: dropContext.asignacionId
+                    });
 
-                        item.innerHTML = `
-                    <div class="d-flex align-items-start justify-content-between gap-2">
-                        <div class="fw-semibold flex-grow-1">${resultado}</div>
-                        <div class="btn-group btn-group-sm">
-                            <button type="button" class="btn btn-link text-success p-0 edit-asig" title="Editar">
-                                <i class="bi bi-pencil-square"></i>
-                            </button>
-                            <button type="button" class="btn btn-link text-danger p-0 delete-asig" title="Eliminar">
-                                <i class="bi bi-trash"></i>
-                            </button>
+                    if (conflictoLocal) {
+                        showAlert("❌ " + conflictoLocal, "danger");
+                        return;
+                    }
+
+                    // =============== VALIDACIÓN GLOBAL (JS / HORARIOS DE BD) ===============
+                    const conflictoG = conflictoGlobal(
+                        instructorId,
+                        dia,
+                        horaDesde,
+                        horaHasta,
+                        payload.idFichaActual
+                    );
+
+                    if (conflictoG) {
+                        showAlert("❌ " + conflictoG, "danger");
+                        return;
+                    }
+
+                    // =============== VALIDACIÓN BACKEND SECUNDARIA ===============
+                    $.get("/Home/ValidarChoqueInstructorGlobal", {
+                        idInstructor: instructorId,
+                        dia: dia,
+                        desde: horaDesde,
+                        hasta: horaHasta,
+                        idFichaActual: payload.idFichaActual
+                    }).done(resp => {
+
+                        if (!resp.ok) {
+                            showAlert("Error validando horario: " + resp.msg, "danger");
+                            return;
+                        }
+
+                        if (resp.choque) {
+                            showAlert("❌ Este instructor ya está asignado en otra ficha en este mismo horario.", "danger");
+                            return;
+                        }
+
+                        // =============== GUARDAR DATOS ===============
+                        const instructorNombre = INSTRUCTORES_BY_ID.get(String(instructorId)) || "—";
+
+                        if (asignacion) {
+                            asignacion.instructorId = parseInt(instructorId, 10);
+                            asignacion.instructorNombre = instructorNombre;
+                            asignacion.horaDesde = horaDesde;
+                            asignacion.horaHasta = horaHasta;
+                        }
+
+                        const nombreEl = dropContext.itemEl.querySelector(".instructor");
+                        const horarioEl = dropContext.itemEl.querySelector(".horario");
+
+                        if (nombreEl) nombreEl.textContent = instructorNombre;
+                        if (horarioEl) horarioEl.textContent = `${horaDesde} – ${horaHasta}`;
+                        dropContext.itemEl.title = `${instructorNombre} • ${horaDesde} – ${horaHasta}`;
+
+                        dropContextGuardado = true;
+
+                        showAlert(`Instructor ${instructorNombre} asignado correctamente.`, "success");
+
+                        bootstrap.Modal.getInstance(modalAsignarEl).hide();
+                        dropContext = null;
+                    });
+                }); // ← cierra el addEventListener
+            })();
+
+              
+            // Si se cierra el modal sin guardar
+            modalAsignarEl.addEventListener("hidden.bs.modal", () => {
+                if (!dropContext) return;
+
+                const asignacion = payload.asignaciones.find(a => a.id === dropContext.asignacionId);
+
+                if (!dropContextGuardado && asignacion) {
+                    const instructorId = selInstructorEl.value?.trim() || null;
+                    const horaDesde = horaDesdeEl.value?.trim() || "06:00";
+                    const horaHasta = horaHastaEl.value?.trim() || "09:00";
+
+                    if (instructorId) {
+                        asignacion.instructorId = parseInt(instructorId, 10);
+                        asignacion.horaDesde = horaDesde;
+                        asignacion.horaHasta = horaHasta;
+                        asignacion.instructorNombre = INSTRUCTORES_BY_ID.get(String(instructorId)) || "—";
+
+                        const nombreEl = dropContext.itemEl.querySelector(".instructor");
+                        const horarioEl = dropContext.itemEl.querySelector(".horario");
+                        if (nombreEl) nombreEl.textContent = asignacion.instructorNombre;
+                        if (horarioEl) horarioEl.textContent = `${horaDesde} – ${horaHasta}`;
+                        dropContext.itemEl.title = `${asignacion.instructorNombre} • ${horaDesde} – ${horaHasta}`;
+
+                        dropContextGuardado = true;
+                    } else {
+                        dropContext.itemEl?.remove();
+                        payload.asignaciones = payload.asignaciones.filter(a => a.id !== dropContext.asignacionId);
+                    }
+                }
+
+                dropContext = null;
+            });
+
+            // ========== DRAG & DROP DÍAS ==========
+            function initDropHints() {
+                document.querySelectorAll(".day-col").forEach(col => {
+                    const hint = col.querySelector(".drop-hint");
+                    if (hint) updateDropHint(col);
+                });
+            }
+
+            function updateDropHint(dayCol) {
+                const hint = dayCol.querySelector(".drop-hint");
+                if (!hint) return;
+                const hasItems = dayCol.querySelectorAll(".asignacion").length > 0;
+                hint.style.display = hasItems ? "none" : "";
+            }
+
+            function wireDayDropZones() {
+                document.querySelectorAll(".day-col").forEach(dia => {
+                    dia.addEventListener("dragover", e => {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = "move";
+                        dia.classList.add("drag-over");
+                    });
+
+                    dia.addEventListener("dragleave", () => dia.classList.remove("drag-over"));
+
+                    dia.addEventListener("drop", async e => {
+                        e.preventDefault();
+                        dia.classList.remove("drag-over");
+
+                        const competenciaCompletaData = e.dataTransfer.getData("competenciaCompleta");
+                        const competenciaData = e.dataTransfer.getData("competencia");
+                        const resultadoData = e.dataTransfer.getData("resultado");
+                        const diaSemana = dia.dataset.day;
+
+                        // Competencia completa
+                        if (competenciaCompletaData && COMP_DRAGGING) {
+                            mostrarModalConfirmacionCompetencia(COMP_DRAGGING, diaSemana);
+                            return;
+                        }
+
+                        // Resultado individual
+                        if (competenciaData && resultadoData) {
+                            const competencia = decodeURIComponent(competenciaData);
+                            const resultado = decodeURIComponent(resultadoData);
+                            const asignacionId = nextId();
+
+                            const item = document.createElement("div");
+                            item.className = "asignacion border rounded p-2 mb-1 text-start";
+                            item.dataset.asignacionId = String(asignacionId);
+                            item.dataset.competencia = competencia;
+                            item.dataset.resultado = resultado;
+                            item.dataset.dia = diaSemana;
+
+                            item.innerHTML = `
+                                <div class="d-flex align-items-start justify-content-between gap-2">
+                                    <div class="fw-semibold flex-grow-1">${resultado}</div>
+                                    <div class="btn-group btn-group-sm">
+                                        <button type="button" class="btn btn-link text-success p-0 edit-asig" title="Editar">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-link text-danger p-0 delete-asig" title="Eliminar">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="meta mt-1">
+                                    <i class="bi bi-mortarboard"></i><span class="instructor">Seleccione instructor…</span>
+                                    <span class="sep">•</span>
+                                    <i class="bi bi-clock"></i><span class="horario">--:-- – --:--</span>
+                                </div>`;
+
+                            dia.appendChild(item);
+                            updateDropHint(dia);
+
+                            payload.asignaciones.push({
+                                id: asignacionId,
+                                competencia,
+                                resultado,
+                                dia: diaSemana,
+                                instructorId: null,
+                                instructorNombre: null,
+                                horaDesde: null,
+                                horaHasta: null
+                            });
+
+                            item.querySelector(".edit-asig")?.addEventListener("click", () => editarAsignacion(item));
+                            item.querySelector(".delete-asig")?.addEventListener("click", () => eliminarAsignacion(item));
+
+                            await abrirModalAsignar({ asignacionId, itemEl: item });
+                        }
+                    });
+                });
+            }
+
+            // ========== DRAG RESULTADOS Y COMPETENCIAS ==========
+            function wireResultadosDrag() {
+                document.querySelectorAll(".resultado-item").forEach(r => {
+                    if (r.dataset.wired === "1") return;
+                    r.dataset.wired = "1";
+
+                    r.addEventListener("dragstart", e => {
+                        e.dataTransfer.setData("competencia", r.dataset.competencia);
+                        e.dataTransfer.setData("resultado", r.dataset.resultado);
+                        e.dataTransfer.effectAllowed = "move";
+                        r.classList.add("dragging");
+                    });
+                    r.addEventListener("dragend", () => r.classList.remove("dragging"));
+                });
+            }
+
+            function wireCompetenciaDrag() {
+                document.querySelectorAll(".card-header .fw-bold.text-sena").forEach((span, idx) => {
+                    if (span.dataset.wired === "1") return;
+                    span.dataset.wired = "1";
+
+                    span.draggable = true;
+                    span.title = "Arrastra la competencia completa";
+
+                    span.addEventListener("dragstart", e => {
+                        const comp = COMPETENCIAS[idx];
+                        if (!comp) return;
+                        COMP_DRAGGING = comp;
+                        e.dataTransfer.effectAllowed = "move";
+                        e.dataTransfer.setData("competenciaCompleta", encodeURIComponent(comp.Competencia));
+                        span.classList.add("opacity-50");
+                    });
+
+                    span.addEventListener("dragend", () => {
+                        COMP_DRAGGING = null;
+                        span.classList.remove("opacity-50");
+                    });
+                });
+            }
+
+            function mostrarModalConfirmacionCompetencia(competencia, diaSemana) {
+                if (!competencia) return;
+
+                document.getElementById("nombreCompetenciaConfirm").textContent = competencia.Competencia;
+                document.getElementById("totalResultadosConfirm").textContent = competencia.Resultados?.length || 0;
+                document.getElementById("nombreDiaConfirm").textContent = diaSemana;
+
+                window._competenciaPendiente = competencia;
+                window._diaPendiente = diaSemana;
+
+                const modal = new bootstrap.Modal(document.getElementById("modalConfirmCompetencia"));
+                modal.show();
+            }
+
+            document.getElementById("btnConfirmAgregarCompetencia")
+                ?.addEventListener("click", async () => {
+                    const competencia = window._competenciaPendiente;
+                    const diaSemana = window._diaPendiente;
+                    if (!competencia || !diaSemana) return;
+
+                    const asignacionId = nextId();
+                    const item = document.createElement("div");
+
+                    item.className = "asignacion border rounded p-2 mb-1 text-start";
+                    item.dataset.asignacionId = String(asignacionId);
+                    item.dataset.competencia = encodeURIComponent(competencia.Competencia);
+                    item.dataset.resultado = competencia.Resultados?.[0]
+                        ? encodeURIComponent(competencia.Resultados[0])
+                        : "";
+                    item.dataset.dia = diaSemana;
+
+                    item.innerHTML = `
+                        <div class="d-flex align-items-start justify-content-between gap-2">
+                            <div class="fw-semibold flex-grow-1">
+                                <i class="bi bi-bookmark-star text-success me-1"></i>
+                                ${competencia.Competencia}
+                            </div>
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-link text-success p-0 edit-asig" title="Editar">
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>
+                                <button type="button" class="btn btn-link text-danger p-0 delete-asig" title="Eliminar">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                    <div class="meta mt-1">
-                        <i class="bi bi-mortarboard"></i><span class="instructor">Seleccione instructor…</span>
-                        <span class="sep">•</span>
-                        <i class="bi bi-clock"></i><span class="horario">--:-- – --:--</span>
-                    </div>`;
+                        <div class="meta mt-1">
+                            <i class="bi bi-mortarboard"></i><span class="instructor">Seleccione instructor…</span>
+                            <span class="sep">•</span>
+                            <i class="bi bi-clock"></i><span class="horario">--:-- – --:--</span>
+                        </div>`;
 
-                        dia.appendChild(item);
-                        updateDropHint(dia);
+                    const diaEl = document.querySelector(`.day-col[data-day="${diaSemana}"]`);
+                    if (diaEl) {
+                        diaEl.appendChild(item);
+                        updateDropHint(diaEl);
+                    }
 
-                        payload.asignaciones.push({
-                            id: asignacionId,
-                            competencia,
-                            resultado,
-                            dia: diaSemana,
-                            instructorId: null,
-                            instructorNombre: null,
-                            horaDesde: null,
-                            horaHasta: null
+                    payload.asignaciones.push({
+                        id: asignacionId,
+                        competencia: competencia.Competencia,
+                        resultado: null,
+                        dia: diaSemana,
+                        instructorId: null,
+                        instructorNombre: null,
+                        horaDesde: null,
+                        horaHasta: null
+                    });
+
+                    item.querySelector(".edit-asig")?.addEventListener("click", () => editarAsignacion(item));
+                    item.querySelector(".delete-asig")?.addEventListener("click", () => eliminarAsignacion(item));
+
+                    const modalConfirm = bootstrap.Modal.getInstance(document.getElementById("modalConfirmCompetencia"));
+                    modalConfirm.hide();
+
+                    await abrirModalAsignar({ asignacionId, itemEl: item });
+
+                    window._competenciaPendiente = null;
+                    window._diaPendiente = null;
+                });
+
+            // ========== AUTOCOMPLETADO FICHAS ==========
+            function ocultarSugerencias() {
+                fichaSugerencias.classList.add("d-none");
+                fichaSugerencias.innerHTML = "";
+            }
+
+            async function buscarFichasLectivas(term = "") {
+                const anio = selAnio?.value?.trim();
+                const trimestre = selTrimestreAnio?.value?.trim();
+
+                fichaSugerencias.innerHTML = "";
+                if (!anio || !trimestre) {
+                    fichaSugerencias.innerHTML = `
+                        <div class="list-group-item small text-muted">
+                            ⚠️ Selecciona año y trimestre antes de buscar.
+                        </div>`;
+                    fichaSugerencias.classList.remove("d-none");
+                    return;
+                }
+
+                try {
+                    const url = '@Url.Action("GetFichasEnFormacion", "Home")'
+                        + `?term=${encodeURIComponent(term)}`
+                        + `&anio=${encodeURIComponent(anio)}`
+                        + `&trimestre=${encodeURIComponent(trimestre)}`;
+
+                    const resp = await fetch(url, { headers: { "Accept": "application/json" } });
+                    if (!resp.ok) throw new Error(`Error HTTP ${resp.status}`);
+
+                    const json = await resp.json();
+                    if (!json?.ok) throw new Error(json.msg || "No se pudieron obtener las fichas.");
+
+                    let fichas = json.data || [];
+
+                    if (term && fichas.length > 0) {
+                        const termLower = term.toLowerCase();
+                        fichas = fichas.filter(f =>
+                            (f.CodigoFicha?.toString().toLowerCase().includes(termLower)) ||
+                            (f.ProgramaNombre?.toLowerCase().includes(termLower))
+                        );
+                    }
+
+                    if (!fichas.length) {
+                        fichaSugerencias.innerHTML = `
+                            <div class="list-group-item small text-muted">
+                                Sin coincidencias…
+                            </div>`;
+                        fichaSugerencias.classList.remove("d-none");
+                        return;
+                    }
+
+                    fichaSugerencias.innerHTML = "";
+                    fichas.forEach(f => {
+                        const btn = document.createElement("button");
+                        btn.type = "button";
+                        btn.className = "list-group-item list-group-item-action";
+                        btn.innerHTML = `
+                            <div><strong>${f.CodigoFicha}</strong> — ${f.ProgramaNombre}</div>
+                            <small class="text-muted">
+                                Trimestre ${f.TrimestreDeLaFicha ?? "?"}
+                                • ${f.FechaInicio?.split("T")[0] ?? ""} - ${f.FechaFin?.split("T")[0] ?? ""}
+                            </small>`;
+
+                        btn.addEventListener("click", () => {
+                            inputFicha.value = f.CodigoFicha;
+                            hfFichaId.value = f.IdFicha;
+                            inputPrograma.value = f.ProgramaNombre;
+                            txtTrimestreFicha.value = f.TrimestreDeLaFicha ?? "";
+                            actualizarSiguienteTrimestre();
+                            ocultarSugerencias();
+
+                            if (typeof cargarCompetenciasFicha === "function") {
+                                cargarCompetenciasFicha(f.IdFicha);
+                            }
                         });
 
-                        item.querySelector(".edit-asig")?.addEventListener("click", () => editarAsignacion(item));
-                        item.querySelector(".delete-asig")?.addEventListener("click", () => eliminarAsignacion(item));
+                        fichaSugerencias.appendChild(btn);
+                    });
 
-                        await abrirModalAsignar({ asignacionId, itemEl: item });
-                    }
-                });
-            });
-
-        }
-
-        /* =================== MODAL DE CONFIRMACIÓN DE COMPETENCIA COMPLETA =================== */
-function mostrarModalConfirmacionCompetencia(competencia, diaSemana) {
-    if (!competencia) return;
-
-    // 🔹 Rellenar datos en el modal de confirmación
-    document.getElementById("nombreCompetenciaConfirm").textContent = competencia.Competencia;
-    document.getElementById("totalResultadosConfirm").textContent = competencia.Resultados?.length || 0;
-    document.getElementById("nombreDiaConfirm").textContent = diaSemana;
-
-    // 🔹 Guardar temporalmente contexto global
-    window._competenciaPendiente = competencia;
-    window._diaPendiente = diaSemana;
-
-    // 🔹 Mostrar modal
-    const modal = new bootstrap.Modal(document.getElementById("modalConfirmCompetencia"));
-    modal.show();
-}
-
-// Al confirmar la adición de competencia completa
-document.getElementById("btnConfirmAgregarCompetencia")?.addEventListener("click", async () => {
-    const competencia = window._competenciaPendiente;
-    const diaSemana = window._diaPendiente;
-    if (!competencia || !diaSemana) return;
-
-    const asignacionId = nextId();
-
-    // Crear elemento DOM de asignación general
-    const item = document.createElement("div");
-    item.className = "asignacion bg-success-subtle border rounded p-2 mb-1 text-start";
-    item.dataset.asignacionId = String(asignacionId);
-    item.dataset.competencia = encodeURIComponent(competencia.Competencia);
-    item.dataset.resultado = "null";
-    item.dataset.dia = diaSemana;
-
-    item.innerHTML = `
-    <div class="d-flex align-items-start justify-content-between gap-2">
-        <div class="fw-semibold flex-grow-1">
-            <i class="bi bi-bookmark-star text-success me-1"></i>
-            ${competencia.Competencia}
-        </div>
-        <div class="btn-group btn-group-sm">
-            <button type="button" class="btn btn-link text-success p-0 edit-asig" title="Editar">
-                <i class="bi bi-pencil-square"></i>
-            </button>
-            <button type="button" class="btn btn-link text-danger p-0 delete-asig" title="Eliminar">
-                <i class="bi bi-trash"></i>
-            </button>
-        </div>
-    </div>
-    <div class="meta mt-1">
-        <i class="bi bi-mortarboard"></i><span class="instructor">Seleccione instructor…</span>
-        <span class="sep">•</span>
-        <i class="bi bi-clock"></i><span class="horario">--:-- – --:--</span>
-    </div>`;
-
-    // Insertar en el día correspondiente
-    const diaEl = document.querySelector(`.day-col[data-day="${diaSemana}"]`);
-    if (diaEl) {
-        diaEl.appendChild(item);
-        updateDropHint(diaEl);
-    }
-
-    // Guardar en payload
-    payload.asignaciones.push({
-        id: asignacionId,
-        competencia: competencia.Competencia,
-        resultado: null,
-        dia: diaSemana,
-        instructorId: null,
-        instructorNombre: null,
-        horaDesde: null,
-        horaHasta: null
-    });
-
-    // Vincular botones de acción
-    item.querySelector(".edit-asig")?.addEventListener("click", () => editarAsignacion(item));
-    item.querySelector(".delete-asig")?.addEventListener("click", () => eliminarAsignacion(item));
-
-    // Cerrar el modal de confirmación
-    const modalConfirm = bootstrap.Modal.getInstance(document.getElementById("modalConfirmCompetencia"));
-    modalConfirm.hide();
-
-    // 🟢 Abrir modal de instructor inmediatamente
-    await abrirModalAsignar({ asignacionId, itemEl: item });
-
-    // Limpiar variables temporales
-    window._competenciaPendiente = null;
-    window._diaPendiente = null;
-});
-
-
-
-        function wireResultadosDrag() {
-            document.querySelectorAll(".resultado-item").forEach(r => {
-                if (r.dataset.wired === "1") return;   // ← evita duplicados
-                r.dataset.wired = "1";
-
-                r.addEventListener("dragstart", e => {
-                    e.dataTransfer.setData("competencia", r.dataset.competencia);
-                    e.dataTransfer.setData("resultado", r.dataset.resultado);
-                    e.dataTransfer.effectAllowed = "move";
-                    r.classList.add("dragging");
-                });
-                r.addEventListener("dragend", () => r.classList.remove("dragging"));
-            });
-        }
-        /* =================== DRAG & DROP: Competencias completas =================== */
-        let COMP_DRAGGING = null; // competencia que se está arrastrando
-
-        function wireCompetenciaDrag() {
-            document.querySelectorAll(".card-header .fw-bold.text-sena").forEach((span, idx) => {
-                if (span.dataset.wired === "1") return;
-                span.dataset.wired = "1";
-
-                // 🔹 Hacemos que el título sea arrastrable
-                span.draggable = true;
-                span.title = "Arrastra la competencia completa";
-
-                span.addEventListener("dragstart", e => {
-                    const comp = COMPETENCIAS[idx];
-                    if (!comp) return;
-                    COMP_DRAGGING = comp;
-                    e.dataTransfer.effectAllowed = "move";
-                    e.dataTransfer.setData("competenciaCompleta", encodeURIComponent(comp.Competencia));
-                    span.classList.add("opacity-50");
-                });
-
-                span.addEventListener("dragend", () => {
-                    COMP_DRAGGING = null;
-                    span.classList.remove("opacity-50");
-                });
-            });
-        }
-
-
-
-    // Si el usuario cierra el modal SIN guardar, elimina el bloque
-        modalAsignarEl?.addEventListener("hidden.bs.modal", () => {
-            if (!dropContext) return;
-
-            const asignacion = payload.asignaciones.find(a => a.id === dropContext.asignacionId);
-
-            // Si no se guardó manualmente, intenta guardar automático
-            if (!dropContextGuardado && asignacion) {
-                const instructorId = selInstructorEl.value?.trim() || null;
-                const horaDesde = horaDesdeEl.value?.trim() || "06:00";
-                const horaHasta = horaHastaEl.value?.trim() || "09:00";
-
-                // Si instructor y horas válidos → guardar
-                if (instructorId) {
-                    asignacion.instructorId = parseInt(instructorId, 10);
-                    asignacion.horaDesde = horaDesde;
-                    asignacion.horaHasta = horaHasta;
-                    asignacion.instructorNombre = INSTRUCTORES_BY_ID.get(String(instructorId)) || "—";
-
-                    const nombreEl = dropContext.itemEl.querySelector(".instructor");
-                    const horarioEl = dropContext.itemEl.querySelector(".horario");
-                    if (nombreEl) nombreEl.textContent = asignacion.instructorNombre;
-                    if (horarioEl) horarioEl.textContent = `${horaDesde} – ${horaHasta}`;
-                    dropContext.itemEl.title = `${asignacion.instructorNombre} • ${horaDesde} – ${horaHasta}`;
-
-                    dropContextGuardado = true;
-                } else {
-                    // Si no tiene datos mínimos, eliminar
-                    dropContext.itemEl?.remove();
-                    payload.asignaciones = payload.asignaciones.filter(a => a.id !== dropContext.asignacionId);
+                    fichaSugerencias.classList.remove("d-none");
+                } catch (err) {
+                    fichaSugerencias.innerHTML = `
+                        <div class="list-group-item small text-danger">
+                            Error: ${err.message}
+                        </div>`;
+                    fichaSugerencias.classList.remove("d-none");
                 }
             }
 
-            dropContext = null;
-        });
+            inputFicha?.addEventListener("input", debounce(async () => {
+                const q = inputFicha.value.trim();
+                hfFichaId.value = "";
+                txtTrimestreFicha.value = "";
+                inputPrograma.value = "";
+                if (q.length < 2) {
+                    ocultarSugerencias();
+                    return;
+                }
+                await buscarFichasLectivas(q);
+            }, 300));
 
+            inputFicha?.addEventListener("focus", async () => {
+                if (!selAnio.value || !selTrimestreAnio.value) {
+                    showAlert("Selecciona el año y trimestre antes de buscar fichas.", "warning");
+                    return;
+                }
+                await buscarFichasLectivas(inputFicha.value.trim());
+            });
 
-  /* =================== Estado =================== */
-let payload = { numeroFicha: "", nombreHorario: "Horario generado", trimestre: "", asignaciones: [] };
-const nextId = (() => { let c = 1; return () => c++; })();
-
-/* Cache de fichas para autocompletar */
-let fichasCache = []; // [{ IdFicha, CodigoFicha, TrimestreDeLaFicha, IdPrograma, ProgramaNombre }]
-
-/* =================== Cargar Fichas (unificado) =================== */
-async function cargarFichas() {
-    const anio = selAnio.value.trim();
-    const tri = selTrimestreAnio.value;
-
-    // Limpia valores actuales
-    inputFicha.value = "";
-    hfFichaId.value = "";
-    txtTrimestreFicha.value = "";
-    inputPrograma.value = "";
-    fichasCache = [];
-    ocultarSugerencias();
-
-    if (!anio || !tri) return;
-
-    try {
-        const url = `@Url.Action("GetFichasEnFormacion","Home")?anio=${encodeURIComponent(anio)}&trimestre=${encodeURIComponent(tri)}`;
-        const resp = await fetch(url, { headers: { "Accept": "application/json" } });
-        const json = await resp.json();
-        if (!resp.ok || !json?.ok) throw new Error(json?.msg || "No fue posible obtener las fichas.");
-
-        const fichas = Array.isArray(json.data) ? json.data : [];
-        // Normaliza y guarda en caché
-        fichasCache = fichas.map(f => ({
-            IdFicha: f.IdFicha,
-            CodigoFicha: (f.CodigoFicha ?? "").toString().trim(),
-            TrimestreDeLaFicha: f.TrimestreDeLaFicha ?? "",
-            IdPrograma: f.IdPrograma ?? "",
-            ProgramaNombre: f.ProgramaNombre ?? ""
-        }));
-
-        console.log("✅ Fichas cargadas:", fichasCache.length);
-    } catch (err) {
-        console.error(err);
-        showAlert(err.message || "Error cargando fichas.", "danger");
-    }
-}
-
-/* =================== AUTOCOMPLETADO DE FICHAS LECTIVAS (Optimizado y Reactivo) =================== */
-async function buscarFichasLectivas(term = "") {
-    const anio = selAnio?.value?.trim();
-    const trimestre = selTrimestreAnio?.value?.trim();
-
-    fichaSugerencias.innerHTML = "";
-    if (!anio || !trimestre) {
-        fichaSugerencias.innerHTML = `
-            <div class="list-group-item small text-muted">
-                ⚠️ Selecciona año y trimestre antes de buscar.
-            </div>`;
-        fichaSugerencias.classList.remove("d-none");
-        return;
-    }
-
-    try {
-        const url = '@Url.Action("GetFichasEnFormacion", "Home")'
-            + `?term=${encodeURIComponent(term)}`
-            + `&anio=${encodeURIComponent(anio)}`
-            + `&trimestre=${encodeURIComponent(trimestre)}`;
-
-        console.log("🔎 Buscando fichas en:", url);
-
-        const resp = await fetch(url, { headers: { "Accept": "application/json" } });
-        if (!resp.ok) throw new Error(`Error HTTP ${resp.status}`);
-
-        const json = await resp.json();
-        if (!json?.ok) throw new Error(json.msg || "No se pudieron obtener las fichas.");
-
-        let fichas = json.data || [];
-
-        // 🧩 FILTRO LOCAL: si el backend no filtra por 'term', lo hacemos aquí
-        if (term && fichas.length > 0) {
-            const termLower = term.toLowerCase();
-            fichas = fichas.filter(f =>
-                (f.CodigoFicha?.toString().toLowerCase().includes(termLower)) ||
-                (f.ProgramaNombre?.toLowerCase().includes(termLower))
-            );
-        }
-
-        if (!fichas.length) {
-            fichaSugerencias.innerHTML = `
-                <div class="list-group-item small text-muted">
-                    Sin coincidencias…
-                </div>`;
-            fichaSugerencias.classList.remove("d-none");
-            return;
-        }
-
-        // 🟢 Render dinámico de coincidencias
-        fichaSugerencias.innerHTML = "";
-        fichas.forEach(f => {
-            const btn = document.createElement("button");
-            btn.type = "button";
-            btn.className = "list-group-item list-group-item-action";
-
-            btn.innerHTML = `
-                <div><strong>${f.CodigoFicha}</strong> — ${f.ProgramaNombre}</div>
-                <small class="text-muted">
-                    Trimestre ${f.TrimestreDeLaFicha ?? "?"} • ${f.FechaInicio?.split("T")[0] ?? ""} - ${f.FechaFin?.split("T")[0] ?? ""}
-                </small>
-            `;
-
-            btn.addEventListener("click", () => {
-                // ✅ Rellenar datos base de la ficha seleccionada
-                inputFicha.value = f.CodigoFicha;
-                hfFichaId.value = f.IdFicha;
-                inputPrograma.value = f.ProgramaNombre;
-                txtTrimestreFicha.value = f.TrimestreDeLaFicha ?? "";
-
-                // Calcular siguiente trimestre
-                actualizarSiguienteTrimestre();
-
-                // Ocultar sugerencias
-                ocultarSugerencias();
-
-                // Cargar competencias del trimestre actual
-                if (typeof cargarCompetenciasFicha === "function") {
-                    cargarCompetenciasFicha(f.IdFicha);
+            document.addEventListener("click", e => {
+                if (!fichaSugerencias.contains(e.target) && !inputFicha.contains(e.target)) {
+                    ocultarSugerencias();
                 }
             });
-            fichaSugerencias.appendChild(btn);
-        });
 
-        fichaSugerencias.classList.remove("d-none");
-    } catch (err) {
-        console.error("💥 Error general al buscar fichas:", err);
-        fichaSugerencias.innerHTML = `
-            <div class="list-group-item small text-danger">
-                Error: ${err.message}
-            </div>`;
-        fichaSugerencias.classList.remove("d-none");
-    }
-}
+            selAnio?.addEventListener("change", () => buscarFichasLectivas(inputFicha.value.trim()));
+            selTrimestreAnio?.addEventListener("change", () => buscarFichasLectivas(inputFicha.value.trim()));
 
-/* =================== AUXILIARES =================== */
-function ocultarSugerencias() {
-    fichaSugerencias.classList.add("d-none");
-    fichaSugerencias.innerHTML = "";
-}
-
-function debounce(fn, ms = 250) {
-    let t;
-    return (...args) => {
-        clearTimeout(t);
-        t = setTimeout(() => fn.apply(this, args), ms);
-    };
-}
-
-/* =================== EVENTOS =================== */
-
-// 🔹 Buscar fichas mientras el usuario escribe (mínimo 2 caracteres)
-inputFicha?.addEventListener("input", debounce(async () => {
-    const q = inputFicha.value.trim();
-    hfFichaId.value = "";
-    txtTrimestreFicha.value = "";
-    inputPrograma.value = "";
-
-    if (q.length < 2) {
-        ocultarSugerencias();
-        return;
-    }
-
-    console.log("⌨️ Buscando coincidencias:", q);
-    await buscarFichasLectivas(q);
-}, 300));
-
-// 🔹 Mostrar fichas al enfocar (si hay año/trimestre)
-inputFicha?.addEventListener("focus", async () => {
-    if (!selAnio.value || !selTrimestreAnio.value) {
-        showAlert("⚠️ Selecciona el año y trimestre antes de buscar fichas.", "warning");
-        return;
-    }
-    console.log("🟢 Mostrando fichas disponibles...");
-    await buscarFichasLectivas(inputFicha.value.trim());
-});
-
-// 🔹 Cerrar sugerencias si hace click fuera
-document.addEventListener("click", e => {
-    if (!fichaSugerencias.contains(e.target) && !inputFicha.contains(e.target)) {
-        ocultarSugerencias();
-    }
-});
-
-// 🔹 Recargar fichas si cambia año o trimestre
-selAnio?.addEventListener("change", async () => {
-    console.log("🔄 Año cambiado, recargando fichas...");
-    await buscarFichasLectivas(inputFicha.value.trim());
-});
-
-selTrimestreAnio?.addEventListener("change", async () => {
-    console.log("🔄 Trimestre cambiado, recargando fichas...");
-    await buscarFichasLectivas(inputFicha.value.trim());
-});
-
-
-
-
-
-        /* =================== EVENTOS DE CARGA DE EXCEL =================== */
-        const btnCargarExcel = document.getElementById("btnCargarExcel");
-        const inputExcel = document.getElementById("inputExcel");
-
-        /* 🔹 Paso 1: al hacer clic en el botón visible, abrimos el input oculto */
-        btnCargarExcel?.addEventListener("click", () => {
-            inputExcel.click();
-        });
-
-        /* 🔹 Paso 2: cuando se selecciona un archivo, procesamos la carga */
-        inputExcel?.addEventListener("change", async function (e) {
-            const file = e.target.files?.[0];
-            if (!file) return;
-
-            const anio = selAnio.value;
-            const trimestre = selTrimestreAnio.value;
-            const idFicha = hfFichaId.value;
-
-            if (!anio || !trimestre || !idFicha) {
-                showAlert("⚠️ Debes seleccionar un Año, un Trimestre y una Ficha antes de importar.", "warning");
-                e.target.value = "";
-                return;
-            }
-
-            btnCargarExcel.innerHTML = `<i class="bi bi-hourglass-split me-1"></i> Cargando...`;
-            btnCargarExcel.disabled = true;
-
-            try {
-                const fd = new FormData();
-                fd.append("archivoExcel", file);
-                fd.append("anio", anio);
-                fd.append("trimestre", trimestre);
-                fd.append("idFicha", idFicha);
-
-                const resp = await fetch('@Url.Action("ImportarExcel","Home")', { method: "POST", body: fd });
-                const data = await resp.json();
-
-                if (!data.ok) throw new Error(data.msg || "Error al importar la planeación.");
-
-                showAlert(data.msg, "success");
-
-                // ✅ Mostrar las competencias cargadas después de importar
-                mostrarCompetenciasCargadas(data.competencias);
-
-            } catch (err) {
-                showAlert("❌ " + err.message, "danger");
-            } finally {
-                btnCargarExcel.disabled = false;
-                btnCargarExcel.innerHTML = `<i class="bi bi-file-earmark-excel-fill me-1"></i> Cargar Planeación`;
-                e.target.value = ""; // limpia el input
-            }
-        });
-
-        // =================== Estado en memoria ===================
-        let COMPETENCIAS = [];              // [{ Competencia, Resultados: [...] }]
-        let OPEN_COMP_IDS = new Set();      // ids de acordeones abiertos (para recordar estado)
-
-        // =================== Render con acordeón (desplegar) ===================
-        function renderCompetencias(list) {
-            const cont = document.getElementById("competenciasList");
-            cont.innerHTML = "";
-
-            if (!list || !list.length) {
-                cont.innerHTML = `<div class="text-muted text-center py-2">Sin competencias para mostrar.</div>`;
-                return;
-            }
-
-            list.forEach((c, idx) => {
-                const compId = `comp_${idx}`;
-                const isOpen = OPEN_COMP_IDS.has(compId);
-
-                const card = document.createElement("div");
-                card.className = "card mb-2 border-0 shadow-sm";
-
-                card.innerHTML = `
-      <div class="card-header d-flex justify-content-between align-items-center bg-white border-start border-4 border-success pointer"
-           role="button" data-bs-toggle="collapse" data-bs-target="#${compId}" aria-expanded="${isOpen}"
-           aria-controls="${compId}">
-        <span class="fw-bold text-sena">${c.Competencia}</span>
-        <i class="bi bi-chevron-down text-success fs-5 transition ${isOpen ? 'rotate-180' : ''}"></i>
-      </div>
-
-      <div id="${compId}" class="collapse ${isOpen ? 'show' : ''}">
-        <div class="card-body pt-2 pb-2 ps-4">
-          ${Array.isArray(c.Resultados) && c.Resultados.length
-                        ? `
-                <ul class="list-unstyled mb-0">
-                  ${c.Resultados.map(r => `
-                    <li class="resultado-item small text-muted border p-1 mb-1 rounded bg-light"
-                        draggable="true"
-                        data-competencia="${encodeURIComponent(c.Competencia)}"
-                        data-resultado="${encodeURIComponent(r)}">
-                      <i class="bi bi-arrows-move me-1 text-success"></i> ${r}
-                    </li>
-                  `).join("")}
-                </ul>
-              `
-                        : `<small class="text-muted fst-italic">Sin resultados de aprendizaje</small>`
-                    }
-        </div>
-      </div>
-    `;
-
-                // recordar estado abierto/cerrado
-                const header = card.querySelector(".card-header");
-                const chevron = card.querySelector(".bi-chevron-down");
-                const collapseEl = card.querySelector(`#${compId}`);
-                collapseEl.addEventListener("shown.bs.collapse", () => {
-                    OPEN_COMP_IDS.add(compId);
-                    chevron.classList.add("rotate-180");
-                });
-                collapseEl.addEventListener("hidden.bs.collapse", () => {
-                    OPEN_COMP_IDS.delete(compId);
-                    chevron.classList.remove("rotate-180");
-                });
-
-                cont.appendChild(card);
+            // ========== IMPORTAR EXCEL ==========
+            btnCargarExcel?.addEventListener("click", () => {
+                inputExcel.click();
             });
 
-            // re-activar drag&drop sobre los <li> recién pintados
-            wireResultadosDrag();
-            wireCompetenciaDrag(); // NO llames a activarDragDropResultados aquí
-        }
+            inputExcel?.addEventListener("change", async function (e) {
+                const file = e.target.files?.[0];
+                if (!file) return;
 
-        // =================== Cargar (desde backend) y dejar base para filtrar ===================
-        function mostrarCompetenciasCargadas(competencias) {
-            // guardamos copia “maestra” para el filtro
-            COMPETENCIAS = Array.isArray(competencias) ? competencias : [];
-            // reseteamos el estado abierto (si quieres conservarlo entre cargas, quita la siguiente línea)
-            OPEN_COMP_IDS = new Set();
-            renderCompetencias(COMPETENCIAS);
-        }
+                const anio = selAnio.value;
+                const trimestre = selTrimestreAnio.value;
+                const idFicha = hfFichaId.value;
 
-        // =================== Filtro que conserva estructura de acordeón ===================
-        const txtSearchEl = document.getElementById("txtSearch");
-        txtSearchEl?.addEventListener("input", debounce(() => {
-            const q = (txtSearchEl.value || "").trim().toLowerCase();
-            if (!q) {
+                if (!anio || !trimestre || !idFicha) {
+                    showAlert("Debes seleccionar un Año, un Trimestre y una Ficha antes de importar.", "warning");
+                    e.target.value = "";
+                    return;
+                }
+
+                btnCargarExcel.innerHTML = `<i class="bi bi-hourglass-split me-1"></i> Cargando...`;
+                btnCargarExcel.disabled = true;
+
+                try {
+                    const fd = new FormData();
+                    fd.append("archivoExcel", file);
+                    fd.append("anio", anio);
+                    fd.append("trimestre", trimestre);
+                    fd.append("idFicha", idFicha);
+
+                    const resp = await fetch('@Url.Action("ImportarExcel", "Home")', {
+                        method: "POST",
+                        body: fd
+                    });
+                    const data = await resp.json();
+
+                    if (!data.ok) throw new Error(data.msg || "Error al importar la planeación.");
+
+                    showAlert(data.msg, "success");
+                    cargarCompetenciasFicha(idFicha);
+                } catch (err) {
+                    showAlert(err.message, "danger");
+                } finally {
+                    btnCargarExcel.disabled = false;
+                    btnCargarExcel.innerHTML = `<i class="bi bi-file-earmark-excel-fill me-1"></i> Cargar Planeación`;
+                    e.target.value = "";
+                }
+            });
+
+            // ========== RENDER COMPETENCIAS ==========
+            function renderCompetencias(list) {
+                competenciasList.innerHTML = "";
+
+                if (!list || !list.length) {
+                    competenciasList.innerHTML =
+                        `<div class="text-muted text-center py-2">Sin competencias para mostrar.</div>`;
+                    return;
+                }
+
+                list.forEach((c, idx) => {
+                    const compId = `comp_${idx}`;
+                    const isOpen = OPEN_COMP_IDS.has(compId);
+
+                    const card = document.createElement("div");
+                    card.className = "card mb-2 border-0 shadow-sm";
+
+                    card.innerHTML = `
+                        <div class="card-header d-flex justify-content-between align-items-center bg-white border-start border-4 border-success pointer"
+                             role="button"
+                             data-bs-toggle="collapse"
+                             data-bs-target="#${compId}"
+                             aria-expanded="${isOpen}"
+                             aria-controls="${compId}">
+                            <span class="fw-bold text-sena">${c.Competencia}</span>
+                            <i class="bi bi-chevron-down text-success fs-5 ${isOpen ? 'rotate-180' : ''}"></i>
+                        </div>
+                        <div id="${compId}" class="collapse ${isOpen ? 'show' : ''}">
+                            <div class="card-body pt-2 pb-2 ps-4">
+                                ${
+                                    Array.isArray(c.Resultados) && c.Resultados.length
+                                        ? `<ul class="list-unstyled mb-0">
+                                            ${c.Resultados.map(r => `
+                                                <li class="resultado-item small text-muted border p-1 mb-1 rounded bg-light"
+                                                    draggable="true"
+                                                    data-competencia="${encodeURIComponent(c.Competencia)}"
+                                                    data-resultado="${encodeURIComponent(r)}">
+                                                    <i class="bi bi-arrows-move me-1 text-success"></i> ${r}
+                                                </li>`).join("")}
+                                           </ul>`
+                                        : `<small class="text-muted fst-italic">Sin resultados de aprendizaje</small>`
+                                }
+                            </div>
+                        </div>`;
+
+                    const collapseEl = card.querySelector(`#${compId}`);
+                    const chevron = card.querySelector(".bi-chevron-down");
+
+                    collapseEl.addEventListener("shown.bs.collapse", () => {
+                        OPEN_COMP_IDS.add(compId);
+                        chevron.classList.add("rotate-180");
+                    });
+
+                    collapseEl.addEventListener("hidden.bs.collapse", () => {
+                        OPEN_COMP_IDS.delete(compId);
+                        chevron.classList.remove("rotate-180");
+                    });
+
+                    competenciasList.appendChild(card);
+                });
+
+                wireResultadosDrag();
+                wireCompetenciaDrag();
+            }
+
+            function mostrarCompetenciasCargadas(competencias) {
+                COMPETENCIAS = Array.isArray(competencias) ? competencias : [];
+                OPEN_COMP_IDS = new Set();
                 renderCompetencias(COMPETENCIAS);
-                return;
             }
 
-            // filtra por texto en nombre de competencia o en resultados
-            const filtered = COMPETENCIAS
-                .map(c => {
-                    const matchComp = (c.Competencia || "").toLowerCase().includes(q);
-                    const resFiltrados = (c.Resultados || []).filter(r => (r || "").toLowerCase().includes(q));
-                    if (matchComp) {
-                        // si coincide el título, mostramos todos sus resultados
-                        return { Competencia: c.Competencia, Resultados: c.Resultados || [] };
+            txtSearch?.addEventListener("input", debounce(() => {
+                const q = (txtSearch.value || "").trim().toLowerCase();
+                if (!q) {
+                    renderCompetencias(COMPETENCIAS);
+                    return;
+                }
+
+                const filtered = COMPETENCIAS
+                    .map(c => {
+                        const matchComp = (c.Competencia || "").toLowerCase().includes(q);
+                        const resFiltrados = (c.Resultados || [])
+                            .filter(r => (r || "").toLowerCase().includes(q));
+                        if (matchComp) {
+                            return { Competencia: c.Competencia, Resultados: c.Resultados || [] };
+                        }
+                        if (resFiltrados.length) {
+                            return { Competencia: c.Competencia, Resultados: resFiltrados };
+                        }
+                        return null;
+                    })
+                    .filter(Boolean);
+
+                OPEN_COMP_IDS = new Set(filtered.map((_, i) => `comp_${i}`));
+                renderCompetencias(filtered);
+            }, 200));
+
+            // ========== ASIGNACIONES ==========
+            function editarAsignacion(item) {
+                const id = parseInt(item.dataset.asignacionId, 10);
+                const a = payload.asignaciones.find(x => x.id === id);
+                const preset = {
+                    instructorId: a?.instructorId ? String(a.instructorId) : "",
+                    horaDesde: a?.horaDesde || "06:00",
+                    horaHasta: a?.horaHasta || "09:00"
+                };
+                abrirModalAsignar({ asignacionId: id, itemEl: item }, preset);
+            }
+
+            function eliminarAsignacion(item) {
+                const id = parseInt(item.dataset.asignacionId, 10);
+                const col = item.closest(".day-col");
+                payload.asignaciones = payload.asignaciones.filter(a => a.id !== id);
+                item.remove();
+                if (col) updateDropHint(col);
+            }
+
+            function parseHM(hhmm) {
+                if (!hhmm || !/^\d{2}:\d{2}$/.test(hhmm)) return null;
+                const [h, m] = hhmm.split(":").map(n => parseInt(n, 10));
+                return h * 60 + m;
+            }
+
+            function rangosSePisan(d1, h1, d2, h2) {
+                return d1 < h2 && d2 < h1;
+            }
+
+
+            function tieneConflictoEnDia({ dia, instructorId, desde, hasta, ignoreId = null }) {
+                const d = parseHM(desde);
+                const h = parseHM(hasta);
+                if (d == null || h == null) return "Debes indicar un horario válido.";
+                if (d >= h) return "La hora inicial debe ser menor que la final.";
+
+                const choqueInstructor = payload.asignaciones.some(a =>
+                    a.dia === dia &&
+                    a.id !== ignoreId &&
+                    a.instructorId != null &&
+                    String(a.instructorId) === String(instructorId) &&
+                    rangosSePisan(parseHM(a.horaDesde), parseHM(a.horaHasta), d, h)
+                );
+                if (choqueInstructor) return "Ese instructor ya tiene una asignación en ese horario.";
+
+                return null;
+            }
+
+            // ========== CARGAR COMPETENCIAS POR FICHA/TRIM ==========
+
+            async function cargarCompetenciasFicha(idFicha) {
+                const trimestreFicha = txtTrimestreFicha.value.trim();
+                if (!idFicha || !trimestreFicha) {
+                    showAlert("No se puede cargar competencias sin seleccionar ficha y trimestre.", "warning");
+                    return;
+                }
+
+                try {
+                    const url = '@Url.Action("GetCompetenciasPorTrimestre", "Home")'
+                        + `?idFicha=${encodeURIComponent(idFicha)}&trimestre=${encodeURIComponent(trimestreFicha)}`;
+
+                    const resp = await fetch(url, { headers: { "Accept": "application/json" } });
+                    const json = await resp.json();
+
+                    if (!json.ok) {
+                        showAlert(json.msg || "No hay competencias en este trimestre.", "info");
+                        competenciasList.innerHTML =
+                            `<div class="text-muted text-center py-2">Sin competencias para este trimestre.</div>`;
+                        return;
                     }
-                    if (resFiltrados.length) {
-                        // si no coincide el título pero sí algunos resultados, mostramos solo esos
-                        return { Competencia: c.Competencia, Resultados: resFiltrados };
-                    }
-                    return null;
-                })
-                .filter(Boolean);
 
-            // abre todo por comodidad cuando hay búsqueda
-            OPEN_COMP_IDS = new Set(filtered.map((_, i) => `comp_${i}`));
-            renderCompetencias(filtered);
-        }, 180));
+                    mostrarCompetenciasCargadas(json.data);
+                } catch (err) {
+                    console.error(err);
+                    showAlert("Error cargando competencias: " + err.message, "danger");
+                }
+            }
 
-        // =================== Utilidad: debounce sencillo ===================
-        function debounce(fn, ms = 200) {
-            let t;
-            return (...args) => { clearTimeout(t); t = setTimeout(() => fn.apply(this, args), ms); };
-        }
+            // ========== GUARDAR HORARIO COMPLETO ==========
+            btnGuardarHorario?.addEventListener("click", async () => {
+                if (!payload.asignaciones.length) {
+                    showAlert("No hay asignaciones para guardar.", "warning");
+                    return;
+                }
 
-        /* =================== CREAR / EDITAR / ELIMINAR =================== */
-        function activarDragDropResultados() {
-            wireDayDropZones();   // ← se ejecuta una vez
-            wireResultadosDrag(); // ← se puede llamar tras cada render de competencias
-        }
-
-
-        function editarAsignacion(item) {
-            const id = parseInt(item.dataset.asignacionId, 10);
-            const a = payload.asignaciones.find(x => x.id === id);
-            const preset = {
-                instructorId: a?.instructorId ? String(a.instructorId) : "",
-                horaDesde: a?.horaDesde || "06:00",
-                horaHasta: a?.horaHasta || "09:00"
-            };
-            abrirModalAsignar({ asignacionId: id, itemEl: item }, preset);
-        }
-
-        function eliminarAsignacion(item) {
-            const id = parseInt(item.dataset.asignacionId, 10);
-            const col = item.closest(".day-col");
-            payload.asignaciones = payload.asignaciones.filter(a => a.id !== id);
-            item.remove();
-            if (col) updateDropHint(col);
-        }
-
-        /* =================== UTIL: placeholders "Suelta aquí" =================== */
-        function initDropHints() {
-            document.querySelectorAll(".day-col").forEach(col => {
-                const hint = col.querySelector("small.text-muted");
-                if (hint) hint.classList.add("drop-hint");
-                updateDropHint(col);
+                await cargarInstructoresLider();
+                const modal = new bootstrap.Modal(document.getElementById("modalLider"));
+                modal.show();
             });
-        }
-        function updateDropHint(dayCol) {
-            const hint = dayCol.querySelector(".drop-hint");
-            if (!hint) return;
-            const hasItems = dayCol.querySelectorAll(".asignacion").length > 0;
-            hint.style.display = hasItems ? "none" : "";
-        }
 
-        /* =================== VALIDACIONES DE HORARIO =================== */
-        function parseHM(hhmm) {
-            // "06:00" → minutos desde 00:00
-            if (!hhmm || !/^\d{2}:\d{2}$/.test(hhmm)) return null;
-            const [h, m] = hhmm.split(":").map(n => parseInt(n, 10));
-            return h * 60 + m;
-        }
-        function rangosSePisan(aDesde, aHasta, bDesde, bHasta) {
-            return aDesde < bHasta && bDesde < aHasta; // intersección abierta
-        }
-        function tieneConflictoEnDia({ dia, instructorId, desde, hasta, ignoreId = null }) {
-            const d = parseHM(desde);
-            const h = parseHM(hasta);
-            if (d == null || h == null) return "Debes indicar un horario válido.";
-            if (d >= h) return "La hora inicial debe ser menor que la final.";
+            btnConfirmarLider?.addEventListener("click", async () => {
+                const idInstructorLider = selInstructorLider.value;
 
-            // 1) Ese instructor ya tiene algo que se pisa en el mismo día
-            const choqueInstructor = payload.asignaciones.some(a =>
-                a.dia === dia &&
-                a.id !== ignoreId &&
-                a.instructorId != null &&
-                String(a.instructorId) === String(instructorId) &&
-                rangosSePisan(parseHM(a.horaDesde), parseHM(a.horaHasta), d, h)
-            );
-            if (choqueInstructor) return "Ese instructor ya tiene una asignación en ese horario.";
+                if (!idInstructorLider) {
+                    showAlert("Debes seleccionar un instructor líder.", "warning");
+                    return;
+                }
 
-            return null; // OK
-        }
+                const fd = new FormData();
+                fd.append("__RequestVerificationToken", getAntiForgeryToken());
+                fd.append("AsignacionesJson", JSON.stringify(payload.asignaciones));
+                fd.append("numeroFicha", inputFicha.value.trim());
+                fd.append("nombreHorario", `Horario ${inputFicha.value.trim()} - T${selTrimestreAnio.value}`);
+                fd.append("trimestre", selTrimestreAnio.value.trim());
+                fd.append("idInstructorLider", idInstructorLider);
 
+                const resp = await fetch('@Url.Action("GuardarHorario", "Home")', {
+                    method: "POST",
+                    body: fd
+                });
 
-async function cargarCompetenciasFicha(idFicha) {
-    const trimestreFicha = document.getElementById("txtTrimestreFicha").value.trim();
+                const json = await resp.json();
 
-    if (!idFicha || !trimestreFicha) {
-        showAlert("⚠️ No se puede cargar competencias sin seleccionar ficha y trimestre.", "warning");
-        return;
-    }
+                if (json.ok) {
+                    showAlert(json.msg, "success");
+                    setTimeout(() => {
+                        window.location.href = '@Url.Action("ListaHorarios", "Home")';
+                    }, 1500);
+                } else {
+                    showAlert(json.msg, "danger");
+                }
+            });
 
-    try {
-        const url = `@Url.Action("GetCompetenciasPorTrimestre", "Home")?idFicha=${idFicha}&trimestre=${trimestreFicha}`;
-        const resp = await fetch(url, { headers: { "Accept": "application/json" } });
-        const json = await resp.json();
-
-        if (!json.ok) {
-            showAlert(json.msg || "No hay competencias en este trimestre.", "info");
-            document.getElementById("competenciasList").innerHTML =
-                `<div class="text-muted text-center py-2"> Sin competencias para este trimestre.</div>`;
-            return;
-        }
-
-        // ✅ Mostrar competencias filtradas
-        mostrarCompetenciasCargadas(json.data);
-
-    } catch (err) {
-        console.error(err);
-    }
-        }
-
-        /* =================== GUARDAR HORARIO COMPLETO =================== */
-document.getElementById("btnGuardarHorario")?.addEventListener("click", async () => {
-    try {
-        // 1️⃣ Validar datos base
-        const anio = selAnio.value.trim();
-        const trimestre = selTrimestreAnio.value.trim();
-        const fichaCodigo = inputFicha.value.trim();
-        const trimestreFicha = txtTrimestreFicha.value.trim();
-
-        if (!anio || !trimestre || !fichaCodigo || !trimestreFicha) {
-            showAlert("⚠️ Debes seleccionar el año, trimestre y ficha antes de guardar.", "warning");
-            return;
-        }
-
-        if (!payload.asignaciones.length) {
-            showAlert("⚠️ No hay asignaciones creadas para guardar.", "warning");
-            return;
-        }
-
-        // 2️⃣ Actualizar datos base del payload
-        payload.numeroFicha = fichaCodigo;
-        payload.trimestre = trimestre;
-        payload.nombreHorario = `Horario ${fichaCodigo} - T${trimestre}`;
-
-        // 3️⃣ Preparar datos para enviar
-        const fd = new FormData();
-        fd.append("__RequestVerificationToken", getAntiForgeryToken());
-        fd.append("AsignacionesJson", JSON.stringify(payload.asignaciones));
-        fd.append("numeroFicha", payload.numeroFicha);
-        fd.append("nombreHorario", payload.nombreHorario);
-        fd.append("trimestre", payload.trimestre);
-
-        // 4️⃣ Enviar al backend
-        const resp = await fetch('@Url.Action("GuardarHorario", "Home")', {
-            method: "POST",
-            body: fd
-        });
-        const json = await resp.json();
-
-        if (json.ok) {
-            showAlert(json.msg || "✅ Horario guardado correctamente.", "success");
-
-            // 5️⃣ Redirigir automáticamente después de 1.5 segundos
-            setTimeout(() => {
-                window.location.href = '@Url.Action("ListaHorarios", "Home")';
-            }, 1500);
-        } else {
-            showAlert(json.msg || "❌ Error al guardar el horario.", "danger");
-        }
-    } catch (err) {
-        console.error(err);
-        showAlert("💥 Error inesperado: " + err.message, "danger");
-    }
-});
-
-
-        // ====== Calcular siguiente trimestre automáticamente ======
-        const txtSiguienteTrimestre = document.getElementById("txtSiguienteTrimestre");
-
-        // Cada vez que se llene la ficha, calculamos el siguiente trimestre
-        function actualizarSiguienteTrimestre() {
-            const actual = parseInt(txtTrimestreFicha.value || "0");
-            if (!actual || isNaN(actual)) {
-                txtSiguienteTrimestre.value = "";
-                return;
+            // ========== TRIMESTRE SIGUIENTE ==========
+            function actualizarSiguienteTrimestre() {
+                const actual = parseInt(txtTrimestreFicha.value || "0");
+                if (!actual || isNaN(actual)) {
+                    txtSiguienteTrimestre.value = "";
+                    return;
+                }
+                const siguiente = actual >= 7 ? 1 : actual + 1;
+                txtSiguienteTrimestre.value = siguiente;
             }
 
-            // Si llega al 7, el siguiente vuelve a 1
-            const siguiente = actual >= 7 ? 1 : actual + 1;
-            txtSiguienteTrimestre.value = siguiente;
-        }
+            txtTrimestreFicha.addEventListener("change", actualizarSiguienteTrimestre);
 
-        // Vinculamos este cálculo al flujo actual
-        txtTrimestreFicha.addEventListener("change", actualizarSiguienteTrimestre);
+            // ========== INICIALIZACIÓN ==========
+            (async function init() {
+                initDropHints();
+                wireDayDropZones();
+                await cargarHorariosGlobales();
+            })();
 
 
-    </script>
-}
+
+            // VALIDACIÓN INSTANTÁNEA DE CHOQUE
+            // =============================================================
+            //  VALIDACIÓN EN VIVO DENTRO DEL MODAL  (CORREGIDA)
+            // =============================================================
+            function validarEnVivo() {
+                if (!dropContext) return;
+
+                const alertaChoque = document.getElementById("alertChoque");
+                const instructorId = selInstructorEl.value;
+                const horaDesde = horaDesdeEl.value;
+                const horaHasta = horaHastaEl.value;
+                const idFicha = payload.idFichaActual;
+
+                if (!instructorId || !horaDesde || !horaHasta) {
+                    alertaChoque.classList.add("d-none");
+                    return;
+                }
+
+                const asignacion = payload.asignaciones.find(a => a.id === dropContext.asignacionId);
+                const dia = asignacion?.dia || dropContext.itemEl.dataset.dia;
+
+                // --- 1️⃣ VALIDACIÓN LOCAL ---
+                const conflictoLocal = tieneConflictoEnDia({
+                    dia,
+                    instructorId,
+                    desde: horaDesde,
+                    hasta: horaHasta,
+                    ignoreId: dropContext.asignacionId
+                });
+
+                if (conflictoLocal) {
+                    alertaChoque.textContent = "❌ " + conflictoLocal;
+                    alertaChoque.classList.remove("d-none");
+                    return;
+                }
+
+                // --- 2️⃣ VALIDACIÓN GLOBAL (OTRAS FICHAS) ---
+                $.get("/Home/ValidarChoqueInstructorGlobal", {
+                    idInstructor: instructorId,
+                    dia: dia,
+                    desde: horaDesde,
+                    hasta: horaHasta,
+                    idFichaActual: idFicha
+                }).done(resp => {
+
+                    if (!resp.ok) {
+                        alertaChoque.textContent = "Error validando horario.";
+                        alertaChoque.classList.remove("d-none");
+                        return;
+                    }
+
+                    if (resp.choque) {
+                        alertaChoque.textContent =
+                            "❌ Este instructor ya tiene una clase en otra ficha en este mismo rango.";
+                        alertaChoque.classList.remove("d-none");
+                    } else {
+                        alertaChoque.classList.add("d-none");
+                    }
+                });
+            }
+
+
+
+
+            function animarChoque(alertaEl) {
+                alertaEl.classList.remove("shake-alert");
+                void alertaEl.offsetWidth; // fuerza reflow
+                alertaEl.classList.add("shake-alert");
+            }
+
+            // Eventos en vivo
+            selInstructorEl.addEventListener("change", validarEnVivo);
+            horaDesdeEl.addEventListener("input", validarEnVivo);
+            horaHastaEl.addEventListener("input", validarEnVivo);
+
+
+
+            // =============================
+            //  VALIDACIÓN GLOBAL DE HORARIO
+            //  Consulta horarios reales de otras fichas
+            function conflictoGlobal(instructorId, dia, desde, hasta, idFichaActual) {
+
+                const d1 = parseHM(desde);
+                const h1 = parseHM(hasta);
+
+                if (d1 == null || h1 == null || d1 >= h1) {
+                    return "Debes indicar un horario válido.";
+                }
+
+                const asigs = HORARIOS_GLOBAL.filter(h =>
+                    h.IdInstructor == instructorId &&
+                    h.Dia === dia &&
+                    h.IdFicha != idFichaActual   // ← OTRA FICHA
+                );
+
+                for (const h of asigs) {
+                    const d2 = parseHM(h.HoraDesde);
+                    const h2 = parseHM(h.HoraHasta);
+
+                    const choque =
+                        (d1 >= d2 && d1 < h2) ||
+                        (h1 > d2 && h1 <= h2) ||
+                        (d1 <= d2 && h1 >= h2);
+
+                    if (choque) {
+                        return `El instructor ya está asignado el día ${dia} de ${h.HoraDesde} a ${h.HoraHasta} en otra ficha.`;
+                    }
+                }
+
+                return null;
+            }
+
+        </script>
+    }

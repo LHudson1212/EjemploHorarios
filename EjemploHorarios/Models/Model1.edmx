@@ -4,7 +4,7 @@
   <edmx:Runtime>
     <!-- SSDL content -->
     <edmx:StorageModels>
-      <Schema Namespace="SenaPlanningModel.Store" Provider="System.Data.SqlClient" ProviderManifestToken="2012" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
+    <Schema Namespace="SenaPlanningModel.Store" Provider="System.Data.SqlClient" ProviderManifestToken="2012" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
         <EntityType Name="Ambiente">
           <Key>
             <PropertyRef Name="IdAmbiente" />
@@ -106,11 +106,12 @@
             <PropertyRef Name="Id_Horario" />
           </Key>
           <Property Name="Id_Horario" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
-          <Property Name="Año_Horario" Type="int" Nullable="false" />
+          <Property Name="Año_Horario" Type="int" />
           <Property Name="Trimestre_Año" Type="int" Nullable="false" />
           <Property Name="Fecha_Creacion" Type="datetime" />
           <Property Name="IdFicha" Type="int" Nullable="false" />
           <Property Name="Id_Asignacion" Type="int" />
+          <Property Name="IdInstructorLider" Type="int" />
         </EntityType>
         <EntityType Name="HorarioInstructor">
           <Key>
@@ -119,8 +120,8 @@
           <Property Name="IdHorarioInstructor" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
           <Property Name="IdInstructor" Type="int" Nullable="false" />
           <Property Name="IdFicha" Type="int" Nullable="false" />
-          <Property Name="Competencia" Type="nvarchar" MaxLength="255" />
-          <Property Name="Resultado" Type="nvarchar" MaxLength="500" />
+          <Property Name="Competencia" Type="nvarchar(max)" />
+          <Property Name="Resultado" Type="nvarchar(max)" />
           <Property Name="Dia" Type="nvarchar" MaxLength="50" Nullable="false" />
           <Property Name="HoraDesde" Type="time" Precision="7" Nullable="false" />
           <Property Name="HoraHasta" Type="time" Precision="7" Nullable="false" />
@@ -148,8 +149,8 @@
           <Property Name="FechaIngreso" Type="varchar" MaxLength="150" />
           <Property Name="SexoInstructor" Type="varchar" MaxLength="150" />
           <Property Name="EstadoInstructor" Type="bit" Nullable="false" />
-          <Property Name="Horas_De_Trabajo" Type="decimal" Precision="4" Scale="2" />
-          <Property Name="Horas_Trabajadas" Type="decimal" Precision="4" Scale="2" />
+          <Property Name="Horas_De_Trabajo" Type="numeric" Precision="10" Scale="2" />
+          <Property Name="Horas_Trabajadas" Type="numeric" Precision="10" Scale="2" />
         </EntityType>
         <EntityType Name="Meta">
           <Key>
@@ -453,6 +454,18 @@
             </Dependent>
           </ReferentialConstraint>
         </Association>
+        <Association Name="FK_Horario_InstructorLider">
+          <End Role="Instructor" Type="Self.Instructor" Multiplicity="0..1" />
+          <End Role="Horario" Type="Self.Horario" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Instructor">
+              <PropertyRef Name="IdInstructor" />
+            </Principal>
+            <Dependent Role="Horario">
+              <PropertyRef Name="IdInstructorLider" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
         <Association Name="FK_HorarioInstructor_Ficha">
           <End Role="Ficha" Type="Self.Ficha" Multiplicity="1" />
           <End Role="HorarioInstructor" Type="Self.HorarioInstructor" Multiplicity="*" />
@@ -571,6 +584,10 @@
             <End Role="Ficha" EntitySet="Ficha" />
             <End Role="Horario" EntitySet="Horario" />
           </AssociationSet>
+          <AssociationSet Name="FK_Horario_InstructorLider" Association="Self.FK_Horario_InstructorLider">
+            <End Role="Instructor" EntitySet="Instructor" />
+            <End Role="Horario" EntitySet="Horario" />
+          </AssociationSet>
           <AssociationSet Name="FK_HorarioInstructor_Ficha" Association="Self.FK_HorarioInstructor_Ficha">
             <End Role="Ficha" EntitySet="Ficha" />
             <End Role="HorarioInstructor" EntitySet="HorarioInstructor" />
@@ -580,8 +597,7 @@
             <End Role="HorarioInstructor" EntitySet="HorarioInstructor" />
           </AssociationSet>
         </EntityContainer>
-      </Schema>
-    </edmx:StorageModels>
+      </Schema></edmx:StorageModels>
     <!-- CSDL content -->
     <edmx:ConceptualModels>
       <Schema Namespace="SenaPlanningModel" Alias="Self" annotation:UseStrongSpatialTypes="false" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm">
@@ -688,7 +704,7 @@
             <PropertyRef Name="Id_Horario" />
           </Key>
           <Property Name="Id_Horario" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
-          <Property Name="Año_Horario" Type="Int32" Nullable="false" />
+          <Property Name="Año_Horario" Type="Int32" />
           <Property Name="Trimestre_Año" Type="Int32" Nullable="false" />
           <Property Name="Fecha_Creacion" Type="DateTime" Precision="3" />
           <Property Name="IdFicha" Type="Int32" Nullable="false" />
@@ -696,6 +712,8 @@
           <NavigationProperty Name="Asignacion_horario" Relationship="Self.FK_Horario_Asignacion" FromRole="Horario" ToRole="Asignacion_horario" />
           <NavigationProperty Name="Diseño_Curricular" Relationship="Self.FK__Diseño_Cu__Id_Ho__40F9A68C" FromRole="Horario" ToRole="Diseño_Curricular" />
           <NavigationProperty Name="Ficha" Relationship="Self.FK_Horario_Ficha" FromRole="Horario" ToRole="Ficha" />
+          <Property Name="IdInstructorLider" Type="Int32" />
+          <NavigationProperty Name="Instructor" Relationship="SenaPlanningModel.FK_Horario_InstructorLider" FromRole="Horario" ToRole="Instructor" />
         </EntityType>
         <EntityType Name="HorarioInstructor">
           <Key>
@@ -704,8 +722,8 @@
           <Property Name="IdHorarioInstructor" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
           <Property Name="IdInstructor" Type="Int32" Nullable="false" />
           <Property Name="IdFicha" Type="Int32" Nullable="false" />
-          <Property Name="Competencia" Type="String" MaxLength="255" FixedLength="false" Unicode="true" />
-          <Property Name="Resultado" Type="String" MaxLength="500" FixedLength="false" Unicode="true" />
+          <Property Name="Competencia" Type="String" MaxLength="Max" FixedLength="false" Unicode="true" />
+          <Property Name="Resultado" Type="String" MaxLength="Max" FixedLength="false" Unicode="true" />
           <Property Name="Dia" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
           <Property Name="HoraDesde" Type="Time" Nullable="false" Precision="7" />
           <Property Name="HoraHasta" Type="Time" Nullable="false" Precision="7" />
@@ -735,13 +753,14 @@
           <Property Name="FechaIngreso" Type="String" MaxLength="150" FixedLength="false" Unicode="false" />
           <Property Name="SexoInstructor" Type="String" MaxLength="150" FixedLength="false" Unicode="false" />
           <Property Name="EstadoInstructor" Type="Boolean" Nullable="false" />
-          <Property Name="Horas_De_Trabajo" Type="Decimal" Precision="4" Scale="2" />
-          <Property Name="Horas_Trabajadas" Type="Decimal" Precision="4" Scale="2" />
+          <Property Name="Horas_De_Trabajo" Type="Decimal" Precision="10" Scale="2" />
+          <Property Name="Horas_Trabajadas" Type="Decimal" Precision="10" Scale="2" />
           <NavigationProperty Name="Asignacion_horario" Relationship="Self.FK_AsignacionHorario_Instructor" FromRole="Instructor" ToRole="Asignacion_horario" />
           <NavigationProperty Name="Diseño_Curricular" Relationship="Self.FK__Diseño_Cu__IdIns__40058253" FromRole="Instructor" ToRole="Diseño_Curricular" />
           <NavigationProperty Name="HorarioInstructor" Relationship="Self.FK_HorarioInstructor_Instructor" FromRole="Instructor" ToRole="HorarioInstructor" />
           <NavigationProperty Name="Resultado_aprendizaje" Relationship="Self.FK__Resultado__IdIns__02084FDA" FromRole="Instructor" ToRole="Resultado_aprendizaje" />
           <NavigationProperty Name="Area_Conocimiento" Relationship="Self.Area_conocimiento_has_Instructor" FromRole="Instructor" ToRole="Area_Conocimiento" />
+          <NavigationProperty Name="Horario" Relationship="SenaPlanningModel.FK_Horario_InstructorLider" FromRole="Instructor" ToRole="Horario" />
         </EntityType>
         <EntityType Name="Meta">
           <Key>
@@ -1131,7 +1150,23 @@
             <End Role="Ambiente" EntitySet="Ambiente" />
             <End Role="Ficha" EntitySet="Ficha" />
           </AssociationSet>
+          <AssociationSet Name="FK_Horario_InstructorLider" Association="SenaPlanningModel.FK_Horario_InstructorLider">
+            <End Role="Instructor" EntitySet="Instructor" />
+            <End Role="Horario" EntitySet="Horario" />
+          </AssociationSet>
         </EntityContainer>
+        <Association Name="FK_Horario_InstructorLider">
+          <End Type="SenaPlanningModel.Instructor" Role="Instructor" Multiplicity="0..1" />
+          <End Type="SenaPlanningModel.Horario" Role="Horario" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Instructor">
+              <PropertyRef Name="IdInstructor" />
+            </Principal>
+            <Dependent Role="Horario">
+              <PropertyRef Name="IdInstructorLider" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
       </Schema>
     </edmx:ConceptualModels>
     <!-- C-S mapping content -->
@@ -1227,6 +1262,7 @@
           <EntitySetMapping Name="Horario">
             <EntityTypeMapping TypeName="SenaPlanningModel.Horario">
               <MappingFragment StoreEntitySet="Horario">
+                <ScalarProperty Name="IdInstructorLider" ColumnName="IdInstructorLider" />
                 <ScalarProperty Name="Id_Horario" ColumnName="Id_Horario" />
                 <ScalarProperty Name="Año_Horario" ColumnName="Año_Horario" />
                 <ScalarProperty Name="Trimestre_Año" ColumnName="Trimestre_Año" />

@@ -25,6 +25,8 @@ namespace EjemploHorarios.Controllers
         // GET: Home/Index
         public ActionResult Index()
         {
+            
+            ActualizarEstadosFichas();
             return View();
         }
         public ActionResult ListaHorarios()
@@ -38,9 +40,6 @@ namespace EjemploHorarios.Controllers
         {
             try
             {
-                // 🔹 1. Actualiza automáticamente los estados antes de buscar
-                ActualizarEstadosFichas();
-
                 // 🔹 2. Validar parámetros
                 if (anio <= 0 || trimestre < 1 || trimestre > 4)
                     return Json(new { ok = false, msg = "Parámetros inválidos." }, JsonRequestBehavior.AllowGet);
@@ -109,21 +108,22 @@ namespace EjemploHorarios.Controllers
         {
             try
             {
-                var hoy = DateTime.Now;
+                var hoy = DateTime.Now.Date;
 
-                var fichas = db.Ficha.ToList();
+                // 🔥 Fichas que podrían cambiar hoy (FechaFinFicha no nula)
+                var fichas = db.Ficha
+                               .Where(f => f.FechaFinFicha.HasValue)
+                               .ToList();
 
                 foreach (var ficha in fichas)
                 {
-                    if (ficha.FechaFinFicha.HasValue)
-                    {
-                        DateTime fechaLimite = ficha.FechaFinFicha.Value.AddMonths(-6);
+                    DateTime fechaLimite = ficha.FechaFinFicha.Value.AddMonths(-6);
 
-                        // Si la fecha actual supera la fecha fin - 6 meses → ya no puede tener horario lectivo
-                        if (hoy > fechaLimite)
-                            ficha.EstadoFicha = false; // práctica
-                        else
-                            ficha.EstadoFicha = true;  // lectiva
+                    bool nuevoEstado = hoy <= fechaLimite;
+
+                    if (ficha.EstadoFicha != nuevoEstado)
+                    {
+                        ficha.EstadoFicha = nuevoEstado;
                     }
                 }
 
@@ -131,16 +131,9 @@ namespace EjemploHorarios.Controllers
             }
             catch (Exception ex)
             {
-                // Evita romper el flujo si algo falla (por ejemplo, bloqueo de DB)
                 System.Diagnostics.Debug.WriteLine("⚠️ Error al actualizar estados: " + ex.Message);
             }
         }
-
-
-
-
-
-
 
 
 
@@ -163,10 +156,14 @@ namespace EjemploHorarios.Controllers
                 if (ficha == null)
                     return Json(new { ok = false, msg = "Ficha no encontrada." });
 
-                int horarioId = ObtenerHorarioValido(idFicha, anio, trimestre);
-                string programaNombre = ficha.Programa_Formacion?.DenominacionPrograma ?? "Programa desconocido";
+                // ❌ YA NO ACTUALIZAMOS EL TRIMESTRE DE LA FICHA
+                // ficha.Trimestre = trimestre;   ← ELIMINADO
+                // db.SaveChanges();              ← ELIMINADO
 
-                var listaCompetencias = new List<CompetenciaDTO>();
+                // 👍 SOLO usamos el trimestre que viene desde el usuario
+                int horarioId = ObtenerHorarioValido(idFicha, anio, trimestre);
+
+                string programaNombre = ficha.Programa_Formacion?.DenominacionPrograma ?? "Programa desconocido";
 
                 using (var package = new OfficeOpenXml.ExcelPackage(new FileInfo(filePath)))
                 {
@@ -179,9 +176,9 @@ namespace EjemploHorarios.Controllers
 
                     for (int row = 2; row <= rowCount; row++)
                     {
-                        string competencia = ws.Cells[row, 4].Text?.Trim();   // Columna D
-                        string resultado = ws.Cells[row, 6].Text?.Trim();     // Columna F
-                        string instructorNombre = ws.Cells[row, 34].Text?.Trim(); // Columna AI
+                        string competencia = ws.Cells[row, 4].Text?.Trim();
+                        string resultado = ws.Cells[row, 6].Text?.Trim();
+                        string instructorNombre = ws.Cells[row, 35].Text?.Trim();
 
                         if (!string.IsNullOrEmpty(competencia))
                             competenciaActual = competencia;
@@ -218,7 +215,7 @@ namespace EjemploHorarios.Controllers
                     db.SaveChanges();
                 }
 
-                // 🔹 Filtramos automáticamente por el trimestre de la ficha
+                // 🎯 USAR SIEMPRE EL TRIMESTRE QUE EL USUARIO SELECCIONÓ
                 var competenciasFiltradas = FiltrarCompetenciasPorTrimestre(idFicha, trimestre);
 
                 return Json(new
@@ -237,16 +234,94 @@ namespace EjemploHorarios.Controllers
             }
         }
 
-
         public class CompetenciaDTO
         {
             public string Competencia { get; set; }
             public List<string> Resultados { get; set; }
         }
 
+        private int ObtenerInstructorId(string nombre)
+        {
+            // 1️⃣ Si viene vacío → usar instructor genérico
+            if (string.IsNullOrWhiteSpace(nombre))
+                return 1219;
+
+            // 2️⃣ Lista de valores basura
+            string[] basura =
+            {
+        "100%", "%", "NO", "N/A", "-", "--", "0", "XX", "XXX",
+        "NINGUNO", "SIN", "NO APLICA", "NOAPLICA",
+        "INSTRUCTOR", "INSTRUCTOR GENERICO", "INSTRUCTOR GENÉRICO"
+    };
+
+            string upper = nombre.Trim().ToUpperInvariant();
+            if (basura.Contains(upper))
+                return 1219;
+
+            // 3️⃣ Normalizador (SIN usar dentro de LINQ)
+            string Normalizar(string t)
+            {
+                if (string.IsNullOrWhiteSpace(t)) return "";
+
+                t = t.Trim().ToUpperInvariant();
+
+                while (t.Contains("  "))
+                    t = t.Replace("  ", " ");
+
+                // Quitar tildes
+                var normalized = t.Normalize(System.Text.NormalizationForm.FormD);
+                var sb = new System.Text.StringBuilder();
+
+                foreach (char c in normalized)
+                {
+                    var cat = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c);
+                    if (cat != System.Globalization.UnicodeCategory.NonSpacingMark)
+                        sb.Append(c);
+                }
+
+                return sb.ToString().Trim();
+            }
+
+            // Normalize del Excel
+            string nombreExcelNorm = Normalizar(nombre);
+
+            // 4️⃣ Cargar todos los instructores a memoria (AQUÍ SI PODEMOS USAR TOUPPER, etc)
+            var lista = db.Instructor
+                          .AsNoTracking()
+                          .ToList()
+                          .Select(i => new
+                          {
+                              Id = i.IdInstructor,
+                              NombreNorm = Normalizar(i.NombreCompletoInstructor)
+                          })
+                          .ToList();
+
+            // 5️⃣ Buscar coincidencia EXACTA
+            var exacto = lista.FirstOrDefault(x => x.NombreNorm == nombreExcelNorm);
+            if (exacto != null)
+                return exacto.Id;
+
+            // 6️⃣ Buscar coincidencia por palabras (muy útil)
+            string[] palabrasExcel = nombreExcelNorm.Split(' ').Where(x => x.Length > 0).ToArray();
+
+            foreach (var item in lista)
+            {
+                string[] palabrasBD = item.NombreNorm.Split(' ').Where(x => x.Length > 0).ToArray();
+
+                int coincidencias = palabrasExcel.Count(pe => palabrasBD.Contains(pe));
+
+                if (coincidencias >= 2) // regla segura
+                    return item.Id;
+            }
+
+            // 7️⃣ Si no lo encuentra
+            return 1219;
+        }
 
 
-      
+
+
+
         [HttpGet]
         public JsonResult GetCompetenciasPorTrimestre(int idFicha, int trimestre)
         {
@@ -297,19 +372,7 @@ namespace EjemploHorarios.Controllers
             return competencias;
         }
 
-        private int ObtenerInstructorId(string nombre)
-        {
-            if (string.IsNullOrWhiteSpace(nombre))
-                nombre = "Instructor Genérico";
-
-            var instructor = db.Instructor.FirstOrDefault(i => i.NombreCompletoInstructor == nombre);
-            if (instructor != null) return instructor.IdInstructor;
-
-            var nuevo = new Instructor { NombreCompletoInstructor = nombre, EstadoInstructor = true };
-            db.Instructor.Add(nuevo);
-            db.SaveChanges();
-            return nuevo.IdInstructor;
-        }
+       
 
         private int ObtenerHorarioValido(int idFicha, int anio, int trimestre)
         {
@@ -429,85 +492,108 @@ namespace EjemploHorarios.Controllers
             {
                 if (string.IsNullOrWhiteSpace(resultado))
                 {
-                    System.Diagnostics.Debug.WriteLine("⚠️ Resultado vacío o nulo.");
-                    return Json(new { ok = false, msg = "Resultado vacío." }, JsonRequestBehavior.AllowGet);
+                    return Json(new
+                    {
+                        ok = true,
+                        data = new { IdInstructor = 0, Nombre = "Instructor no asignado" }
+                    }, JsonRequestBehavior.AllowGet);
                 }
 
-                // 🔹 Normaliza el texto para evitar fallos por tildes o espacios
-                string NormalizeText(string text)
+                // ===== NORMALIZADOR =====
+                string Normalize(string t)
                 {
-                    if (string.IsNullOrWhiteSpace(text)) return "";
-                    var normalized = text.Normalize(System.Text.NormalizationForm.FormD);
+                    if (string.IsNullOrEmpty(t)) return "";
+                    var normalized = t.Normalize(System.Text.NormalizationForm.FormD);
                     var sb = new System.Text.StringBuilder();
-                    foreach (var c in normalized)
+                    foreach (char c in normalized)
                     {
-                        var unicodeCategory = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c);
-                        if (unicodeCategory != System.Globalization.UnicodeCategory.NonSpacingMark)
+                        if (System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c) !=
+                            System.Globalization.UnicodeCategory.NonSpacingMark)
                             sb.Append(c);
                     }
                     return sb.ToString().ToUpperInvariant().Trim();
                 }
 
-                string resultadoNormalizado = NormalizeText(resultado);
+                // ===== LIMPIEZA =====
+                string QuitarBasura(string tx)
+                {
+                    if (string.IsNullOrWhiteSpace(tx)) return "";
+                    string[] basura = { "EL", "LA", "DE", "DEL", "LOS", "LAS", "Y", "EN", "PARA" };
 
-                // 🔹 Busca coincidencia flexible en Diseño_Curricular
-                var data = db.Diseño_Curricular
-                    .AsEnumerable()
-                    .FirstOrDefault(x =>
-                    {
-                        string res = NormalizeText(x.Resultado);
-                        return res.Contains(resultadoNormalizado); // ← comparación más flexible
-                    });
+                    return string.Join(" ",
+                        tx.Split(' ')
+                          .Where(p => p.Length > 3 && !basura.Contains(p))
+                    );
+                }
 
+                string buscado = QuitarBasura(Normalize(resultado));
+
+                // ============================
+                // BUSCAR RESULTADO EXACTO / CERCA
+                // ============================
+
+                // Primero: coincidencia EXACTA normalizada
+                var lista = db.Diseño_Curricular.ToList();
+
+                var data = lista.FirstOrDefault(x =>
+                {
+                    string res = QuitarBasura(Normalize(x.Resultado));
+                    return res == buscado;
+                });
+
+                // Segundo intento: contiene (pero ya no tan laxo)
                 if (data == null)
                 {
-                    System.Diagnostics.Debug.WriteLine($"❌ No se encontró coincidencia en Diseño_Curricular para: {resultadoNormalizado}");
-
-                    // 🔹 Devuelve Instructor Genérico si no hay coincidencia
-                    var instructorDefault = db.Instructor.FirstOrDefault(i => i.IdInstructor == 1219)
-                        ?? new Instructor
-                        {
-                            IdInstructor = 1219,
-                            NombreCompletoInstructor = "Instructor Genérico",
-                            EstadoInstructor = true
-                        };
-
-                    if (instructorDefault.IdInstructor == 0)
+                    data = lista.FirstOrDefault(x =>
                     {
-                        db.Instructor.Add(instructorDefault);
-                        db.SaveChanges();
-                        System.Diagnostics.Debug.WriteLine("🆕 Instructor genérico creado.");
-                    }
+                        string res = QuitarBasura(Normalize(x.Resultado));
+                        return res.Contains(buscado) || buscado.Contains(res);
+                    });
+                }
 
+                // ============================
+                // SI NO HUBO COINCIDENCIA
+                // ============================
+                if (data == null)
+                {
                     return Json(new
                     {
                         ok = true,
-                        data = new
-                        {
-                            IdInstructor = instructorDefault.IdInstructor,
-                            Nombre = instructorDefault.NombreCompletoInstructor
-                        }
+                        data = new { IdInstructor = 0, Nombre = "Instructor no asignado" }
                     }, JsonRequestBehavior.AllowGet);
                 }
 
-                // 🔹 Si se encuentra, devuelve el instructor real
-                var instructor = db.Instructor.FirstOrDefault(i => i.IdInstructor == data.IdInstructor);
-                System.Diagnostics.Debug.WriteLine($"✅ Instructor encontrado: {instructor?.NombreCompletoInstructor} (ID {data.IdInstructor})");
+                // ============================
+                // SI HUBO → TRAER INSTRUCTOR
+                // ============================
+                var instructor = db.Instructor
+                                   .FirstOrDefault(i => i.IdInstructor == data.IdInstructor);
 
+                if (instructor == null)
+                {
+                    return Json(new
+                    {
+                        ok = true,
+                        data = new { IdInstructor = 0, Nombre = "Instructor no asignado" }
+                    }, JsonRequestBehavior.AllowGet);
+                }
+
+                // ============================
+                // ÉXITO
+                // ============================
                 return Json(new
                 {
                     ok = true,
                     data = new
                     {
-                        IdInstructor = instructor?.IdInstructor ?? 1219,
-                        Nombre = instructor?.NombreCompletoInstructor ?? "Instructor Genérico"
+                        IdInstructor = instructor.IdInstructor,
+                        Nombre = instructor.NombreCompletoInstructor
                     }
                 }, JsonRequestBehavior.AllowGet);
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine("💥 Error en GetInstructorPorResultado: " + ex.Message);
-                return Json(new { ok = false, msg = "Error obteniendo el instructor: " + ex.Message },
+                return Json(new { ok = false, msg = "Error: " + ex.Message },
                     JsonRequestBehavior.AllowGet);
             }
         }
@@ -520,90 +606,235 @@ namespace EjemploHorarios.Controllers
         // 👈 Asegúrate de tener este using arriba
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public JsonResult GuardarHorario(string AsignacionesJson, string numeroFicha, string nombreHorario, string trimestre)
+        public JsonResult GuardarHorario(
+       string AsignacionesJson,
+       string numeroFicha,
+       string nombreHorario,
+       string trimestre,
+       int idInstructorLider)
         {
             try
             {
-                // 🔹 Deserializar asignaciones
+                // ============================
+                // 1. Deserializar asignaciones
+                // ============================
                 var asignaciones = JsonConvert.DeserializeObject<List<AsignacionViewModel>>(AsignacionesJson);
                 if (asignaciones == null || !asignaciones.Any())
                     return Json(new { ok = false, msg = "⚠️ No hay asignaciones para guardar." });
 
-                // 🔹 Buscar ficha
+                // ============================
+                // 2. Validar ficha
+                // ============================
                 var ficha = db.Ficha.FirstOrDefault(f => f.CodigoFicha.ToString() == numeroFicha);
                 if (ficha == null)
                     return Json(new { ok = false, msg = "❌ Ficha no encontrada." });
 
-                // 🔹 Obtener trimestre numérico
+                // ============================
+                // 3. Validar trimestre
+                // ============================
                 int tri = int.TryParse(trimestre, out var parsedTri) ? parsedTri : 0;
 
-                // 🔹 Verificar si ya existe un horario para esa ficha y trimestre
                 var horarioExistente = db.Horario
                     .FirstOrDefault(h => h.IdFicha == ficha.IdFicha && h.Trimestre_Año == tri);
 
                 int? primeraAsignacionId = null;
 
-                // 🔹 Crear asignaciones
+                const int SEMANAS_TRIMESTRE = 12;
+
+                var asignacionesEntidad = new List<Asignacion_horario>();
+                var horariosInstructorEntidad = new List<HorarioInstructor>();
+
+
+                    // ============================
+                    // 4. Validación interna entre asignaciones nuevas (EVITA DUPLICADOS EN LA MISMA CARGA)
+                    // ============================
+                    foreach (var group in asignaciones
+                        .Where(a => a.instructorId > 0)
+                        .GroupBy(a => new { a.instructorId, a.dia }))
+                    {
+                        var lista = group.ToList();
+
+                        for (int i = 0; i < lista.Count; i++)
+                        {
+                            for (int j = i + 1; j < lista.Count; j++)
+                            {
+                                TimeSpan d1 = TimeSpan.Parse(lista[i].horaDesde);
+                                TimeSpan h1 = TimeSpan.Parse(lista[i].horaHasta);
+                                TimeSpan d2 = TimeSpan.Parse(lista[j].horaDesde);
+                                TimeSpan h2 = TimeSpan.Parse(lista[j].horaHasta);
+
+                                bool internoChoque =
+                                    (d1 >= d2 && d1 < h2) ||
+                                    (h1 > d2 && h1 <= h2) ||
+                                    (d1 <= d2 && h1 >= h2);
+
+                                if (internoChoque)
+                                {
+                                    return Json(new
+                                    {
+                                        ok = false,
+                                        msg = $"❌ El instructor ID {group.Key.instructorId} tiene un choque interno en el día {group.Key.dia}. " +
+                                              $"Dos asignaciones nuevas tienen horas traslapadas."
+                                    });
+                                }
+                            }
+                        }
+                    }
+
+                // ============================
+                // 5. Procesar asignaciones una por una
+                // ============================
                 foreach (var a in asignaciones)
                 {
-                    if (a.instructorId <= 0) continue;
+                    if (a.instructorId <= 0)
+                        continue;
 
+                    TimeSpan horaDesde = TimeSpan.Parse(a.horaDesde);
+                    TimeSpan horaHasta = TimeSpan.Parse(a.horaHasta);
+
+                    decimal horasPorDia = (decimal)(horaHasta - horaDesde).TotalHours;
+                    if (horasPorDia < 0) horasPorDia = 0;
+
+                    decimal horasAsignacion = Math.Round(horasPorDia * SEMANAS_TRIMESTRE, 2);
+
+                    var instructor = db.Instructor.FirstOrDefault(i => i.IdInstructor == a.instructorId);
+                    if (instructor == null) continue;
+
+                    decimal horasActuales = instructor.Horas_Trabajadas ?? 0m;
+                    decimal horasMaximas = instructor.Horas_De_Trabajo ?? 0m;
+                    decimal nuevoTotal = horasActuales + horasAsignacion;
+
+
+                    // ============================
+                    // 6. Validar exceso de horas
+                    // ============================
+                    if (nuevoTotal > horasMaximas)
+                    {
+                        return Json(new
+                        {
+                            ok = false,
+                            msg = $"❌ El instructor {instructor.NombreCompletoInstructor} supera su límite de horas. " +
+                                  $"Máximo {horasMaximas}, actuales {horasActuales}, intento sumar {horasAsignacion}."
+                        });
+                    }
+
+
+                    // ============================
+                    // 7. Validar choque con BD
+                    // ============================
+                    bool choqueBD = db.HorarioInstructor.Any(h =>
+                        h.IdInstructor == a.instructorId &&
+                        h.IdFicha == ficha.IdFicha &&
+                        h.Dia == a.dia &&
+                        (
+                            (horaDesde >= h.HoraDesde && horaDesde < h.HoraHasta) ||
+                            (horaHasta > h.HoraDesde && horaHasta <= h.HoraHasta) ||
+                            (horaDesde <= h.HoraDesde && horaHasta >= h.HoraHasta)
+                        )
+                    );
+
+                    if (choqueBD)
+                    {
+                        return Json(new
+                        {
+                            ok = false,
+                            msg = $"❌ Choque detectado: {instructor.NombreCompletoInstructor} ya tiene clase " +
+                                  $"el {a.dia} entre {horaDesde} y {horaHasta}."
+                        });
+                    }
+
+
+                    // ============================
+                    // 8. Actualizar horas trabajadas
+                    // ============================
+                    instructor.Horas_Trabajadas = Math.Round(nuevoTotal, 2);
+                    db.Entry(instructor).State = EntityState.Modified;
+
+
+                    // ============================
+                    // 9. Preparar asignación
+                    // ============================
                     var asignacion = new Asignacion_horario
                     {
-                        Dia = string.IsNullOrEmpty(a.dia) ? "Pendiente" : a.dia,
-                        HoraDesde = TimeSpan.TryParse(a.horaDesde, out var desde) ? desde : new TimeSpan(6, 0, 0),
-                        HoraHasta = TimeSpan.TryParse(a.horaHasta, out var hasta) ? hasta : new TimeSpan(9, 0, 0),
+                        Dia = a.dia,
+                        HoraDesde = horaDesde,
+                        HoraHasta = horaHasta,
                         IdInstructor = a.instructorId,
                         IdFicha = ficha.IdFicha
                     };
+                    asignacionesEntidad.Add(asignacion);
 
-                    db.Asignacion_horario.Add(asignacion);
-                    db.SaveChanges();
 
-                    if (primeraAsignacionId == null)
-                        primeraAsignacionId = asignacion.Id_Asignacion;
+                    // ============================
+                    // 10. Sanitizar textos
+                    // ============================
+                    string comp = (a.competencia ?? "Pendiente");
+                    string res = (a.resultado ?? "Pendiente");
 
-                    // Guardar en HorarioInstructor
-                    var horarioInstructor = new HorarioInstructor
+                    if (comp.Length > 250) comp = comp.Substring(0, 250);
+                    if (res.Length > 2000) res = res.Substring(0, 2000);
+
+                    horariosInstructorEntidad.Add(new HorarioInstructor
                     {
                         IdInstructor = a.instructorId,
                         IdFicha = ficha.IdFicha,
-                        Competencia = string.IsNullOrEmpty(a.competencia) ? "Pendiente" : a.competencia,
-                        Resultado = string.IsNullOrEmpty(a.resultado) ? "Pendiente" : a.resultado,
-                        Dia = string.IsNullOrEmpty(a.dia) ? "Pendiente" : a.dia,
-                        HoraDesde = asignacion.HoraDesde,
-                        HoraHasta = asignacion.HoraHasta
-                    };
-                    db.HorarioInstructor.Add(horarioInstructor);
+                        Competencia = comp,
+                        Resultado = res,
+                        Dia = a.dia,
+                        HoraDesde = horaDesde,
+                        HoraHasta = horaHasta
+                    });
                 }
 
-                // 🔹 Solo crear horario si no existe
+
+                // ============================
+                // 11. Guardar asignaciones
+                // ============================
+                foreach (var asig in asignacionesEntidad)
+                    db.Asignacion_horario.Add(asig);
+
+                foreach (var hi in horariosInstructorEntidad)
+                    db.HorarioInstructor.Add(hi);
+
+                db.SaveChanges();
+
+                primeraAsignacionId = asignacionesEntidad.First().Id_Asignacion;
+
+
+                // ============================
+                // 12. Crear o actualizar horario
+                // ============================
                 if (horarioExistente == null)
                 {
-                    var nuevoHorario = new Horario
+                    db.Horario.Add(new Horario
                     {
                         Año_Horario = DateTime.Now.Year,
                         Trimestre_Año = tri,
                         Fecha_Creacion = DateTime.Now,
                         IdFicha = ficha.IdFicha,
-                        Id_Asignacion = primeraAsignacionId
-                    };
-                    db.Horario.Add(nuevoHorario);
+                        Id_Asignacion = primeraAsignacionId,
+                        IdInstructorLider = idInstructorLider
+                    });
                 }
                 else
                 {
-                    // Si ya existe, solo actualiza la asignación principal
                     horarioExistente.Id_Asignacion = primeraAsignacionId;
+                    horarioExistente.IdInstructorLider = idInstructorLider;
                     db.Entry(horarioExistente).State = EntityState.Modified;
                 }
 
                 db.SaveChanges();
 
+
                 return Json(new { ok = true, msg = "✅ Horario y asignaciones guardadas correctamente." });
             }
             catch (Exception ex)
             {
-                return Json(new { ok = false, msg = "❌ Error al guardar el horario: " + ex.Message });
+                string errorReal = ex.InnerException?.InnerException?.Message ??
+                                   ex.InnerException?.Message ??
+                                   ex.Message;
+
+                return Json(new { ok = false, msg = "❌ Error real: " + errorReal });
             }
         }
 
@@ -617,20 +848,37 @@ namespace EjemploHorarios.Controllers
         {
             try
             {
-                var data = (from h in db.Horario
-                            join f in db.Ficha on h.IdFicha equals f.IdFicha
-                            join p in db.Programa_Formacion on f.IdPrograma equals p.IdPrograma
-                            orderby h.Fecha_Creacion descending
-                            select new
-                            {
-                                h.Id_Horario,
-                                h.Año_Horario,
-                                h.Trimestre_Año,
-                                h.Fecha_Creacion,
-                                f.IdFicha,
-                                f.CodigoFicha,
-                                ProgramaNombre = p.DenominacionPrograma
-                            }).ToList();
+                var data = (
+                    from h in db.Horario
+                    join f in db.Ficha on h.IdFicha equals f.IdFicha
+                    join p in db.Programa_Formacion on f.IdPrograma equals p.IdPrograma
+
+                    // 🔥 FORZAMOS a EF a incluir IdInstructorLider
+                    join i in db.Instructor
+                         on (h.IdInstructorLider ?? 0)
+                         equals i.IdInstructor
+                         into liderJoin
+
+                    from lider in liderJoin.DefaultIfEmpty() // left join
+
+                    orderby h.Fecha_Creacion descending
+
+                    select new
+                    {
+                        h.Id_Horario,
+                        h.Año_Horario,
+                        h.Trimestre_Año,
+                        h.Fecha_Creacion,
+                        f.IdFicha,
+                        f.CodigoFicha,
+                        ProgramaNombre = p.DenominacionPrograma,
+
+                        // 🔥 AQUÍ SE CORRIGE MOSTRADO DEL INSTRUCTOR
+                        InstructorLider = lider != null
+                            ? lider.NombreCompletoInstructor
+                            : "Sin asignar"
+                    }
+                ).ToList();
 
                 return Json(new { ok = true, data }, JsonRequestBehavior.AllowGet);
             }
@@ -639,6 +887,8 @@ namespace EjemploHorarios.Controllers
                 return Json(new { ok = false, msg = ex.Message }, JsonRequestBehavior.AllowGet);
             }
         }
+
+
 
         // =================== HORARIOS POR INSTRUCTOR ===================
         [HttpGet]
@@ -655,12 +905,15 @@ namespace EjemploHorarios.Controllers
                                 hi.IdHorarioInstructor,
                                 hi.IdFicha,
                                 f.CodigoFicha,
+                                IdInstructor = hi.IdInstructor,
                                 NombreInstructor = i.NombreCompletoInstructor,
                                 hi.Competencia,
                                 hi.Resultado,
                                 hi.Dia,
-                                HoraDesde = hi.HoraDesde.ToString().Substring(0, 5),
-                                HoraHasta = hi.HoraHasta.ToString().Substring(0, 5)
+
+                                // 🔥 Asegura formato HH:mm
+                                HoraDesde = hi.HoraDesde.ToString(@"hh\:mm"),
+                                HoraHasta = hi.HoraHasta.ToString(@"hh\:mm")
                             }).ToList();
 
                 return Json(new { ok = true, data }, JsonRequestBehavior.AllowGet);
@@ -808,6 +1061,80 @@ namespace EjemploHorarios.Controllers
                 return View(new List<Diseño_Curricular>());
             }
         }
+
+
+
+        private decimal CalcularHorasTrabajadas(TimeSpan desde, TimeSpan hasta)
+        {
+            var horas = (decimal)(hasta - desde).TotalHours;
+            if (horas < 0) horas = 0;
+            return horas;
+        }
+
+
+
+        [HttpGet]
+        public JsonResult ValidarChoqueInstructorGlobal(
+      int idInstructor,
+      string dia,
+      string desde,
+      string hasta,
+      int idFichaActual)
+        {
+            try
+            {
+                TimeSpan hDesde = TimeSpan.Parse(desde);
+                TimeSpan hHasta = TimeSpan.Parse(hasta);
+
+                bool choque = db.Asignacion_horario.Any(h =>
+                    h.IdInstructor == idInstructor &&
+                    h.IdFicha != idFichaActual &&
+                    h.Dia == dia &&
+                    (
+                        (hDesde >= h.HoraDesde && hDesde < h.HoraHasta) ||
+                        (hHasta > h.HoraDesde && hHasta <= h.HoraHasta) ||
+                        (hDesde <= h.HoraDesde && hHasta >= h.HoraHasta)
+                    )
+                );
+
+                return Json(new { ok = true, choque = choque }, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { ok = false, msg = ex.Message }, JsonRequestBehavior.AllowGet);
+            }
+        }
+
+
+        [HttpGet]
+        public JsonResult GetAsignacionesInstructor()
+        {
+            try
+            {
+                var data = db.Asignacion_horario
+                    .Select(a => new
+                    {
+                        IdInstructor = a.IdInstructor,
+                        IdFicha = a.IdFicha,
+                        Dia = a.Dia,
+                        HoraDesde = a.HoraDesde.ToString(@"hh\:mm"),
+                        HoraHasta = a.HoraHasta.ToString(@"hh\:mm")
+                    })
+                    .ToList();
+
+                return Json(new { ok = true, data }, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { ok = false, msg = ex.Message }, JsonRequestBehavior.AllowGet);
+            }
+        }
+
+
+
+
+
+
 
     }
 

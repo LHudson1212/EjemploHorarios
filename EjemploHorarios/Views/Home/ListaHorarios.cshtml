@@ -97,10 +97,12 @@
                             <tr>
                                 <th>Ficha</th>
                                 <th>Programa</th>
-                                <th>Trimestre</th>
+                                <th>Trimestre del año </th>
+                                <th>Instructor Líder</th>
                                 <th>Acción</th>
                             </tr>
                         </thead>
+
                         <tbody id="tbodyFichas">
                             <tr><td colspan="4" class="text-center text-muted py-3">Cargando horarios...</td></tr>
                         </tbody>
@@ -157,14 +159,16 @@ async function cargarHorariosFicha() {
         json.data.forEach(h => {
             const tr = document.createElement("tr");
             tr.innerHTML = `
-                <td>${h.CodigoFicha}</td>
-                <td>${h.ProgramaNombre ?? ""}</td>
-                <td>${h.Trimestre_Año}</td>
-                <td class="text-center">
-                    <button class="btn btn-outline-sena btn-sm" onclick="verHorarioFicha(${h.IdFicha})">
-                        <i class="bi bi-eye-fill"></i> Ver
-                    </button>
-                </td>`;
+    <td>${h.CodigoFicha}</td>
+    <td>${h.ProgramaNombre ?? ""}</td>
+    <td>${h.Trimestre_Año}</td>
+    <td>${h.InstructorLider ?? "Sin asignar"}</td>
+    <td class="text-center">
+        <button class="btn btn-outline-sena btn-sm" onclick="verHorarioFicha(${h.IdFicha})">
+            <i class="bi bi-eye-fill"></i> Ver
+        </button>
+    </td>`;
+
             tbody.appendChild(tr);
         });
     } catch (err) {

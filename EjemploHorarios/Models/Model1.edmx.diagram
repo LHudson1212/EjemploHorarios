@@ -39,6 +39,7 @@
         <AssociationConnector Association="SenaPlanningModel.FK__Oferta__IdUsuari__5AEE82B9" ManuallyRouted="false" />
         <AssociationConnector Association="SenaPlanningModel.Area_conocimiento_has_Instructor" ManuallyRouted="false" />
         <AssociationConnector Association="SenaPlanningModel.Ficha_has_Ambiente" ManuallyRouted="false" />
+        <AssociationConnector Association="SenaPlanningModel.FK_Horario_InstructorLider" />
       </Diagram>
     </edmx:Diagrams>
   </edmx:Designer>
