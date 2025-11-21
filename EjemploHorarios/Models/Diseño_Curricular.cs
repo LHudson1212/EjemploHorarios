@@ -31,8 +31,8 @@ namespace EjemploHorarios.Models
         public string Pend { get; set; }
         public Nullable<decimal> Porcentaje { get; set; }
         public int IdInstructor { get; set; }
-        public Nullable<int> Id_Horario { get; set; }
-        public Nullable<int> IdFicha { get; set; }
+        public int Id_Horario { get; set; }
+        public int IdFicha { get; set; }
     
         public virtual Horario Horario { get; set; }
         public virtual Ficha Ficha { get; set; }
