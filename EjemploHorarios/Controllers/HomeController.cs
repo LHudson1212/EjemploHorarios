@@ -975,23 +975,29 @@ namespace EjemploHorarios.Controllers
         [HttpGet]
         public JsonResult GetHorariosInstructores()
         {
-            var data = db.HorarioInstructor
-                .Include("Instructor")
-                .Include("Ficha")
-                .Select(h => new
-                {
-                    IdInstructor = h.IdInstructor, // 👈 Este campo es CLAVE
-                    NombreInstructor = h.Instructor.NombreCompletoInstructor, // o h.Instructor.Nombre
-                    CodigoFicha = h.Ficha.CodigoFicha,
-                    Competencia = h.Competencia,
-                    Resultado = h.Resultado,
-                    Dia = h.Dia,
-                    HoraDesde = h.HoraDesde.ToString(),
-                    HoraHasta = h.HoraHasta.ToString()
-                })
-                .ToList();
+            try
+            {
+                var data = db.HorarioInstructor
+                    .Include("Instructor")
+                    .GroupBy(h => new
+                    {
+                        h.IdInstructor,
+                        h.Instructor.NombreCompletoInstructor
+                    })
+                    .Select(g => new
+                    {
+                        IdInstructor = g.Key.IdInstructor,
+                        NombreInstructor = g.Key.NombreCompletoInstructor
+                    })
+                    .OrderBy(x => x.NombreInstructor)
+                    .ToList();
 
-            return Json(new { ok = true, data = data }, JsonRequestBehavior.AllowGet);
+                return Json(new { ok = true, data = data }, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { ok = false, msg = ex.Message }, JsonRequestBehavior.AllowGet);
+            }
         }
 
         public ActionResult VerHorarioInstructor(int idInstructor)
@@ -1130,15 +1136,53 @@ namespace EjemploHorarios.Controllers
             }
         }
 
+        [HttpGet]
+        public JsonResult ValidarChoqueHorarioBD(
+    int idInstructor,
+    int idFicha,
+    string dia,
+    string desde,
+    string hasta)
+        {
+            try
+            {
+                TimeSpan horaDesde = TimeSpan.Parse(desde);
+                TimeSpan horaHasta = TimeSpan.Parse(hasta);
 
+                // misma lógica que usas en GuardarHorario
+                bool choqueBD = db.HorarioInstructor.Any(h =>
+                    h.IdInstructor == idInstructor &&
+                    h.IdFicha == idFicha &&
+                    h.Dia == dia &&
+                    (
+                        (horaDesde >= h.HoraDesde && horaDesde < h.HoraHasta) ||
+                        (horaHasta > h.HoraDesde && horaHasta <= h.HoraHasta) ||
+                        (horaDesde <= h.HoraDesde && horaHasta >= h.HoraHasta)
+                    )
+                );
 
+                if (choqueBD)
+                {
+                    var instructor = db.Instructor.FirstOrDefault(i => i.IdInstructor == idInstructor);
+                    var nombre = instructor?.NombreCompletoInstructor ?? $"ID {idInstructor}";
 
+                    return Json(new
+                    {
+                        ok = false,
+                        msg = $"❌ Choque detectado: {nombre} ya tiene clase el {dia} entre {horaDesde} y {horaHasta}."
+                    }, JsonRequestBehavior.AllowGet);
+                }
 
-
-
+                return Json(new { ok = true }, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                return Json(new
+                {
+                    ok = false,
+                    msg = "Error validando horario en BD: " + ex.Message
+                }, JsonRequestBehavior.AllowGet);
+            }
+        }
     }
-
-
-
-
 }
