@@ -60,6 +60,40 @@
     .bg-sena {
         background: linear-gradient(135deg, var(--sena-green), var(--sena-green-light));
     }
+
+    /* filtros */
+    .filters {
+        padding: 1rem;
+        border-bottom: 1px solid rgba(0,0,0,0.04);
+        display: flex;
+        gap: 0.75rem;
+        align-items: flex-end;
+        flex-wrap: wrap;
+    }
+
+        .filters .form-group {
+            min-width: 180px;
+            flex: 1 1 180px;
+        }
+
+            .filters .form-group.ficha {
+                flex: 0 0 120px;
+            }
+
+        .filters .btn {
+            min-width: 110px;
+        }
+
+    @@media (max-width: 768px) {
+        .filters {
+            gap: .5rem;
+        }
+
+            .filters .form-group {
+                flex: 1 1 100%;
+                min-width: 0;
+            }
+    }
 </style>
 
 <div class="container py-4">
@@ -91,20 +125,64 @@
                         <i class="bi bi-plus-circle me-1"></i> Crear Nuevo
                     </button>
                 </div>
+
+                <!-- FILTROS -->
+                <div class="filters">
+                    <div class="form-group">
+                        <label class="form-label small mb-1">Programa</label>
+                        <input id="filterPrograma" list="programasList" class="form-control form-control-sm" placeholder="Escribe para buscar..." autocomplete="off" />
+                        <datalist id="programasList"></datalist>
+                    </div>
+
+                    <div class="form-group ficha">
+                        <label class="form-label small mb-1">Ficha</label>
+                        <input id="filterFicha" list="fichasList" class="form-control form-control-sm" placeholder="Ej: 2995985" autocomplete="off" />
+                        <datalist id="fichasList"></datalist>
+                    </div>
+
+                    <div class="form-group" style="max-width:140px;">
+                        <label class="form-label small mb-1">Trimestre ficha</label>
+                        <select id="filterTrimestreFicha" class="form-select form-select-sm">
+                            <option value="">-- Todos --</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" style="max-width:140px;">
+                        <label class="form-label small mb-1">Trimestre (año)</label>
+                        <select id="filterTrimestreAño" class="form-select form-select-sm">
+                            <option value="">-- Todos --</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label small mb-1">Instructor Líder</label>
+                        <input id="filterInstructor" list="instructoresList" class="form-control form-control-sm" placeholder="Escribe para buscar..." autocomplete="off" />
+                        <datalist id="instructoresList"></datalist>
+                    </div>
+
+                    <div class="d-flex gap-2 align-items-center">
+                        <button id="btnBuscarFiltros" class="btn btn-success"><i class="bi bi-search me-1"></i> Buscar</button>
+                        <button id="btnLimpiarFiltros" class="btn btn-outline-secondary">Limpiar</button>
+                    </div>
+                </div>
+
                 <div class="card-body p-0">
                     <table class="table table-bordered align-middle mb-0">
                         <thead>
                             <tr>
                                 <th>Ficha</th>
                                 <th>Programa</th>
-                                <th>Trimestre del año </th>
+                                <th>Fecha inicio</th>
+                                <th>Fecha fin</th>
+                                <th>Trimestre ficha</th>
+                                <th>Trimestre del año</th>
                                 <th>Instructor Líder</th>
                                 <th>Acción</th>
                             </tr>
                         </thead>
 
                         <tbody id="tbodyFichas">
-                            <tr><td colspan="4" class="text-center text-muted py-3">Cargando horarios...</td></tr>
+                            <tr><td colspan="8" class="text-center text-muted py-3">Cargando horarios...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -137,85 +215,230 @@
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
     <script>
-document.addEventListener("DOMContentLoaded", () => {
-    cargarHorariosFicha();
-    cargarHorariosInstructor();
-});
+        // Estado global
+        let ALL_HORARIOS = []; // datos originales completos traídos desde GetHorariosFicha
 
-/* ====================== HORARIOS POR FICHA ====================== */
-async function cargarHorariosFicha() {
-    const tbody = document.getElementById("tbodyFichas");
-    try {
-        const resp = await fetch('@Url.Action("GetHorariosFicha","Home")');
-        const json = await resp.json();
+        document.addEventListener("DOMContentLoaded", () => {
+            // eventos botones
+            document.getElementById("btnBuscarFiltros").addEventListener("click", applyFilters);
+            document.getElementById("btnLimpiarFiltros").addEventListener("click", clearFilters);
 
-        if (!json.ok || !json.data.length) {
-            tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-3">No hay horarios registrados.</td></tr>`;
-            return;
+            // permitir buscar con Enter dentro de los inputs
+            ["filterPrograma", "filterFicha", "filterInstructor"].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener("keypress", (e) => { if (e.key === "Enter") { applyFilters(); e.preventDefault(); } });
+            });
+
+            cargarHorariosFicha();
+            cargarHorariosInstructor();
+        });
+
+        /* ====================== CARGA Y RENDER TABLA ====================== */
+        async function cargarHorariosFicha() {
+            const tbody = document.getElementById("tbodyFichas");
+            try {
+                const resp = await fetch('@Url.Action("GetHorariosFicha","Home")', { credentials: 'same-origin' });
+                const json = await resp.json();
+
+                if (!json.ok || !json.data || !json.data.length) {
+                    tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-3">No hay horarios registrados.</td></tr>`;
+                    // Aun así inicializamos filtros vacíos
+                    ALL_HORARIOS = [];
+                    populateFilterControls();
+                    return;
+                }
+
+                // guardamos datos originales
+                ALL_HORARIOS = json.data;
+
+                // llenar datalist/select con los valores que existen EN LOS HORARIOS (únicos)
+                populateFilterControls();
+
+                // render inicial (todos)
+                renderTable(ALL_HORARIOS);
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center text-danger py-3">Error: ${err.message}</td></tr>`;
+                console.error(err);
+            }
         }
 
-        tbody.innerHTML = "";
-        json.data.forEach(h => {
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-    <td>${h.CodigoFicha}</td>
-    <td>${h.ProgramaNombre ?? ""}</td>
-    <td>${h.Trimestre_Año}</td>
-    <td>${h.InstructorLider ?? "Sin asignar"}</td>
-    <td class="text-center">
-        <button class="btn btn-outline-sena btn-sm" onclick="verHorarioFicha(${h.IdFicha})">
-            <i class="bi bi-eye-fill"></i> Ver
-        </button>
-    </td>`;
+        function renderTable(data) {
+            const tbody = document.getElementById("tbodyFichas");
+            if (!data || !data.length) {
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-3">No hay coincidencias para los filtros seleccionados.</td></tr>`;
+                return;
+            }
 
-            tbody.appendChild(tr);
-        });
-    } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger py-3">Error: ${err.message}</td></tr>`;
-    }
-}
-
-/* ====================== HORARIOS POR INSTRUCTOR ====================== */
-async function cargarHorariosInstructor() {
-    const tbody = document.getElementById("tbodyInstructores");
-    try {
-        // 🔹 ahora apunta al nuevo método
-        const resp = await fetch('@Url.Action("GetHorariosInstructores","Home")');
-        const json = await resp.json();
-
-        if (!json.ok || !json.data.length) {
-            tbody.innerHTML = `<tr><td colspan="2" class="text-center text-muted py-3">No hay horarios asignados.</td></tr>`;
-            return;
+            tbody.innerHTML = "";
+            data.forEach(h => {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td>${h.CodigoFicha ?? ""}</td>
+                    <td>${h.ProgramaNombre ?? ""}</td>
+                    <td>${h.FechaInicioFicha ?? ""}</td>
+                    <td>${h.FechaFinFicha ?? ""}</td>
+                    <td class="text-center">${h.TrimestreFicha ?? ""}</td>
+                    <td class="text-center">${h.Trimestre_Año ?? ""}</td>
+                    <td>${h.InstructorLider ?? "Sin asignar"}</td>
+                    <td class="text-center">
+                        <button class="btn btn-outline-sena btn-sm" onclick="verHorarioFicha(${h.IdFicha})">
+                            <i class="bi bi-eye-fill"></i> Ver
+                        </button>
+                    </td>`;
+                tbody.appendChild(tr);
+            });
         }
 
-        tbody.innerHTML = "";
-        json.data.forEach(h => {
-            const idInstructor = h.IdInstructor || 0;
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-                <td>${h.NombreInstructor ?? "Sin nombre"}</td>
-                <td class="text-center">
-                    <button class="btn btn-outline-sena btn-sm" onclick="verHorarioInstructor(${idInstructor})">
-                        <i class="bi bi-eye-fill"></i> Ver
-                    </button>
-                </td>`;
-            tbody.appendChild(tr);
-        });
-    } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="2" class="text-center text-danger py-3">Error: ${err.message}</td></tr>`;
-    }
-}
+        /* ====================== POPULAR FILTROS ====================== */
+        function populateFilterControls() {
+            const programasSet = new Set();
+            const fichasSet = new Set();
+            const instructoresSet = new Set();
+            const trimestresFichaSet = new Set();
+            const trimestresAnoSet = new Set();
 
-/* ====================== REDIRECCIONES ====================== */
-function verHorarioFicha(idFicha) {
-    const baseUrl = '@Url.Action("VerHorarioFicha", "Home")';
-    window.location.href = `${baseUrl}?idFicha=${idFicha}`;
-}
+            ALL_HORARIOS.forEach(h => {
+                if (h.ProgramaNombre) programasSet.add(h.ProgramaNombre.trim());
+                if (h.CodigoFicha != null) fichasSet.add(String(h.CodigoFicha).trim());
+                if (h.InstructorLider) instructoresSet.add(h.InstructorLider.trim());
+                if (h.TrimestreFicha != null) trimestresFichaSet.add(String(h.TrimestreFicha));
+                if (h.Trimestre_Año != null) trimestresAnoSet.add(String(h.Trimestre_Año));
+            });
 
-function verHorarioInstructor(idInstructor) {
-    const baseUrl = '@Url.Action("VerHorarioInstructor", "Home")';
-    window.location.href = `${baseUrl}?idInstructor=${idInstructor}`;
-}
+            // programas datalist
+            const dlProgramas = document.getElementById("programasList");
+            dlProgramas.innerHTML = "";
+            Array.from(programasSet).sort((a,b)=>a.localeCompare(b)).forEach(p => {
+                const opt = document.createElement("option"); opt.value = p; dlProgramas.appendChild(opt);
+            });
+
+            // fichas datalist
+            const dlFichas = document.getElementById("fichasList");
+            dlFichas.innerHTML = "";
+            Array.from(fichasSet).sort((a,b)=> a.localeCompare(b, undefined, {numeric: true})).forEach(f => {
+                const opt = document.createElement("option"); opt.value = f; dlFichas.appendChild(opt);
+            });
+
+            // instructores datalist
+            const dlInstr = document.getElementById("instructoresList");
+            dlInstr.innerHTML = "";
+            Array.from(instructoresSet).sort((a,b)=>a.localeCompare(b)).forEach(i => {
+                const opt = document.createElement("option"); opt.value = i; dlInstr.appendChild(opt);
+            });
+
+            // trimestres ficha (1..7) - solo los que existan en los horarios
+            const selTriFicha = document.getElementById("filterTrimestreFicha");
+            const triFichaOptions = [`<option value="">-- Todos --</option>`].concat(
+                Array.from(trimestresFichaSet)
+                    .map(t => parseInt(t, 10))
+                    .filter(n => !isNaN(n) && n >= 1 && n <= 7)
+                    .sort((a,b)=> a - b)
+                    .map(n => `<option value="${n}">${n}</option>`)
+            );
+            selTriFicha.innerHTML = triFichaOptions.join("");
+
+            // trimestres año (1..4) - limitar a 1..4
+            const selTriAño = document.getElementById("filterTrimestreAño");
+            const triAñoOptions = [`<option value="">-- Todos --</option>`].concat(
+                Array.from(trimestresAnoSet)
+                    .map(t => parseInt(t, 10))
+                    .filter(n => !isNaN(n) && n >= 1 && n <= 4)
+                    .sort((a,b)=> a - b)
+                    .map(n => `<option value="${n}">${n}</option>`)
+            );
+            selTriAño.innerHTML = triAñoOptions.join("");
+        }
+
+        /* ====================== FILTRADO ====================== */
+        function applyFilters() {
+            const prog = (document.getElementById("filterPrograma").value || "").trim().toLowerCase();
+            const ficha = (document.getElementById("filterFicha").value || "").trim().toLowerCase();
+            const triFicha = (document.getElementById("filterTrimestreFicha").value || "").trim();
+            const triAño = (document.getElementById("filterTrimestreAño").value || "").trim();
+            const instr = (document.getElementById("filterInstructor").value || "").trim().toLowerCase();
+
+            // filtrar
+            const results = ALL_HORARIOS.filter(h => {
+                // programa (contains)
+                if (prog) {
+                    const ph = (h.ProgramaNombre || "").toString().toLowerCase();
+                    if (!ph.includes(prog)) return false;
+                }
+                // ficha (contains) -> permite escribir parte del código
+                if (ficha) {
+                    const fh = (h.CodigoFicha != null ? h.CodigoFicha.toString().toLowerCase() : "");
+                    if (!fh.includes(ficha)) return false;
+                }
+                // trimestre ficha (exact)
+                if (triFicha) {
+                    if ((h.TrimestreFicha == null ? "" : String(h.TrimestreFicha)) !== triFicha) return false;
+                }
+                // trimestre año (exact)
+                if (triAño) {
+                    if ((h.Trimestre_Año == null ? "" : String(h.Trimestre_Año)) !== triAño) return false;
+                }
+                // instructor (contains)
+                if (instr) {
+                    const ih = (h.InstructorLider || "").toString().toLowerCase();
+                    if (!ih.includes(instr)) return false;
+                }
+                return true;
+            });
+
+            renderTable(results);
+        }
+
+        function clearFilters() {
+            document.getElementById("filterPrograma").value = "";
+            document.getElementById("filterFicha").value = "";
+            document.getElementById("filterTrimestreFicha").value = "";
+            document.getElementById("filterTrimestreAño").value = "";
+            document.getElementById("filterInstructor").value = "";
+            renderTable(ALL_HORARIOS);
+        }
+
+        /* ====================== HORARIOS POR INSTRUCTOR (tab) ====================== */
+        async function cargarHorariosInstructor() {
+            const tbody = document.getElementById("tbodyInstructores");
+            try {
+                const resp = await fetch('@Url.Action("GetHorariosInstructores","Home")', { credentials: 'same-origin' });
+                const json = await resp.json();
+
+                if (!json.ok || !json.data || !json.data.length) {
+                    tbody.innerHTML = `<tr><td colspan="2" class="text-center text-muted py-3">No hay horarios asignados.</td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = "";
+                json.data.forEach(h => {
+                    const idInstructor = h.IdInstructor || 0;
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `
+                        <td>${h.NombreInstructor ?? "Sin nombre"}</td>
+                        <td class="text-center">
+                            <button class="btn btn-outline-sena btn-sm" onclick="verHorarioInstructor(${idInstructor})">
+                                <i class="bi bi-eye-fill"></i> Ver
+                            </button>
+                        </td>`;
+                    tbody.appendChild(tr);
+                });
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="2" class="text-center text-danger py-3">Error: ${err.message}</td></tr>`;
+                console.error(err);
+            }
+        }
+
+        /* ====================== REDIRECCIONES ====================== */
+        function verHorarioFicha(idFicha) {
+            const baseUrl = '@Url.Action("VerHorarioFicha", "Home")';
+            window.location.href = `${baseUrl}?idFicha=${idFicha}`;
+        }
+
+        function verHorarioInstructor(idInstructor) {
+            const baseUrl = '@Url.Action("VerHorarioInstructor", "Home")';
+            window.location.href = `${baseUrl}?idInstructor=${idInstructor}`;
+        }
     </script>
 }

@@ -318,10 +318,6 @@ namespace EjemploHorarios.Controllers
             return 1219;
         }
 
-
-
-
-
         [HttpGet]
         public JsonResult GetCompetenciasPorTrimestre(int idFicha, int trimestre)
         {
@@ -371,9 +367,6 @@ namespace EjemploHorarios.Controllers
 
             return competencias;
         }
-
-       
-
         private int ObtenerHorarioValido(int idFicha, int anio, int trimestre)
         {
             // Buscar si ya existe un horario para esa ficha y trimestre
@@ -597,11 +590,6 @@ namespace EjemploHorarios.Controllers
                     JsonRequestBehavior.AllowGet);
             }
         }
-
-
-
-
-
 
         // 👈 Asegúrate de tener este using arriba
         [HttpPost]
@@ -839,56 +827,109 @@ namespace EjemploHorarios.Controllers
         }
 
 
-
-
-
-        // =================== HORARIOS POR FICHA ===================
+        // =================== HORARIOS POR FICHA (corregido con TrimestreFicha y HorarioTrimestre) ===================
         [HttpGet]
-        public JsonResult GetHorariosFicha()
+        public JsonResult GetHorariosFicha(string programa = "", string codigoFicha = "",
+                                   int? trimestreAno = null, int? trimestreFicha = null,
+                                   int? idInstructorLider = null)
         {
             try
             {
-                var data = (
+                // 1) Traemos datos crudos desde la BD (sin ToString ni formatos)
+                var raw = (
                     from h in db.Horario
                     join f in db.Ficha on h.IdFicha equals f.IdFicha
                     join p in db.Programa_Formacion on f.IdPrograma equals p.IdPrograma
-
-                    // 🔥 FORZAMOS a EF a incluir IdInstructorLider
-                    join i in db.Instructor
-                         on (h.IdInstructorLider ?? 0)
-                         equals i.IdInstructor
-                         into liderJoin
-
-                    from lider in liderJoin.DefaultIfEmpty() // left join
-
+                    join i in db.Instructor on h.IdInstructorLider equals (int?)i.IdInstructor into liderJoin
+                    from lider in liderJoin.DefaultIfEmpty()
                     orderby h.Fecha_Creacion descending
-
                     select new
                     {
                         h.Id_Horario,
                         h.Año_Horario,
-                        h.Trimestre_Año,
+                        Trimestre_Año = h.Trimestre_Año,    // valor guardado en Horario (1..4)
                         h.Fecha_Creacion,
                         f.IdFicha,
-                        f.CodigoFicha,
+                        CodigoFicha = f.CodigoFicha,
                         ProgramaNombre = p.DenominacionPrograma,
-
-                        // 🔥 AQUÍ SE CORRIGE MOSTRADO DEL INSTRUCTOR
-                        InstructorLider = lider != null
-                            ? lider.NombreCompletoInstructor
-                            : "Sin asignar"
+                        FechaInFicha = f.FechaInFicha,
+                        FechaFinFicha = f.FechaFinFicha,
+                        // Trimestre actual de la ficha (nullable)
+                        FichaTrimestre = f.Trimestre,        // int?
+                        InstructorLiderId = h.IdInstructorLider, // int?
+                        InstructorLiderNombre = lider != null ? lider.NombreCompletoInstructor : null
                     }
-                ).ToList();
+                ).ToList(); // ejecuta la consulta en la BD aquí
 
-                return Json(new { ok = true, data }, JsonRequestBehavior.AllowGet);
+                // 2) Aplicamos filtros en memoria
+                var filtered = raw.AsEnumerable();
+
+                if (!string.IsNullOrWhiteSpace(programa))
+                {
+                    var pterm = programa.Trim();
+                    filtered = filtered.Where(x => (x.ProgramaNombre ?? "")
+                        .IndexOf(pterm, StringComparison.OrdinalIgnoreCase) >= 0);
+                }
+
+                if (!string.IsNullOrWhiteSpace(codigoFicha))
+                {
+                    var s = codigoFicha.Trim();
+                    filtered = filtered.Where(x => (x.CodigoFicha != null ? x.CodigoFicha.ToString() : "")
+                        .IndexOf(s, StringComparison.OrdinalIgnoreCase) >= 0);
+                }
+
+                if (trimestreAno.HasValue)
+                {
+                    // Trimestre del AÑO (valor guardado en Horario.Trimestre_Año) — típicamente 1..4
+                    filtered = filtered.Where(x => x.Trimestre_Año == trimestreAno.Value);
+                }
+
+                if (trimestreFicha.HasValue)
+                {
+                    // Trimestre al que va la ficha: Ficha.Trimestre + 1 (tope 7)
+                    // x.FichaTrimestre es int? -> usar (x.FichaTrimestre ?? 1)
+                    filtered = filtered.Where(x =>
+                    {
+                        int fichaTri = x.FichaTrimestre ?? 1;
+                        int triFichaCalc = fichaTri >= 7 ? 7 : fichaTri + 1;
+                        return triFichaCalc == trimestreFicha.Value;
+                    });
+                }
+
+                if (idInstructorLider.HasValue)
+                {
+                    // InstructorLiderId es int? por eso usamos ?? 0
+                    filtered = filtered.Where(x => (x.InstructorLiderId ?? 0) == idInstructorLider.Value);
+                }
+
+                // 3) Proyección / formateo final
+                var data = filtered.Select(x => new
+                {
+                    x.Id_Horario,
+                    x.Año_Horario,
+                    Trimestre_Año = x.Trimestre_Año,
+                    x.Fecha_Creacion,
+                    x.IdFicha,
+                    CodigoFicha = x.CodigoFicha != null ? x.CodigoFicha.ToString() : "",
+                    ProgramaNombre = x.ProgramaNombre ?? "",
+                    FechaInicioFicha = x.FechaInFicha.HasValue ? x.FechaInFicha.Value.ToString("dd/MM/yyyy") : "",
+                    FechaFinFicha = x.FechaFinFicha.HasValue ? x.FechaFinFicha.Value.ToString("dd/MM/yyyy") : "",
+                    // Trimestre al que va la ficha (1..7)
+                    TrimestreFicha = ((x.FichaTrimestre ?? 1) >= 7) ? 7 : (x.FichaTrimestre ?? 1) + 1,
+                    // Trimestre del año (el valor guardado en Horario, 1..4)
+                    TrimestreDelAnio = x.Trimestre_Año,
+                    InstructorLider = string.IsNullOrWhiteSpace(x.InstructorLiderNombre) ? "Sin asignar" : x.InstructorLiderNombre,
+                    InstructorLiderId = x.InstructorLiderId ?? 0
+                }).ToList();
+
+                return Json(new { ok = true, count = data.Count, data }, JsonRequestBehavior.AllowGet);
             }
             catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine("GetHorariosFicha error: " + ex.ToString());
                 return Json(new { ok = false, msg = ex.Message }, JsonRequestBehavior.AllowGet);
             }
         }
-
-
 
         // =================== HORARIOS POR INSTRUCTOR ===================
         [HttpGet]
@@ -896,25 +937,39 @@ namespace EjemploHorarios.Controllers
         {
             try
             {
-                var data = (from hi in db.HorarioInstructor
-                            join i in db.Instructor on hi.IdInstructor equals i.IdInstructor
-                            join f in db.Ficha on hi.IdFicha equals f.IdFicha
-                            orderby hi.IdFicha, hi.Dia
-                            select new
-                            {
-                                hi.IdHorarioInstructor,
-                                hi.IdFicha,
-                                f.CodigoFicha,
-                                IdInstructor = hi.IdInstructor,
-                                NombreInstructor = i.NombreCompletoInstructor,
-                                hi.Competencia,
-                                hi.Resultado,
-                                hi.Dia,
+                // 1) Traer en bruto desde BD (sin ToString o formatos)
+                var raw = (from hi in db.HorarioInstructor
+                           join i in db.Instructor on hi.IdInstructor equals i.IdInstructor
+                           join f in db.Ficha on hi.IdFicha equals f.IdFicha
+                           orderby hi.IdFicha, hi.Dia
+                           select new
+                           {
+                               hi.IdHorarioInstructor,
+                               hi.IdFicha,
+                               CodigoFicha = f.CodigoFicha,
+                               IdInstructor = hi.IdInstructor,
+                               NombreInstructor = i.NombreCompletoInstructor,
+                               hi.Competencia,
+                               hi.Resultado,
+                               hi.Dia,
+                               HoraDesde = hi.HoraDesde, // TimeSpan?
+                               HoraHasta = hi.HoraHasta  // TimeSpan?
+                           }).ToList(); // Ejecuta en la BD
 
-                                // 🔥 Asegura formato HH:mm
-                                HoraDesde = hi.HoraDesde.ToString(@"hh\:mm"),
-                                HoraHasta = hi.HoraHasta.ToString(@"hh\:mm")
-                            }).ToList();
+                // 2) Formatear en memoria
+                var data = raw.Select(x => new
+                {
+                    x.IdHorarioInstructor,
+                    x.IdFicha,
+                    CodigoFicha = x.CodigoFicha != null ? x.CodigoFicha.ToString() : "",
+                    x.IdInstructor,
+                    NombreInstructor = x.NombreInstructor ?? "(Sin nombre)",
+                    Competencia = x.Competencia ?? "",
+                    Resultado = x.Resultado ?? "",
+                    x.Dia,
+                    HoraDesde = x.HoraDesde != null ? x.HoraDesde.ToString(@"hh\:mm") : "--:--",
+                    HoraHasta = x.HoraHasta != null ? x.HoraHasta.ToString(@"hh\:mm") : "--:--"
+                }).ToList();
 
                 return Json(new { ok = true, data }, JsonRequestBehavior.AllowGet);
             }
@@ -923,6 +978,7 @@ namespace EjemploHorarios.Controllers
                 return Json(new { ok = false, msg = ex.Message }, JsonRequestBehavior.AllowGet);
             }
         }
+
 
         // =================== DETALLE POR FICHA ===================
         [HttpGet]
@@ -930,22 +986,34 @@ namespace EjemploHorarios.Controllers
         {
             try
             {
-                var data = (from hi in db.HorarioInstructor
-                            join i in db.Instructor on hi.IdInstructor equals i.IdInstructor
-                            join f in db.Ficha on hi.IdFicha equals f.IdFicha
-                            where hi.IdFicha == idFicha
-                            orderby hi.Dia
-                            select new
-                            {
-                                hi.IdHorarioInstructor,
-                                f.CodigoFicha,
-                                NombreInstructor = i.NombreCompletoInstructor,
-                                hi.Competencia,
-                                hi.Resultado,
-                                hi.Dia,
-                                HoraDesde = hi.HoraDesde.ToString().Substring(0, 5),
-                                HoraHasta = hi.HoraHasta.ToString().Substring(0, 5)
-                            }).ToList();
+                var raw = (from hi in db.HorarioInstructor
+                           join i in db.Instructor on hi.IdInstructor equals i.IdInstructor
+                           join f in db.Ficha on hi.IdFicha equals f.IdFicha
+                           where hi.IdFicha == idFicha
+                           orderby hi.Dia
+                           select new
+                           {
+                               hi.IdHorarioInstructor,
+                               CodigoFicha = f.CodigoFicha,
+                               NombreInstructor = i.NombreCompletoInstructor,
+                               hi.Competencia,
+                               hi.Resultado,
+                               hi.Dia,
+                               HoraDesde = hi.HoraDesde,
+                               HoraHasta = hi.HoraHasta
+                           }).ToList();
+
+                var data = raw.Select(x => new
+                {
+                    x.IdHorarioInstructor,
+                    CodigoFicha = x.CodigoFicha != null ? x.CodigoFicha.ToString() : "",
+                    NombreInstructor = x.NombreInstructor ?? "",
+                    Competencia = x.Competencia ?? "",
+                    Resultado = x.Resultado ?? "",
+                    x.Dia,
+                    HoraDesde = x.HoraDesde != null ? x.HoraDesde.ToString(@"hh\:mm") : "--:--",
+                    HoraHasta = x.HoraHasta != null ? x.HoraHasta.ToString(@"hh\:mm") : "--:--"
+                }).ToList();
 
                 return Json(new { ok = true, data }, JsonRequestBehavior.AllowGet);
             }
@@ -954,7 +1022,6 @@ namespace EjemploHorarios.Controllers
                 return Json(new { ok = false, msg = ex.Message }, JsonRequestBehavior.AllowGet);
             }
         }
-
 
 
         public ActionResult VerHorarioFicha(int idFicha)
@@ -1015,8 +1082,6 @@ namespace EjemploHorarios.Controllers
         }
 
 
-
-
         public ActionResult CrearSiguienteHorario(int idFicha, int trimestre)
         {
             try
@@ -1068,16 +1133,12 @@ namespace EjemploHorarios.Controllers
             }
         }
 
-
-
         private decimal CalcularHorasTrabajadas(TimeSpan desde, TimeSpan hasta)
         {
             var horas = (decimal)(hasta - desde).TotalHours;
             if (horas < 0) horas = 0;
             return horas;
         }
-
-
 
         [HttpGet]
         public JsonResult ValidarChoqueInstructorGlobal(
@@ -1110,7 +1171,6 @@ namespace EjemploHorarios.Controllers
                 return Json(new { ok = false, msg = ex.Message }, JsonRequestBehavior.AllowGet);
             }
         }
-
 
         [HttpGet]
         public JsonResult GetAsignacionesInstructor()
@@ -1184,5 +1244,86 @@ namespace EjemploHorarios.Controllers
                 }, JsonRequestBehavior.AllowGet);
             }
         }
+
+        [HttpGet]
+        public JsonResult GetFichaResumen(int idFicha)
+        {
+            try
+            {
+                var ficha = db.Ficha
+                              .Include("Programa_Formacion")
+                              .FirstOrDefault(f => f.IdFicha == idFicha);
+
+                if (ficha == null)
+                    return Json(new { ok = false, msg = "Ficha no encontrada." }, JsonRequestBehavior.AllowGet);
+
+                int triActual = ficha.Trimestre ?? 1;
+                int triDestino = (triActual < 7) ? triActual + 1 : 7;
+
+                var programaNombre = ficha.Programa_Formacion?.DenominacionPrograma ?? "Sin programa";
+
+                return Json(new
+                {
+                    ok = true,
+                    data = new
+                    {
+                        ProgramaNombre = programaNombre,
+                        CodigoFicha = ficha.CodigoFicha?.ToString() ?? "",
+                        TrimestreDestino = triDestino,
+                        FechaInicio = ficha.FechaInFicha?.ToString("yyyy-MM-dd") ?? "",
+                        FechaFin = ficha.FechaFinFicha?.ToString("yyyy-MM-dd") ?? ""
+                    }
+                }, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { ok = false, msg = "Error: " + ex.Message }, JsonRequestBehavior.AllowGet);
+            }
+        }
+
+        [HttpGet]
+        public JsonResult ValidarFranjaExactaInstructor(int idInstructor, string dia, string desde, string hasta, int idFichaActual)
+        {
+            try
+            {
+                TimeSpan hDesde = TimeSpan.Parse(desde);
+                TimeSpan hHasta = TimeSpan.Parse(hasta);
+
+                // Buscamos una franja EXACTA en HorarioInstructor para el mismo instructor y día (en la misma ficha podría ignorarse)
+                bool choque = db.HorarioInstructor.Any(h =>
+                    h.IdInstructor == idInstructor &&
+                    h.Dia == dia &&
+                    h.IdFicha != idFichaActual &&
+                    h.HoraDesde == hDesde &&
+                    h.HoraHasta == hHasta
+                );
+
+                return Json(new { ok = true, choque = choque }, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { ok = false, msg = ex.Message }, JsonRequestBehavior.AllowGet);
+            }
+        }
+
+        [HttpGet]
+        public JsonResult GetProgramas()
+        {
+            try
+            {
+                var data = db.Programa_Formacion
+                             .OrderBy(p => p.DenominacionPrograma)
+                             .Select(p => p.DenominacionPrograma)
+                             .Distinct()
+                             .ToList();
+
+                return Json(new { ok = true, data }, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { ok = false, msg = ex.Message }, JsonRequestBehavior.AllowGet);
+            }
+        }
+
     }
 }

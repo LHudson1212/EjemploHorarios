@@ -898,6 +898,38 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
+
+                <!-- === INFORMACIÓN VISUAL SOLO LECTURA (traída desde BD) === -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Programa de Formación</label>
+                    <input id="txtProgramaModal" type="text" class="form-control" readonly />
+                </div>
+
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label fw-bold">Ficha</label>
+                        <input id="txtFichaModal" type="text" class="form-control" readonly />
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label fw-bold">Trimestre destino</label>
+                        <input id="txtTrimestreDestinoModal" type="text" class="form-control text-center" readonly />
+                    </div>
+                </div>
+
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label fw-bold">Fecha inicio</label>
+                        <input id="txtFechaInicioModal" type="date" class="form-control" readonly />
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label fw-bold">Fecha fin</label>
+                        <input id="txtFechaFinModal" type="date" class="form-control" readonly />
+                    </div>
+                </div>
+
+                <hr />
+
+                <!-- === INSTRUCTOR LÍDER (queda igual que antes) === -->
                 <div class="mb-3">
                     <label for="selInstructorLider" class="form-label fw-bold">Instructor Líder</label>
                     <select id="selInstructorLider" class="form-select">
@@ -913,6 +945,7 @@
         </div>
     </div>
 </div>
+
 
 <!-- ========================= JS / LÓGICA ========================= -->
 @section Scripts {
@@ -1771,6 +1804,40 @@
         }
     });
 
+    async function cargarFichaResumenParaModal(idFicha) {
+        if (!idFicha) {
+            showAlert("No hay ficha seleccionada.", "warning");
+            return false;
+        }
+        try {
+            const resp = await fetch('@Url.Action("GetFichaResumen", "Home")?idFicha=' + encodeURIComponent(idFicha), {
+                headers: { "Accept": "application/json" },
+                credentials: "same-origin"
+            });
+            const json = await resp.json();
+            if (!resp.ok || !json.ok) {
+                showAlert(json?.msg || "No se pudo obtener la información de la ficha.", "danger");
+                return false;
+            }
+
+            const d = json.data || {};
+            // Rellenar los campos del modal (solo visualización)
+            document.getElementById("txtProgramaModal").value = d.ProgramaNombre || "";
+            document.getElementById("txtFichaModal").value = d.CodigoFicha || "";
+            document.getElementById("txtTrimestreDestinoModal").value = d.TrimestreDestino || "";
+            // Si vienen fechas, asignarlas; si no, dejarlas vacías
+            document.getElementById("txtFechaInicioModal").value = d.FechaInicio || "";
+            document.getElementById("txtFechaFinModal").value = d.FechaFin || "";
+
+            return true;
+        } catch (err) {
+            showAlert("Error cargando resumen de ficha: " + err.message, "danger");
+            return false;
+        }
+    }
+
+
+
     // ========== RENDER COMPETENCIAS ==========
     function renderCompetencias(list) {
         competenciasList.innerHTML = "";
@@ -2035,18 +2102,56 @@
         }
     }
 
-    // ========== GUARDAR HORARIO COMPLETO ==========
+    // =========================
+    // BOTÓN: Guardar Todo (con feedback visual)
+    // =========================
     btnGuardarHorario?.addEventListener("click", async () => {
-        if (!payload.asignaciones.length) {
+        // 1) Validaciones básicas
+        if (!payload.asignaciones || !payload.asignaciones.length) {
             showAlert("No hay asignaciones para guardar.", "warning");
             return;
         }
 
-        await cargarInstructoresLider();
-        const modal = new bootstrap.Modal(document.getElementById("modalLider"));
-        modal.show();
+        const idFichaSeleccionada = hfFichaId.value;
+        if (!idFichaSeleccionada) {
+            showAlert("Debes seleccionar una ficha antes de guardar el horario.", "warning");
+            return;
+        }
+
+        // 2) Feedback: deshabilitar botón y mostrar indicador
+        const originalHTML = btnGuardarHorario.innerHTML;
+        btnGuardarHorario.disabled = true;
+        btnGuardarHorario.innerHTML = `<i class="bi bi-hourglass-split me-2"></i> Cargando...`;
+
+        try {
+            // 3) Cargar instructores para el select (esperar)
+            await cargarInstructoresLider();
+
+            // 4) Cargar desde la BD el resumen de ficha que mostraremos en el modal
+            const ok = await cargarFichaResumenParaModal(idFichaSeleccionada);
+            if (!ok) {
+                // Si la carga falló, no abrimos el modal y salimos (el finally restaurará el botón)
+                return;
+            }
+
+            // 5) Mostrar modal LÍDER (backdrop static para evitar cierres involuntarios)
+            const modalEl = document.getElementById("modalLider");
+            const modal = new bootstrap.Modal(modalEl, { keyboard: true, backdrop: 'static' });
+            modal.show();
+        } catch (err) {
+            console.error("Error en btnGuardarHorario:", err);
+            showAlert("Error preparando el modal: " + (err.message || err), "danger");
+        } finally {
+            // 6) Restaurar el botón siempre
+            btnGuardarHorario.disabled = false;
+            btnGuardarHorario.innerHTML = originalHTML;
+        }
     });
 
+
+    // =========================
+    // BOTÓN: Confirmar Líder (envío final)
+    // =========================
     btnConfirmarLider?.addEventListener("click", async () => {
         const idInstructorLider = selInstructorLider.value;
 
@@ -2055,30 +2160,71 @@
             return;
         }
 
-        const fd = new FormData();
-        fd.append("__RequestVerificationToken", getAntiForgeryToken());
-        fd.append("AsignacionesJson", JSON.stringify(payload.asignaciones));
-        fd.append("numeroFicha", inputFicha.value.trim());
-        fd.append("nombreHorario", `Horario ${inputFicha.value.trim()} - T${selTrimestreAnio.value}`);
-        fd.append("trimestre", selTrimestreAnio.value.trim());
-        fd.append("idInstructorLider", idInstructorLider);
+        // Asegurarnos que hay ficha seleccionada (código) o que el modal fue cargado
+        const codigoFicha = (inputFicha.value || "").trim() || (document.getElementById("txtFichaModal")?.value || "").trim();
+        if (!codigoFicha) {
+            showAlert("Debes seleccionar una ficha antes de guardar el horario.", "warning");
+            return;
+        }
 
-        const resp = await fetch('@Url.Action("GuardarHorario", "Home")', {
-            method: "POST",
-            body: fd
-        });
+        // Tomar el trimestre de destino que mostramos en el modal (es el trimestre al que *va* la ficha).
+        // Si por alguna razón no está, como fallback usamos selTrimestreAnio.
+        const trimestreDestino = (document.getElementById("txtTrimestreDestinoModal")?.value || selTrimestreAnio.value || "").toString().trim();
 
-        const json = await resp.json();
+        // Opcional: deshabilitar el botón 'Guardar Horario' dentro del modal para evitar doble click
+        btnConfirmarLider.disabled = true;
+        const originalConfirmHTML = btnConfirmarLider.innerHTML;
+        btnConfirmarLider.innerHTML = `<i class="bi bi-hourglass-split me-2"></i> Guardando...`;
 
-        if (json.ok) {
-            showAlert(json.msg, "success");
-            setTimeout(() => {
-                window.location.href = '@Url.Action("ListaHorarios", "Home")';
-            }, 1500);
-        } else {
-            showAlert(json.msg, "danger");
+        try {
+            const fd = new FormData();
+            fd.append("__RequestVerificationToken", getAntiForgeryToken());
+            fd.append("AsignacionesJson", JSON.stringify(payload.asignaciones));
+            fd.append("numeroFicha", codigoFicha);
+            fd.append("nombreHorario", `Horario ${codigoFicha} - T${trimestreDestino}`);
+            fd.append("trimestre", trimestreDestino);               // enviamos el trimestre destino (1..7)
+            fd.append("idInstructorLider", idInstructorLider);
+
+            // Enviamos también los datos solo-lectura que se muestran en el modal
+            const programaModal = document.getElementById("txtProgramaModal")?.value || "";
+            const fechaInicioModal = document.getElementById("txtFechaInicioModal")?.value || "";
+            const fechaFinModal = document.getElementById("txtFechaFinModal")?.value || "";
+
+            fd.append("ProgramaNombre", programaModal);
+            fd.append("FechaInicioFicha", fechaInicioModal);
+            fd.append("FechaFinFicha", fechaFinModal);
+
+            const resp = await fetch('@Url.Action("GuardarHorario", "Home")', {
+                method: "POST",
+                body: fd,
+                credentials: "same-origin"
+            });
+
+            const json = await resp.json();
+
+            if (json.ok) {
+                showAlert(json.msg, "success");
+                // Cerrar modal líder si está abierto
+                try {
+                    const modalInstance = bootstrap.Modal.getInstance(document.getElementById("modalLider"));
+                    if (modalInstance) modalInstance.hide();
+                } catch (e) { /* noop */ }
+
+                setTimeout(() => {
+                    window.location.href = '@Url.Action("ListaHorarios", "Home")';
+                }, 1500);
+            } else {
+                showAlert(json.msg || "Error guardando horario.", "danger");
+            }
+        } catch (err) {
+            console.error("Error en btnConfirmarLider:", err);
+            showAlert("Error enviando la solicitud: " + err.message, "danger");
+        } finally {
+            btnConfirmarLider.disabled = false;
+            btnConfirmarLider.innerHTML = originalConfirmHTML;
         }
     });
+
 
     // ========== TRIMESTRE SIGUIENTE ==========
     function actualizarSiguienteTrimestre() {
@@ -2094,15 +2240,18 @@
     txtTrimestreFicha.addEventListener("change", actualizarSiguienteTrimestre);
 
     // ========== VALIDACIÓN EN VIVO EN MODAL ==========
-    function validarEnVivo() {
+    validarEnVivo._callId = 0; // contador para evitar race conditions
+
+    async function validarEnVivo() {
         if (!dropContext) return;
 
         const alertaChoque = document.getElementById("alertChoque");
         const instructorId = selInstructorEl.value;
         const horaDesde = horaDesdeEl.value;
         const horaHasta = horaHastaEl.value;
-        const idFicha = payload.idFichaActual;
+        const idFicha = payload.idFichaActual || hfFichaId.value || null;
 
+        // si faltan datos básicos, ocultamos alerta y salimos
         if (!instructorId || !horaDesde || !horaHasta) {
             alertaChoque.classList.add("d-none");
             return;
@@ -2126,17 +2275,40 @@
             return;
         }
 
-        // --- 2️⃣ VALIDACIÓN FRANJA EXACTA EN BD ---
-        $.get("/Home/ValidarFranjaExactaInstructor", {
-            idInstructor: instructorId,
-            dia: dia,
-            desde: horaDesde,
-            hasta: horaHasta,
-            idFichaActual: idFicha
-        }).done(respFran => {
+        // --- PREPARAR ID DE LLAMADA PARA EVITAR RACE CONDITIONS ---
+        const myCallId = ++validarEnVivo._callId;
 
-            if (!respFran.ok) {
-                alertaChoque.textContent = "Error validando franja horaria.";
+        // Helper para construir querystring y llamar con fetch
+        async function getJson(url, params) {
+            const qs = Object.keys(params || {})
+                .map(k => encodeURIComponent(k) + "=" + encodeURIComponent(params[k]))
+                .join("&");
+            const full = url + (qs ? ("?" + qs) : "");
+            const resp = await fetch(full, { credentials: 'same-origin' });
+            // Si respuesta no es JSON lanzamos
+            const text = await resp.text();
+            try {
+                return JSON.parse(text);
+            } catch (e) {
+                throw new Error("Respuesta no JSON: " + text.substring(0, 200));
+            }
+        }
+
+        // --- 2️⃣ VALIDACIÓN FRANJA EXACTA EN BD ---
+        try {
+            const respFran = await getJson("/Home/ValidarFranjaExactaInstructor", {
+                idInstructor: instructorId,
+                dia: dia,
+                desde: horaDesde,
+                hasta: horaHasta,
+                idFichaActual: idFicha || 0
+            });
+
+            // Si ya hay una llamada más reciente, descartamos este resultado
+            if (myCallId !== validarEnVivo._callId) return;
+
+            if (!respFran || respFran.ok === false) {
+                alertaChoque.textContent = respFran?.msg || "Error validando franja horaria.";
                 alertaChoque.classList.remove("d-none");
                 return;
             }
@@ -2147,32 +2319,45 @@
                 alertaChoque.classList.remove("d-none");
                 return;
             }
+        } catch (err) {
+            // Si falla la validación exacta, mostramos error y no continuamos
+            alertaChoque.textContent = "Error validando franja exacta: " + (err.message || err);
+            alertaChoque.classList.remove("d-none");
+            return;
+        }
 
-            // --- 3️⃣ VALIDACIÓN GLOBAL (OTRAS FICHAS) ---
-            $.get("/Home/ValidarChoqueInstructorGlobal", {
+        // --- 3️⃣ VALIDACIÓN GLOBAL (OTRAS FICHAS) ---
+        try {
+            const respGlobal = await getJson("/Home/ValidarChoqueInstructorGlobal", {
                 idInstructor: instructorId,
                 dia: dia,
                 desde: horaDesde,
                 hasta: horaHasta,
-                idFichaActual: idFicha
-            }).done(resp => {
-
-                if (!resp.ok) {
-                    alertaChoque.textContent = "Error validando horario.";
-                    alertaChoque.classList.remove("d-none");
-                    return;
-                }
-
-                if (resp.choque) {
-                    alertaChoque.textContent =
-                        "❌ Este instructor ya tiene una clase en otra ficha en este mismo rango.";
-                    alertaChoque.classList.remove("d-none");
-                } else {
-                    alertaChoque.classList.add("d-none");
-                }
+                idFichaActual: idFicha || 0
             });
-        });
+
+            // Si ya hay una llamada más reciente, descartamos este resultado
+            if (myCallId !== validarEnVivo._callId) return;
+
+            if (!respGlobal || respGlobal.ok === false) {
+                alertaChoque.textContent = respGlobal?.msg || "Error validando horario.";
+                alertaChoque.classList.remove("d-none");
+                return;
+            }
+
+            if (respGlobal.choque) {
+                alertaChoque.textContent =
+                    "❌ Este instructor ya tiene una clase en otra ficha en este mismo rango.";
+                alertaChoque.classList.remove("d-none");
+            } else {
+                alertaChoque.classList.add("d-none");
+            }
+        } catch (err) {
+            alertaChoque.textContent = "Error validando horario global: " + (err.message || err);
+            alertaChoque.classList.remove("d-none");
+        }
     }
+
 
     function animarChoque(alertaEl) {
         alertaEl.classList.remove("shake-alert");
