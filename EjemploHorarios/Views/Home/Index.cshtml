@@ -575,6 +575,44 @@
         overflow: auto;
     }
 
+    #contenedorBarras .progress-bar {
+        transition: width .4s ease, background-color .4s ease;
+    }
+
+    /* Colores para el horario */
+    .bg-horario-ok {
+        background: #00a859 !important;
+    }
+
+    .bg-horario-aviso {
+        background: #ffb300 !important;
+    }
+
+    .bg-horario-peligro {
+        background: #f57c00 !important;
+    }
+
+    .bg-horario-rojo {
+        background: #d32f2f !important;
+    }
+
+    /* Colores para instructor */
+    .bg-inst-ok {
+        background: #00a859 !important;
+    }
+
+    .bg-inst-aviso {
+        background: #ffb300 !important;
+    }
+
+    .bg-inst-alto {
+        background: #f57c00 !important;
+    }
+
+    .bg-inst-max {
+        background: #d32f2f !important;
+    }
+
     .rotate-180 {
         transform: rotate(180deg);
     }
@@ -617,7 +655,7 @@
         <!-- Año -->
         <div class="col-lg-2 col-md-3">
             <label class="form-label fw-bold text-sena" for="selAnio">Año del Horario</label>
-            <input id="selAnio" type="number" min="2000" max="2100" class="form-control" placeholder="Ej: 2025" autocomplete="off" />
+            <input id="selAnio" type="number" min="2024" max="2100" class="form-control" placeholder="Ej: 2026" autocomplete="off" />
         </div>
 
         <!-- Trimestre del año -->
@@ -797,6 +835,56 @@
         </div>
     }
 </main>
+
+
+<!-- ================== BARRAS DE PROGRESO UNIFICADAS ================== -->
+<div id="contenedorBarras" class="p-3 bg-white border rounded shadow-sm mt-4">
+
+    <!-- ========== HORAS DEL HORARIO ========== -->
+    <label class="fw-bold text-sena">
+        <i class="bi bi-hourglass-split me-1"></i> Horas programadas del horario
+    </label>
+
+    <div class="d-flex justify-content-between small mb-1">
+        <span id="lblHorasHorario">0 horas asignadas</span>
+        <span class="text-muted">Límite: 440h – Objetivo: 352h (80%)</span>
+    </div>
+
+    <div class="progress mb-4" style="height: 20px;">
+        <div id="barraHorario" class="progress-bar bg-success fw-bold" style="width: 0%;">0%</div>
+    </div>
+
+    <!-- ========== HORAS POR INSTRUCTOR ========== -->
+    <label class="fw-bold text-sena">
+        <i class="bi bi-person-lines-fill me-1"></i> Horas asignadas al instructor
+    </label>
+
+    <!-- 🔥 Botones para navegar entre instructores asignados -->
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <button id="btnPrevInstructor" class="btn btn-sm btn-outline-success">
+            <i class="bi bi-chevron-left"></i>
+        </button>
+
+        <div class="fw-bold text-sena" id="nombreInstructorActual">
+            Sin instructores asignados
+        </div>
+
+        <button id="btnNextInstructor" class="btn btn-sm btn-outline-success">
+            <i class="bi bi-chevron-right"></i>
+        </button>
+    </div>
+
+    <div class="d-flex justify-content-between small mb-1">
+        <span id="lblHorasInstructor">0 horas</span>
+        <span id="lblMaxInstructor" class="text-muted">Máximo: 0h</span>
+    </div>
+
+    <div class="progress" style="height: 18px;">
+        <div id="barraInstructor" class="progress-bar fw-bold" style="width: 0%;">0%</div>
+    </div>
+
+    <small id="estadoInstructor" class="text-muted mt-1 d-block"></small>
+</div>
 
 <!-- Modal Asignar -->
 <div class="modal fade" id="modalAsignar" tabindex="-1" aria-hidden="true">
@@ -1003,17 +1091,20 @@
         };
     }
 
-    // ========== ESTADO GLOBAL ==========
-    let payload = {
-        numeroFicha: "",
-        nombreHorario: "Horario generado",
-        trimestre: "",
-        asignaciones: []
-    };
+        // ========== ESTADO GLOBAL ==========
+        let payload = {
+            numeroFicha: "",
+            nombreHorario: "Horario generado",
+            trimestre: "",
+            asignaciones: []
+        };
 
-    let COMPETENCIAS = [];                 // [{ Competencia, Resultados: [] }]
-    let OPEN_COMP_IDS = new Set();        // ids de acordeones abiertos
-    let COMP_DRAGGING = null;             // competencia que se arrastra completa
+        let COMPETENCIAS = [];                 // [{ Competencia, Resultados: [] }]
+        let OPEN_COMP_IDS = new Set();        // ids de acordeones abiertos
+        let COMP_DRAGGING = null;             // competencia que se arrastra completa
+        let INSTRUCTORES_EN_HORARIO = [];
+        let indexInstructorActual = 0;
+   
 
     const INSTRUCTORES_BY_ID = new Map(); // cache id → nombre
 
@@ -1105,74 +1196,163 @@
             const resultado = decodeURIComponent(ctx.itemEl.dataset.resultado || "");
             let instructorAsignado = null;
 
-            // 🔥🔥 Recargar horarios globales SIEMPRE ANTES DE VALIDAR
+            // Recargar horarios globales
             await cargarHorariosGlobales();
 
+            // Buscar instructor recomendado
             if (resultado) {
-                const url = '@Url.Action("GetInstructorPorResultado", "Home")' +
-                    '?resultado=' + encodeURIComponent(resultado);
-
-                let json;
                 try {
-                    const resp = await fetch(url, { headers: { "Accept": "application/json" } });
-                    json = await resp.json();
-                    if (!json.ok) console.warn("Backend error:", json.msg);
-                } catch (err) {
-                    console.error("Error consultando instructor:", err);
-                    showAlert("Error consultando instructor: " + err.message, "danger");
-                    json = { ok: false };
-                }
+                    const resp = await fetch(
+                        '@Url.Action("GetInstructorPorResultado", "Home")' +
+                        '?resultado=' + encodeURIComponent(resultado),
+                        { headers: { "Accept": "application/json" } }
+                    );
 
-                if (json.ok && json.data) {
-                    instructorAsignado = {
-                        id: String(json.data.IdInstructor),
-                        nombre: json.data.Nombre
-                    };
+                    const json = await resp.json();
+                    if (json.ok && json.data) {
+                        instructorAsignado = {
+                            id: String(json.data.IdInstructor),
+                            nombre: json.data.Nombre
+                        };
+                    }
+                } catch (err) {
+                    showAlert("Error consultando instructor: " + err.message, "danger");
                 }
             }
 
+            // Cargar instructores
             await loadInstructores();
 
-            if (instructorAsignado?.id) {
-                selInstructorEl.value = instructorAsignado.id;
-            } else if (preset?.instructorId) {
-                selInstructorEl.value = preset.instructorId;
-            } else {
-                selInstructorEl.value = "";
-            }
+            // Selección inicial
+            selInstructorEl.value =
+                instructorAsignado?.id ||
+                preset?.instructorId ||
+                "";
 
+            // Horas predefinidas
             horaDesdeEl.value = preset?.horaDesde ?? "06:00";
             horaHastaEl.value = preset?.horaHasta ?? "09:00";
 
             dropContext = ctx;
             dropContextGuardado = false;
 
-            // ficha actual
             payload.idFichaActual = hfFichaId.value || null;
 
-            const modal = new bootstrap.Modal(modalAsignarEl);
-            modal.show();
+            // =====================================================
+            //            ✔ ABRIR MODAL
+            // =====================================================
+            new bootstrap.Modal(modalAsignarEl).show();
 
-            // 🔥 Validar apenas se abra
-            setTimeout(() => validarEnVivo(), 150);
+            // =====================================================
+            //   🔥🔥🔥 1) GUARDAR LA ASIGNACIÓN EN TIEMPO REAL
+            //         PARA QUE LAS BARRAS FUNCIONEN
+            // =====================================================
+            const asignacion = payload.asignaciones.find(a => a.id === ctx.asignacionId);
+            if (asignacion) {
+                asignacion.horaDesde = horaDesdeEl.value;
+                asignacion.horaHasta = horaHastaEl.value;
+                asignacion.instructorId = selInstructorEl.value ? parseInt(selInstructorEl.value) : null;
+                asignacion.instructorNombre = INSTRUCTORES_BY_ID.get(selInstructorEl.value) || null;
+            }
+
+            // =====================================================
+            //   🔥🔥🔥 2) REFRESCAR LISTA Y MOSTRAR INSTRUCTOR
+            // =====================================================
+            refrescarListaInstructoresEnHorario();
+            await mostrarInstructorActual();  // carga del backend + barras
+
+            // =====================================================
+            //       Cargar info real desde BD del instructor
+            // =====================================================
+            if (selInstructorEl.value) {
+                await cargarHorasInstructor(selInstructorEl.value);
+                actualizarBarraInstructor();
+            }
+
+            actualizarBarraHorario();
+
+            // =====================================================
+            //          EVENTOS EN VIVO (solo 1 vez)
+            // =====================================================
+            if (!window._eventosModalAsignarRegistrados) {
+                window._eventosModalAsignarRegistrados = true;
+
+                selInstructorEl.addEventListener("change", async () => {
+
+                    if (dropContext) {
+                        const a = payload.asignaciones.find(x => x.id === dropContext.asignacionId);
+                        if (a) {
+                            a.instructorId = selInstructorEl.value ? parseInt(selInstructorEl.value) : null;
+                            a.instructorNombre = INSTRUCTORES_BY_ID.get(selInstructorEl.value) || null;
+                        }
+                    }
+
+                    if (selInstructorEl.value) {
+                        await cargarHorasInstructor(selInstructorEl.value);
+                    }
+
+                    refrescarListaInstructoresEnHorario();
+                    await mostrarInstructorActual();
+
+                    actualizarBarraHorario();
+                    validarEnVivo();
+                });
+
+                horaDesdeEl.addEventListener("input", async () => {
+                    if (dropContext) {
+                        const a = payload.asignaciones.find(x => x.id === dropContext.asignacionId);
+                        if (a) a.horaDesde = horaDesdeEl.value;
+                    }
+
+                    refrescarListaInstructoresEnHorario();
+                    await mostrarInstructorActual();
+                    actualizarBarraHorario();
+                    validarEnVivo();
+                });
+
+                horaHastaEl.addEventListener("input", async () => {
+                    if (dropContext) {
+                        const a = payload.asignaciones.find(x => x.id === dropContext.asignacionId);
+                        if (a) a.horaHasta = horaHastaEl.value;
+                    }
+
+                    refrescarListaInstructoresEnHorario();
+                    await mostrarInstructorActual();
+                    actualizarBarraHorario();
+                    validarEnVivo();
+                });
+            }
+
+            setTimeout(() => validarEnVivo(), 200);
 
         } catch (err) {
             showAlert("Error al abrir el modal: " + err.message, "danger");
         }
     }
 
-    async function cargarHorariosGlobales() {
-        try {
-            const resp = await fetch("/Home/GetAsignacionesInstructor");
-            const json = await resp.json();
+    async function cargarHorasInstructor(idInstructor) {
+        const resp = await fetch("/Home/GetHorasInstructor?idInstructor=" + idInstructor);
+        const json = await resp.json();
 
-            if (json.ok) {
-                HORARIOS_GLOBAL = json.data;   // ← GUARDA TODOS LOS HORARIOS REALES
-            }
-        } catch (err) {
-            console.error("Error cargando horarios globales:", err);
+        if (json.ok) {
+            window._horasInstructorActual = json.horasActuales;   // BD
+            window._horasInstructorMax = json.horasMaximas;      // BD
         }
     }
+
+
+        async function cargarHorariosGlobales() {
+            try {
+                const resp = await fetch("/Home/GetAsignacionessInstructor");
+                const json = await resp.json();
+
+                if (json.ok) {
+                    HORARIOS_GLOBAL = json.data;   // ← GUARDA TODOS LOS HORARIOS REALES
+                }
+            } catch (err) {
+                console.error("Error cargando horarios globales:", err);
+            }
+        }
 
     //  GUARDAR ASIGNACIÓN DESDE EL MODAL  (VALIDA EN BD)
     // =============================================================
@@ -1836,8 +2016,6 @@
         }
     }
 
-
-
     // ========== RENDER COMPETENCIAS ==========
     function renderCompetencias(list) {
         competenciasList.innerHTML = "";
@@ -1961,12 +2139,19 @@
     function eliminarAsignacion(item) {
         const id = parseInt(item.dataset.asignacionId, 10);
         const col = item.closest(".day-col");
+
+        // eliminar del payload
         payload.asignaciones = payload.asignaciones.filter(a => a.id !== id);
+
+        // eliminar del DOM
         item.remove();
+
         if (col) updateDropHint(col);
 
-        // 🔥 Recalcular qué resultados/competencias siguen en uso
-        refrescarUsos();
+        // 🔥 recalcular barras
+        refrescarListaInstructoresEnHorario();
+        mostrarInstructorActual();  // recalcula barra instructor
+        actualizarBarraHorario();   // recalcula la del horario
     }
 
     function parseHM(hhmm) {
@@ -2403,6 +2588,191 @@
         }
         return null;
     }
+
+        function actualizarBarraHorario() {
+
+            if (dropContext) {
+                const asignacion = payload.asignaciones.find(a => a.id === dropContext.asignacionId);
+                if (asignacion) {
+                    asignacion.horaDesde = horaDesdeEl.value;
+                    asignacion.horaHasta = horaHastaEl.value;
+                }
+            }
+
+            const barra = document.getElementById("barraHorario");
+            const lbl = document.getElementById("lblHorasHorario");
+
+            let minutos = 0;
+
+            for (const a of payload.asignaciones) {
+                if (!a.horaDesde || !a.horaHasta) continue;
+
+                const d = parseHM(a.horaDesde);
+                const h = parseHM(a.horaHasta);
+
+                minutos += (h - d);
+            }
+
+            const horas = (minutos / 60) * 12;
+            const pct = Math.min(100, Math.round((horas / 440) * 100));
+
+            lbl.textContent = `${horas.toFixed(1)} horas programadas`;
+            barra.style.width = pct + "%";
+            barra.textContent = pct + "%";
+
+            barra.className = "progress-bar fw-bold";
+
+            if (pct < 60) barra.classList.add("bg-horario-ok");
+            else if (pct < 80) barra.classList.add("bg-horario-aviso");
+            else if (pct <= 100) barra.classList.add("bg-horario-peligro");
+            else barra.classList.add("bg-horario-rojo");
+
+            // 🔥 Se recalcula también la barra del instructor
+            mostrarInstructorActual();
+        }
+
+        function actualizarBarraInstructor() {
+            const barra = document.getElementById("barraInstructor");
+            const lblHoras = document.getElementById("lblHorasInstructor");
+            const lblMax = document.getElementById("lblMaxInstructor");
+            const estado = document.getElementById("estadoInstructor");
+
+            // 🔥 Si aún no hay instructores asignados, mostrar 0
+            if (!INSTRUCTORES_EN_HORARIO.length) {
+                lblHoras.textContent = "0 horas";
+                lblMax.textContent = "Máximo: 0h";
+                barra.style.width = "0%";
+                barra.textContent = "0%";
+                barra.className = "progress-bar fw-bold bg-inst-ok";
+                estado.textContent = "Sin instructor seleccionado";
+                return;
+            }
+
+            // 🔥 ID del instructor actualmente visible en la barra
+            const id = INSTRUCTORES_EN_HORARIO[indexInstructorActual];
+
+            // 🔥 Datos traídos del backend
+            const max = window._horasInstructorMax || 0;
+            const base = window._horasInstructorActual || 0;
+
+            // 🔥 Horas nuevas del horario (multiplicadas por 12 según tu regla)
+            const nuevas = calcularHorasAsignadasAInstructor(id);
+
+            const total = base + nuevas;
+
+            const pct = max > 0
+                ? Math.min(100, Math.round((total / max) * 100))
+                : 0;
+
+            // 🔥 Etiquetas
+            lblHoras.textContent = `${total.toFixed(1)} horas`;
+            lblMax.textContent = `Máximo: ${max}h`;
+
+            // 🔥 Barra visual
+            barra.style.width = pct + "%";
+            barra.textContent = pct + "%";
+
+            // 🔥 Reset estilos
+            barra.className = "progress-bar fw-bold";
+            estado.textContent = "";
+
+            // 🔥 Colores y mensajes según porcentaje
+            if (pct < 70) {
+                barra.classList.add("bg-inst-ok");
+                estado.textContent = "";
+                estado.className = "text-muted mt-1 d-block";
+            }
+            else if (pct < 90) {
+                barra.classList.add("bg-inst-aviso");
+                estado.textContent = "Se acerca al límite permitido.";
+                estado.className = "text-warning fw-bold mt-1 d-block";
+            }
+            else if (pct < 100) {
+                barra.classList.add("bg-inst-alto");
+                estado.textContent = "Muy cerca del límite máximo.";
+                estado.className = "text-danger fw-bold mt-1 d-block";
+            }
+            else {
+                barra.classList.add("bg-inst-max");
+                estado.textContent = "Límite superado.";
+                estado.className = "text-danger fw-bold mt-1 d-block";
+            }
+        }
+
+        function calcularHorasAsignadasAInstructor(idInstructor) {
+            let minutos = 0;
+
+            for (const a of payload.asignaciones) {
+                if (String(a.instructorId) !== String(idInstructor)) continue;
+                if (!a.horaDesde || !a.horaHasta) continue;
+
+                const d = parseHM(a.horaDesde);
+                const h = parseHM(a.horaHasta);
+
+                minutos += (h - d);
+            }
+
+            const horasSimples = minutos / 60;
+            return horasSimples * 12;   // ← 🔥 regla solicitada
+        }
+
+        function refrescarListaInstructoresEnHorario() {
+            const ids = new Set();
+
+            for (const a of payload.asignaciones) {
+                if (a.instructorId) ids.add(String(a.instructorId));
+            }
+
+            INSTRUCTORES_EN_HORARIO = Array.from(ids);
+            if (indexInstructorActual >= INSTRUCTORES_EN_HORARIO.length)
+                indexInstructorActual = 0;
+        }
+
+        async function mostrarInstructorActual() {
+            refrescarListaInstructoresEnHorario();
+
+            const lblNombre = document.getElementById("nombreInstructorActual");
+
+            if (INSTRUCTORES_EN_HORARIO.length === 0) {
+                lblNombre.textContent = "Sin instructores asignados";
+                actualizarBarraInstructor();
+                return;
+            }
+
+            const id = INSTRUCTORES_EN_HORARIO[indexInstructorActual];
+            lblNombre.textContent = INSTRUCTORES_BY_ID.get(id) || "Instructor";
+
+            // 🔥 cargar horas reales del backend
+            await cargarHorasInstructor(id);
+
+            // 🔥 recalcular barra
+            actualizarBarraInstructor();
+        }
+
+        document.getElementById("btnPrevInstructor").addEventListener("click", () => {
+            if (INSTRUCTORES_EN_HORARIO.length === 0) return;
+
+            // ✔ si solo hay 1 instructor NO cambiamos índice, pero sí actualizamos la barra
+            if (INSTRUCTORES_EN_HORARIO.length > 1) {
+                indexInstructorActual =
+                    (indexInstructorActual - 1 + INSTRUCTORES_EN_HORARIO.length) %
+                    INSTRUCTORES_EN_HORARIO.length;
+            }
+
+            mostrarInstructorActual();
+        });
+
+        document.getElementById("btnNextInstructor").addEventListener("click", () => {
+            if (INSTRUCTORES_EN_HORARIO.length === 0) return;
+
+            if (INSTRUCTORES_EN_HORARIO.length > 1) {
+                indexInstructorActual =
+                    (indexInstructorActual + 1) % INSTRUCTORES_EN_HORARIO.length;
+            }
+
+            mostrarInstructorActual();
+        });
+
 
     // ========== INICIALIZACIÓN ==========
     (async function init() {

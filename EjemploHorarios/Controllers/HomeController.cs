@@ -1,7 +1,6 @@
 ﻿using EjemploHorarios.Models;
 using EjemploHorarios.Models.ViewModels;
 using Newtonsoft.Json;
-using Newtonsoft.Json;
 using OfficeOpenXml;
 using System;
 using System.Collections.Generic;
@@ -11,9 +10,6 @@ using System.IO.Packaging;
 using System.Linq;
 using System.Web;
 using System.Web.Mvc;
-
-
-
 
 
 namespace EjemploHorarios.Controllers
@@ -96,11 +92,6 @@ namespace EjemploHorarios.Controllers
                             JsonRequestBehavior.AllowGet);
             }
         }
-
-
-
-
-
 
 
         // 🧩 MÉTODO PRIVADO: actualización automática de estados lectivo / práctica
@@ -1142,11 +1133,11 @@ namespace EjemploHorarios.Controllers
 
         [HttpGet]
         public JsonResult ValidarChoqueInstructorGlobal(
-      int idInstructor,
-      string dia,
-      string desde,
-      string hasta,
-      int idFichaActual)
+          int idInstructor,
+          string dia,
+          string desde,
+          string hasta,
+          int idFichaActual)
         {
             try
             {
@@ -1198,11 +1189,11 @@ namespace EjemploHorarios.Controllers
 
         [HttpGet]
         public JsonResult ValidarChoqueHorarioBD(
-    int idInstructor,
-    int idFicha,
-    string dia,
-    string desde,
-    string hasta)
+        int idInstructor,
+        int idFicha,
+        string dia,
+        string desde,
+        string hasta)
         {
             try
             {
@@ -1244,6 +1235,7 @@ namespace EjemploHorarios.Controllers
                 }, JsonRequestBehavior.AllowGet);
             }
         }
+        
 
         [HttpGet]
         public JsonResult GetFichaResumen(int idFicha)
@@ -1318,6 +1310,29 @@ namespace EjemploHorarios.Controllers
                              .ToList();
 
                 return Json(new { ok = true, data }, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { ok = false, msg = ex.Message }, JsonRequestBehavior.AllowGet);
+            }
+        }
+
+        [HttpGet]
+        public JsonResult GetHorasInstructor(int idInstructor)
+        {
+            try
+            {
+                var inst = db.Instructor.FirstOrDefault(i => i.IdInstructor == idInstructor);
+
+                if (inst == null)
+                    return Json(new { ok = false, msg = "Instructor no encontrado." }, JsonRequestBehavior.AllowGet);
+
+                return Json(new
+                {
+                    ok = true,
+                    horasActuales = inst.Horas_Trabajadas ?? 0,
+                    horasMaximas = inst.Horas_De_Trabajo ?? 0
+                }, JsonRequestBehavior.AllowGet);
             }
             catch (Exception ex)
             {
