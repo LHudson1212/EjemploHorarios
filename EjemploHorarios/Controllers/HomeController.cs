@@ -1011,7 +1011,13 @@ namespace EjemploHorarios.Controllers
             var instructor = db.Instructor.FirstOrDefault(i => i.IdInstructor == idInstructor);
             ViewBag.NombreInstructor = instructor?.NombreCompletoInstructor ?? "Instructor";
 
-            return View("VerHorarioInstructor", horarios); // 👈 Forzamos a usar la vista correcta
+            // Si es una petición AJAX, retornar la vista parcial sin layout
+            if (Request.IsAjaxRequest())
+            {
+                return PartialView("VerHorarioInstructor", horarios);
+            }
+
+            return View("VerHorarioInstructor", horarios);
         }
 
 
