@@ -685,127 +685,127 @@
 
     @using (Html.BeginForm("GuardarHorario", "Home", FormMethod.Post, new { id = "formGuardarHorario", autocomplete = "off" }))
     {
-        @Html.AntiForgeryToken()
-        <input type="hidden" id="hfAsignaciones" name="AsignacionesJson" />
+    @Html.AntiForgeryToken()
+    <input type="hidden" id="hfAsignaciones" name="AsignacionesJson" />
 
-        <div class="row g-3">
-            <!-- Panel izquierdo -->
-            <aside class="col-lg-3 d-flex flex-column" aria-label="Panel lateral">
-                <!-- Importar Excel -->
-                <div class="col-lg-12 col-md-12 mb-2">
-                    <label class="form-label fw-bold text-sena">Importar Excel</label>
-                    <div class="d-flex align-items-center gap-2">
-                        <button type="button"
-                                id="btnCargarExcel"
-                                class="btn btn-success btn-sm"
-                                data-bs-toggle="tooltip"
-                                title="Importa la planeación desde un archivo Excel">
-                            <i class="bi bi-file-earmark-excel-fill me-1"></i> Cargar Planeación
-                        </button>
-                        <input type="file" id="inputExcel" accept=".xlsx,.xls" class="d-none" />
-                    </div>
-                </div>
-
-                <!-- Programa -->
-                <div class="mb-2">
-                    <label class="form-label fw-bold text-sena" for="inputPrograma">Programa de Formación</label>
-                    <input id="inputPrograma"
-                           type="text"
-                           class="form-control"
-                           placeholder="Escribe o selecciona un programa..."
-                           autocomplete="off" />
-                </div>
-
-                <!-- Competencias -->
-                <div class="card border-sena shadow-sm mb-3">
-                    <div class="card-header bg-sena fw-bold d-flex justify-content-between align-items-center">
-                        <span>Competencias</span>
-                        <div class="input-group input-group-sm" style="width:55%;">
-                            <input id="txtSearch"
-                                   type="text"
-                                   class="form-control"
-                                   placeholder="Buscar..."
-                                   autocomplete="off"
-                                   aria-label="Buscar competencia" />
-                            <span class="input-group-text bg-success text-white" title="Buscar">
-                                <i class="bi bi-search"></i>
-                            </span>
-                        </div>
-                    </div>
-                    <div class="card-body p-2">
-                        <div id="competenciasList"
-                             class="list-group list-group-flush"
-                             aria-live="polite"
-                             aria-label="Listado de competencias">
-                        </div>
-                    </div>
-                </div>
-            </aside>
-
-            <!-- Panel central -->
-            <section class="col-lg-9">
-                <div class="card border-sena shadow-sm">
-                    <div class="card-header bg-sena fw-bold d-flex justify-content-between align-items-center">
-                        <span>Días de formación</span>
-                        <small class="opacity-75">
-                            Arrastra los resultados de aprendizaje hacia un día para crear asignaciones
-                        </small>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-bordered align-middle text-center"
-                                   aria-label="Calendario semanal de formación">
-                                <thead class="table-success">
-                                    <tr>
-                                        <th scope="col">Lunes</th>
-                                        <th scope="col">Martes</th>
-                                        <th scope="col">Miércoles</th>
-                                        <th scope="col">Jueves</th>
-                                        <th scope="col">Viernes</th>
-                                        <th scope="col">Sábado</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        @foreach (var d in new[] { "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado" })
-                                        {
-                                            <td>
-                                                <div class="day-col"
-                                                     id="day-@d.ToLower()"
-                                                     data-day="@d"
-                                                     role="list"
-                                                     aria-label="@d">
-                                                    <small class="text-muted drop-hint">Suelta aquí</small>
-                                                </div>
-                                            </td>
-                                        }
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <small class="text-muted">
-                            Arrastra aquí las asignaciones creadas desde la sección de competencias.
-                        </small>
-                    </div>
-                </div>
-
-                <div class="mt-3 text-end">
-                    <button id="btnGuardarHorario"
-                            type="button"
-                            class="btn btn-success"
-                            title="Guarda el horario actual">
-                        <i class="bi bi-save me-2"></i>Guardar Todo
-                    </button>
-
+    <div class="row g-3">
+        <!-- Panel izquierdo -->
+        <aside class="col-lg-3 d-flex flex-column" aria-label="Panel lateral">
+            <!-- Importar Excel -->
+            <div class="col-lg-12 col-md-12 mb-2">
+                <label class="form-label fw-bold text-sena">Importar Excel</label>
+                <div class="d-flex align-items-center gap-2">
                     <button type="button"
-                            class="btn btn-success"
-                            onclick="location.href='@Url.Action("ListaHorarios", "Home")'"
-                            title="Ver horarios guardados">
-                        <i class="bi bi-calendar-check me-2"></i>Ver Horarios
+                            id="btnCargarExcel"
+                            class="btn btn-success btn-sm"
+                            data-bs-toggle="tooltip"
+                            title="Importa la planeación desde un archivo Excel">
+                        <i class="bi bi-file-earmark-excel-fill me-1"></i> Cargar Planeación
                     </button>
+                    <input type="file" id="inputExcel" accept=".xlsx,.xls" class="d-none" />
                 </div>
-            </section>
-        </div>
+            </div>
+
+            <!-- Programa -->
+            <div class="mb-2">
+                <label class="form-label fw-bold text-sena" for="inputPrograma">Programa de Formación</label>
+                <input id="inputPrograma"
+                       type="text"
+                       class="form-control"
+                       placeholder="Escribe o selecciona un programa..."
+                       autocomplete="off" />
+            </div>
+
+            <!-- Competencias -->
+            <div class="card border-sena shadow-sm mb-3">
+                <div class="card-header bg-sena fw-bold d-flex justify-content-between align-items-center">
+                    <span>Competencias</span>
+                    <div class="input-group input-group-sm" style="width:55%;">
+                        <input id="txtSearch"
+                               type="text"
+                               class="form-control"
+                               placeholder="Buscar..."
+                               autocomplete="off"
+                               aria-label="Buscar competencia" />
+                        <span class="input-group-text bg-success text-white" title="Buscar">
+                            <i class="bi bi-search"></i>
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body p-2">
+                    <div id="competenciasList"
+                         class="list-group list-group-flush"
+                         aria-live="polite"
+                         aria-label="Listado de competencias">
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Panel central -->
+        <section class="col-lg-9">
+            <div class="card border-sena shadow-sm">
+                <div class="card-header bg-sena fw-bold d-flex justify-content-between align-items-center">
+                    <span>Días de formación</span>
+                    <small class="opacity-75">
+                        Arrastra los resultados de aprendizaje hacia un día para crear asignaciones
+                    </small>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered align-middle text-center"
+                               aria-label="Calendario semanal de formación">
+                            <thead class="table-success">
+                                <tr>
+                                    <th scope="col">Lunes</th>
+                                    <th scope="col">Martes</th>
+                                    <th scope="col">Miércoles</th>
+                                    <th scope="col">Jueves</th>
+                                    <th scope="col">Viernes</th>
+                                    <th scope="col">Sábado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    @foreach (var d in new[] { "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado" })
+                                        {
+                                    <td>
+                                        <div class="day-col"
+                                             id="day-@d.ToLower()"
+                                             data-day="@d"
+                                             role="list"
+                                             aria-label="@d">
+                                            <small class="text-muted drop-hint">Suelta aquí</small>
+                                        </div>
+                                    </td>
+                                        }
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <small class="text-muted">
+                        Arrastra aquí las asignaciones creadas desde la sección de competencias.
+                    </small>
+                </div>
+            </div>
+
+            <div class="mt-3 text-end">
+                <button id="btnGuardarHorario"
+                        type="button"
+                        class="btn btn-success"
+                        title="Guarda el horario actual">
+                    <i class="bi bi-save me-2"></i>Guardar Todo
+                </button>
+
+                <button type="button"
+                        class="btn btn-success"
+                        onclick="location.href='@Url.Action("ListaHorarios", "Home")'"
+                        title="Ver horarios guardados">
+                    <i class="bi bi-calendar-check me-2"></i>Ver Horarios
+                </button>
+            </div>
+        </section>
+    </div>
     }
 </main>
 
@@ -1975,33 +1975,58 @@ async function abrirModalAsignar(ctx, preset = null) {
 
             // ========== CARGAR COMPETENCIAS POR FICHA/TRIM ==========
 
-            async function cargarCompetenciasFicha(idFicha) {
-                const trimestreFicha = txtTrimestreFicha.value.trim();
-                if (!idFicha || !trimestreFicha) {
-                    showAlert("No se puede cargar competencias sin seleccionar ficha y trimestre.", "warning");
-                    return;
-                }
+          async function cargarCompetenciasFicha(idFicha) {
 
-                try {
-                    const url = '@Url.Action("GetCompetenciasPorTrimestre", "Home")'
-                        + `?idFicha=${encodeURIComponent(idFicha)}&trimestre=${encodeURIComponent(trimestreFicha)}`;
+    const trimestreFicha = txtTrimestreFicha.value.trim();
+    if (!idFicha || !trimestreFicha) {
+        showAlert("No se puede cargar competencias sin seleccionar ficha y trimestre.", "warning");
+        return;
+    }
 
-                    const resp = await fetch(url, { headers: { "Accept": "application/json" } });
-                    const json = await resp.json();
+    try {
+        const url = '@Url.Action("GetCompetenciasPorTrimestre", "Home")'
+            + `?idFicha=${encodeURIComponent(idFicha)}&trimestre=${encodeURIComponent(trimestreFicha)}`;
 
-                    if (!json.ok) {
-                        showAlert(json.msg || "No hay competencias en este trimestre.", "info");
-                        competenciasList.innerHTML =
-                            `<div class="text-muted text-center py-2">Sin competencias para este trimestre.</div>`;
-                        return;
-                    }
+        const resp = await fetch(url, { headers: { "Accept": "application/json" } });
+        const json = await resp.json();
 
-                    mostrarCompetenciasCargadas(json.data);
-                } catch (err) {
-                    console.error(err);
-                    showAlert("Error cargando competencias: " + err.message, "danger");
-                }
-            }
+        if (!json.ok) {
+            competenciasList.innerHTML =
+                `<div class="text-muted text-center py-2">Sin competencias para este trimestre.</div>`;
+            return;
+        }
+
+        let competencias = json.data || [];
+
+        // ===============================================
+        // 🔥 1. Cargar pendientes desde el último horario
+        // ===============================================
+        const urlPend = '@Url.Action("GetPendientesHorarioAnterior", "Home")'
+            + `?idFicha=${encodeURIComponent(idFicha)}`;
+
+        const respPend = await fetch(urlPend, { headers: { "Accept": "application/json" } });
+        const jsonPend = await respPend.json();
+
+        if (jsonPend.ok && jsonPend.pendientes?.length) {
+
+            competencias.unshift({
+                Competencia: "🔥 PENDIENTES DEL TRIMESTRE ANTERIOR",
+                Resultados: jsonPend.pendientes.map(p =>
+                    `${p.Resultado} — Pendiente (${p.HorasFaltantes}h)`
+                )
+            });
+        }
+
+        // ===============================================
+        // 🔥 2. Render normal + pendientes
+        // ===============================================
+        mostrarCompetenciasCargadas(competencias);
+
+    } catch (err) {
+        showAlert("Error cargando competencias: " + err.message, "danger");
+    }
+}
+
 
             // ========== GUARDAR HORARIO COMPLETO ==========
             btnGuardarHorario?.addEventListener("click", async () => {
@@ -2028,7 +2053,8 @@ async function abrirModalAsignar(ctx, preset = null) {
                 fd.append("AsignacionesJson", JSON.stringify(payload.asignaciones));
                 fd.append("numeroFicha", inputFicha.value.trim());
                 fd.append("nombreHorario", `Horario ${inputFicha.value.trim()} - T${selTrimestreAnio.value}`);
-                fd.append("trimestre", selTrimestreAnio.value.trim());
+                fd.append("trimestreFicha", txtTrimestreFicha.value.trim());      // 1–7
+                fd.append("trimestreAnio", selTrimestreAnio.value.trim());       // 1–4
                 fd.append("idInstructorLider", idInstructorLider);
 
                 const resp = await fetch('@Url.Action("GuardarHorario", "Home")', {

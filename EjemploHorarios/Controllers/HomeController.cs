@@ -135,8 +135,6 @@ namespace EjemploHorarios.Controllers
             }
         }
 
-
-
         [HttpPost]
         public JsonResult ImportarExcel(HttpPostedFileBase archivoExcel, int anio, int trimestre, int idFicha)
         {
@@ -145,6 +143,9 @@ namespace EjemploHorarios.Controllers
                 if (archivoExcel == null || archivoExcel.ContentLength == 0)
                     return Json(new { ok = false, msg = "No se cargó ningún archivo Excel." });
 
+                // ============================
+                // 1. Guardar archivo temporal
+                // ============================
                 string path = Server.MapPath("~/Uploads/");
                 if (!Directory.Exists(path))
                     Directory.CreateDirectory(path);
@@ -152,24 +153,41 @@ namespace EjemploHorarios.Controllers
                 string filePath = Path.Combine(path, Path.GetFileName(archivoExcel.FileName));
                 archivoExcel.SaveAs(filePath);
 
-                var ficha = db.Ficha.Include("Programa_Formacion").FirstOrDefault(f => f.IdFicha == idFicha);
+                // ============================
+                // 2. Buscar ficha
+                // ============================
+                var ficha = db.Ficha
+                              .Include("Programa_Formacion")
+                              .FirstOrDefault(f => f.IdFicha == idFicha);
+
                 if (ficha == null)
-                    return Json(new { ok = false, msg = "Ficha no encontrada." });
+                    return Json(new { ok = false, msg = "❌ Ficha no encontrada." });
 
-                // ❌ YA NO ACTUALIZAMOS EL TRIMESTRE DE LA FICHA
-                // ficha.Trimestre = trimestre;   ← ELIMINADO
-                // db.SaveChanges();              ← ELIMINADO
+                // ============================
+                // ❌ 3. ELIMINAR HORARIOS TEMPORALES QUE BLOQUEAN TODO
+                // ============================
+                var temporales = db.Horario
+                    .Where(h => h.IdFicha == idFicha &&
+                                h.Trimestre_Año == trimestre &&
+                                h.Id_Asignacion == null)   // ← TEMPORAL detectado
+                    .ToList();
 
-                // 👍 SOLO usamos el trimestre que viene desde el usuario
-                int horarioId = ObtenerHorarioValido(idFicha, anio, trimestre);
+                if (temporales.Any())
+                {
+                    db.Horario.RemoveRange(temporales);
+                    db.SaveChanges();
+                }
 
                 string programaNombre = ficha.Programa_Formacion?.DenominacionPrograma ?? "Programa desconocido";
 
+                // ============================
+                // 4. Procesar Excel
+                // ============================
                 using (var package = new OfficeOpenXml.ExcelPackage(new FileInfo(filePath)))
                 {
                     var ws = package.Workbook.Worksheets["Hoja1"];
                     if (ws == null)
-                        return Json(new { ok = false, msg = "No se encontró la hoja 'Hoja1'." });
+                        return Json(new { ok = false, msg = "❌ No se encontró la hoja 'Hoja1'." });
 
                     int rowCount = ws.Dimension.Rows;
                     string competenciaActual = null;
@@ -205,8 +223,8 @@ namespace EjemploHorarios.Controllers
                             Total_Hr = ParseNullableInt(ws.Cells[row, 15].Text),
                             Prog = programaNombre,
                             IdInstructor = idInstructorFinal ?? 1219,
-                            Id_Horario = horarioId,
                             IdFicha = idFicha
+                            // 👈 YA NO necesitamos Id_Horario AQUÍ
                         };
 
                         db.Diseño_Curricular.Add(registro);
@@ -215,13 +233,15 @@ namespace EjemploHorarios.Controllers
                     db.SaveChanges();
                 }
 
-                // 🎯 USAR SIEMPRE EL TRIMESTRE QUE EL USUARIO SELECCIONÓ
+                // ============================
+                // 5. Filtrar resultados del trimestre solicitado
+                // ============================
                 var competenciasFiltradas = FiltrarCompetenciasPorTrimestre(idFicha, trimestre);
 
                 return Json(new
                 {
                     ok = true,
-                    msg = "✅ Competencias cargadas y filtradas correctamente.",
+                    msg = "✅ Competencias cargadas correctamente. Ahora puedes guardar el horario.",
                     competencias = competenciasFiltradas
                 });
             }
@@ -230,9 +250,13 @@ namespace EjemploHorarios.Controllers
                 string deepMsg = ex.InnerException?.InnerException?.Message
                                  ?? ex.InnerException?.Message
                                  ?? ex.Message;
+
                 return Json(new { ok = false, msg = "❌ Error al procesar el archivo: " + deepMsg });
             }
         }
+
+
+
 
         public class CompetenciaDTO
         {
@@ -485,6 +509,9 @@ namespace EjemploHorarios.Controllers
                             JsonRequestBehavior.AllowGet);
             }
         }
+
+
+
         [HttpGet]
         public JsonResult GetInstructorPorResultado(string resultado)
         {
@@ -598,235 +625,209 @@ namespace EjemploHorarios.Controllers
             }
         }
 
-
-
-
         [HttpPost]
         [ValidateAntiForgeryToken]
         public JsonResult GuardarHorario(
-     string AsignacionesJson,
-     string numeroFicha,
-     string nombreHorario,
-     string trimestre,
-     int idInstructorLider)
+            string AsignacionesJson,
+            string numeroFicha,
+            string nombreHorario,
+            string trimestreFicha,     // ← 1–7 (real académico)
+            string trimestreAnio,      // ← 1–4 del año
+            int idInstructorLider)
         {
             try
             {
-                // ============================
-                // 1. Deserializar asignaciones
-                // ============================
+                // =========================================================
+                // 1. CARGAR ASIGNACIONES
+                // =========================================================
                 var asignaciones = JsonConvert.DeserializeObject<List<AsignacionViewModel>>(AsignacionesJson);
                 if (asignaciones == null || !asignaciones.Any())
                     return Json(new { ok = false, msg = "⚠️ No hay asignaciones para guardar." });
 
-                // ============================
-                // 2. Obtener ficha
-                // ============================
+                // =========================================================
+                // 2. OBTENER LA FICHA
+                // =========================================================
                 var ficha = db.Ficha.FirstOrDefault(f => f.CodigoFicha.ToString() == numeroFicha);
                 if (ficha == null)
                     return Json(new { ok = false, msg = "❌ Ficha no encontrada." });
 
-                int tri = int.TryParse(trimestre, out var parsedTri) ? parsedTri : 0;
+                int trimestreActualFicha = ficha.Trimestre.GetValueOrDefault();
+                int trimestreSolicitado = int.Parse(trimestreFicha);
 
-                var horarioExistente = db.Horario
-                    .FirstOrDefault(h => h.IdFicha == ficha.IdFicha && h.Trimestre_Año == tri);
-
-                int? primeraAsignacionId = null;
-                const int SEMANAS_TRIMESTRE = 12;
-
-                var listaAsignaciones = new List<Asignacion_horario>();
-
-                // ============================
-                // 3. Validación interna
-                // ============================
-                foreach (var grp in asignaciones
-                    .Where(a => a.instructorId > 0)
-                    .GroupBy(a => new { a.instructorId, a.dia }))
+                // =========================================================
+                // 3. VALIDACIÓN DE TRIMESTRE MÁXIMO
+                // =========================================================
+                if (trimestreActualFicha >= 7)
                 {
-                    var lista = grp.ToList();
-
-                    for (int i = 0; i < lista.Count; i++)
+                    return Json(new
                     {
-                        for (int j = i + 1; j < lista.Count; j++)
-                        {
-                            var a1 = lista[i];
-                            var a2 = lista[j];
-
-                            TimeSpan d1 = TimeSpan.Parse(a1.horaDesde);
-                            TimeSpan h1 = TimeSpan.Parse(a1.horaHasta);
-                            TimeSpan d2 = TimeSpan.Parse(a2.horaDesde);
-                            TimeSpan h2 = TimeSpan.Parse(a2.horaHasta);
-
-                            bool choque =
-                                (d1 >= d2 && d1 < h2) ||
-                                (h1 > d2 && h1 <= h2) ||
-                                (d1 <= d2 && h1 >= h2);
-
-                            if (choque)
-                            {
-                                return Json(new
-                                {
-                                    ok = false,
-                                    msg = $"❌ El instructor {grp.Key.instructorId} tiene dos rangos de horas traslapados en {grp.Key.dia}."
-                                });
-                            }
-                        }
-                    }
+                        ok = false,
+                        msg = "❌ Esta ficha ya está en trimestre 7. No es posible crear más horarios."
+                    });
                 }
 
-                // *************************************************************
-                // 4. CACHE PARA EVITAR DUPLICADOS REALMENTE (CLAVE UNICA)
-                // *************************************************************
-                Dictionary<string, HorarioInstructor> cacheHI = new Dictionary<string, HorarioInstructor>();
+                // =========================================================
+                // 4. VALIDACIÓN DEL TRIMESTRE SOLICITADO
+                // =========================================================
+                if (trimestreSolicitado < trimestreActualFicha ||
+                    trimestreSolicitado > trimestreActualFicha + 1 ||
+                    trimestreSolicitado > 7)
+                {
+                    return Json(new
+                    {
+                        ok = false,
+                        msg = "❌ No se puede crear un horario para un trimestre inválido."
+                    });
+                }
 
-                // ============================
-                // 5. Procesar asignaciones
-                // ============================
+                // =========================================================
+                // 5. VALIDAR QUE NO EXISTA HORARIO EN ESTE TRIMESTRE
+                // =========================================================
+                bool existeHorario = db.Horario.Any(h =>
+                    h.IdFicha == ficha.IdFicha &&
+                    h.Trimestre_Año == trimestreSolicitado
+                );
+
+                if (existeHorario)
+                {
+                    return Json(new
+                    {
+                        ok = false,
+                        msg = $"❌ Ya existe un horario para esta ficha en el trimestre {trimestreSolicitado}."
+                    });
+                }
+
+                // =========================================================
+                // 6. CREAR HORARIO
+                // =========================================================
+                var horarioNuevo = new Horario
+                {
+                    Año_Horario = int.Parse(trimestreAnio),
+                    Trimestre_Año = trimestreSolicitado,
+                    Fecha_Creacion = DateTime.Now,
+                    IdFicha = ficha.IdFicha,
+                    IdInstructorLider = idInstructorLider
+                };
+
+                db.Horario.Add(horarioNuevo);
+                db.SaveChanges();
+
+                // =========================================================
+                // 7. GUARDAR ASIGNACIONES + HORAS + PENDIENTES
+                // =========================================================
+                const int SEMANAS_TRIMESTRE = 12;
+                var listaAsignaciones = new List<Asignacion_horario>();
+                var pendientes = new List<object>();
+
                 foreach (var a in asignaciones)
                 {
                     if (a.instructorId <= 0) continue;
 
-                    TimeSpan d = TimeSpan.Parse(a.horaDesde);
-                    TimeSpan h = TimeSpan.Parse(a.horaHasta);
+                    TimeSpan desde = TimeSpan.Parse(a.horaDesde);
+                    TimeSpan hasta = TimeSpan.Parse(a.horaHasta);
 
-                    decimal horasPorDia = (decimal)(h - d).TotalHours;
-                    decimal horasAsignacion = Math.Round(horasPorDia * SEMANAS_TRIMESTRE, 2);
+                    if (desde >= hasta)
+                        return Json(new { ok = false, msg = "❌ Hora inicial no puede ser mayor o igual a la final." });
 
-                    var instructor = db.Instructor.FirstOrDefault(i => i.IdInstructor == a.instructorId);
-                    if (instructor == null) continue;
-
-                    decimal horasActuales = instructor.Horas_Trabajadas ?? 0;
-                    decimal horasMaximas = instructor.Horas_De_Trabajo ?? 0;
-
-                    if (horasActuales + horasAsignacion > horasMaximas)
-                        return Json(new { ok = false, msg = $"❌ El instructor {instructor.NombreCompletoInstructor} supera su límite de horas." });
-
-                    // ============================
-                    // 6. Validar choque
-                    // ============================
-                    bool choqueBD = db.HorarioInstructor.Any(hh =>
-                        hh.IdInstructor == a.instructorId &&
-                        hh.Dia == a.dia &&
-                        (
-                            (d >= hh.HoraDesde && d < hh.HoraHasta) ||
-                            (h > hh.HoraDesde && h <= hh.HoraHasta) ||
-                            (d <= hh.HoraDesde && h >= hh.HoraHasta)
-                        )
+                    // =====================================================
+                    // 🔥 7.1 CARGAR HORAS TOTALES DESDE DISEÑO CURRICULAR
+                    // =====================================================
+                    var dc = db.Diseño_Curricular.FirstOrDefault(x =>
+                        x.Competencia == a.competencia &&
+                        x.Resultado == a.resultado &&
+                        x.IdFicha == ficha.IdFicha
                     );
 
-                    if (choqueBD)
-                        return Json(new { ok = false, msg = $"❌ Choque detectado: {instructor.NombreCompletoInstructor} ya tiene clase el {a.dia}." });
+                    int horasTotales = dc?.Duracion ?? 0;
 
-                    // ============================
-                    // 7. Actualizar horas trabajadas
-                    // ============================
-                    instructor.Horas_Trabajadas = horasActuales + horasAsignacion;
-                    db.Entry(instructor).State = EntityState.Modified;
+                    // =====================================================
+                    // 🔥 7.2 CALCULAR HORAS PROGRAMADAS
+                    // =====================================================
+                    decimal horasDia = (decimal)(hasta - desde).TotalHours;
+                    int horasProgramadas = (int)(horasDia * SEMANAS_TRIMESTRE);
 
-                    // ============================
-                    // 8. Crear asignación (Asignacion_horario)
-                    // ============================
+                    // =====================================================
+                    // 7.3 GUARDAR ASIGNACIÓN
+                    // =====================================================
                     var nuevaAsig = new Asignacion_horario
                     {
                         Dia = a.dia,
-                        HoraDesde = d,
-                        HoraHasta = h,
+                        HoraDesde = desde,
+                        HoraHasta = hasta,
                         IdInstructor = a.instructorId,
-                        IdFicha = ficha.IdFicha
+                        IdFicha = ficha.IdFicha,
+                        HorasProgramadas = horasProgramadas,
+                        HorasTotales = horasTotales
                     };
 
                     listaAsignaciones.Add(nuevaAsig);
+                    db.Asignacion_horario.Add(nuevaAsig);
 
-                    // ==========================================================
-                    // 9. GUARDAR / ACTUALIZAR HORARIO INSTRUCTOR (SIN DUPLICAR)
-                    // ==========================================================
-
-                    string comp = a.competencia ?? "";
-                    string res = a.resultado ?? "";
-
-                    string key = $"{a.instructorId}|{a.dia}|{d}|{h}";
-
-                    HorarioInstructor HI;
-
-                    if (cacheHI.ContainsKey(key))
+                    // =====================================================
+                    // 7.4 GUARDAR HORARIO INSTRUCTOR
+                    // =====================================================
+                    var hi = new HorarioInstructor
                     {
-                        HI = cacheHI[key];
-                    }
-                    else
-                    {
-                        HI = db.HorarioInstructor.FirstOrDefault(x =>
-                            x.IdInstructor == a.instructorId &&
-                            x.Dia == a.dia &&
-                            x.HoraDesde == d &&
-                            x.HoraHasta == h
-                        );
-
-                        if (HI == null)
-                        {
-                            HI = new HorarioInstructor
-                            {
-                                IdInstructor = a.instructorId,
-                                IdFicha = ficha.IdFicha,
-                                Dia = a.dia,
-                                HoraDesde = d,
-                                HoraHasta = h,
-                                Competencia = "",
-                                Resultado = ""
-                            };
-
-                            db.HorarioInstructor.Add(HI);
-                        }
-
-                        cacheHI[key] = HI;
-                    }
-
-                    // --- Agregar textos sin duplicar ---
-                    if (!HI.Competencia.Contains(comp))
-                        HI.Competencia += (string.IsNullOrEmpty(HI.Competencia) ? "" : " | ") + comp;
-
-                    if (!HI.Resultado.Contains(res))
-                        HI.Resultado += (string.IsNullOrEmpty(HI.Resultado) ? "" : " | ") + res;
-
-                    db.Entry(HI).State = HI.IdHorarioInstructor == 0
-                        ? EntityState.Added
-                        : EntityState.Modified;
-                }
-
-                // ============================
-                // 10. Guardar asignaciones
-                // ============================
-                foreach (var a in listaAsignaciones)
-                    db.Asignacion_horario.Add(a);
-
-                db.SaveChanges();
-
-                primeraAsignacionId = listaAsignaciones.First().Id_Asignacion;
-
-                // ============================
-                // 11. Crear o actualizar horario de ficha
-                // ============================
-                if (horarioExistente == null)
-                {
-                    db.Horario.Add(new Horario
-                    {
-                        Año_Horario = DateTime.Now.Year,
-                        Trimestre_Año = tri,
-                        Fecha_Creacion = DateTime.Now,
+                        IdInstructor = a.instructorId,
                         IdFicha = ficha.IdFicha,
-                        Id_Asignacion = primeraAsignacionId,
-                        IdInstructorLider = idInstructorLider
-                    });
-                }
-                else
-                {
-                    horarioExistente.Id_Asignacion = primeraAsignacionId;
-                    horarioExistente.IdInstructorLider = idInstructorLider;
-                    db.Entry(horarioExistente).State = EntityState.Modified;
+                        Dia = a.dia,
+                        HoraDesde = desde,
+                        HoraHasta = hasta,
+                        Competencia = a.competencia,
+                        Resultado = a.resultado
+                    };
+
+                    db.HorarioInstructor.Add(hi);
+
+                    // =====================================================
+                    // 🔥 7.5 CALCULAR PENDIENTE
+                    // =====================================================
+                    if (horasProgramadas < horasTotales)
+                    {
+                        pendientes.Add(new
+                        {
+                            Competencia = a.competencia,
+                            Resultado = a.resultado,
+                            HorasDadas = horasProgramadas,
+                            HorasRequeridas = horasTotales,
+                            HorasFaltantes = horasTotales - horasProgramadas
+                        });
+                    }
                 }
 
                 db.SaveChanges();
 
-                return Json(new { ok = true, msg = "✅ Horario y asignaciones guardadas correctamente." });
+                // =========================================================
+                // 8. ASOCIAR PRIMERA ASIGNACIÓN AL HORARIO
+                // =========================================================
+                int primeraAsignacionId = listaAsignaciones.First().Id_Asignacion;
+                horarioNuevo.Id_Asignacion = primeraAsignacionId;
+
+                // =========================================================
+                // 9. GUARDAR PENDIENTES EN EL HORARIO (JSON)
+                // =========================================================
+                horarioNuevo.CompetenciasPendientes =
+                    pendientes.Any() ? JsonConvert.SerializeObject(pendientes) : null;
+
+                db.Entry(horarioNuevo).State = EntityState.Modified;
+                db.SaveChanges();
+
+                // =========================================================
+                // 🔥 10. ACTUALIZAR TRIMESTRE DE LA FICHA
+                // =========================================================
+                if (trimestreSolicitado == trimestreActualFicha)
+                {
+                    ficha.Trimestre = Math.Min(7, trimestreActualFicha + 1);
+                }
+                else if (trimestreSolicitado > trimestreActualFicha)
+                {
+                    ficha.Trimestre = trimestreSolicitado;
+                }
+
+                db.Entry(ficha).State = EntityState.Modified;
+                db.SaveChanges();
+
+                return Json(new { ok = true, msg = "✅ Horario creado correctamente." });
             }
             catch (Exception ex)
             {
@@ -837,7 +838,6 @@ namespace EjemploHorarios.Controllers
                 return Json(new { ok = false, msg = "❌ Error real: " + real });
             }
         }
-
 
 
 
@@ -1085,8 +1085,7 @@ namespace EjemploHorarios.Controllers
 
 
         [HttpGet]
-        public JsonResult ValidarChoqueInstructorGlobal(
-      int idInstructor,
+        public JsonResult ValidarChoqueInstructorGlobal(int idInstructor,
       string dia,
       string desde,
       string hasta,
