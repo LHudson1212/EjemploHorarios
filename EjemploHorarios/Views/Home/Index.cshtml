@@ -627,7 +627,146 @@
     }
 
     .modal-backdrop {
-        z-index: 1990 !important;
+        z-index: 1055;
+    }
+
+    #modalAsignar {
+        z-index: 1060;
+    }
+
+    #modalHorarioInstructor {
+        z-index: 1061;
+    }
+
+    /* Botón ver horario */
+    #btnVerHorarioInstructor {
+        padding: 0.5rem 0.75rem;
+        border: 2px solid var(--sena-green);
+        background: transparent;
+        color: var(--sena-green);
+        transition: all var(--transition-base);
+        flex-shrink: 0;
+    }
+
+        #btnVerHorarioInstructor:hover:not(:disabled) {
+            background: var(--sena-green);
+            color: white;
+            transform: translateY(-1px);
+        }
+
+        #btnVerHorarioInstructor:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            border-color: var(--sena-muted);
+            color: var(--sena-muted);
+        }
+
+    /* Ajustes para el modal de horario reducido */
+    #modalHorarioInstructor .modal-dialog {
+        max-width: 600px;
+        width: auto;
+    }
+
+    #modalHorarioInstructor .modal-content {
+        border-radius: 12px;
+        box-shadow: var(--shadow-xl);
+    }
+
+    #modalHorarioInstructor .modal-header {
+        padding: 0.75rem 1rem;
+        border-bottom: 2px solid rgba(255,255,255,0.2);
+    }
+
+    #modalHorarioInstructor .modal-body {
+        max-height: 70vh;
+    }
+
+    /* Ajustes específicos para el contenido del horario en modal reducido */
+    #contenidoHorarioInstructor .horario-header {
+        padding: 0.75rem 1rem;
+        font-size: 0.9rem;
+    }
+
+    #contenidoHorarioInstructor .horario-dias {
+        display: flex;
+        gap: 0.5rem;
+        padding: 0.75rem;
+        max-height: 50vh;
+        overflow-x: auto;
+        overflow-y: hidden;
+    }
+
+    #contenidoHorarioInstructor .dia {
+        min-width: 160px;
+        flex: 1;
+    }
+
+        #contenidoHorarioInstructor .dia h5 {
+            padding: 0.4rem 0.5rem;
+            font-size: 0.85rem;
+            border-radius: 8px 8px 0 0;
+        }
+
+    #contenidoHorarioInstructor .slot {
+        padding: 0.3rem 0.4rem;
+    }
+
+    #contenidoHorarioInstructor .asignacion {
+        padding: 0.4rem;
+        margin: 0.25rem 0.2rem;
+        border-radius: 8px;
+        font-size: 0.8rem;
+    }
+
+        #contenidoHorarioInstructor .asignacion strong {
+            font-size: 0.75rem;
+        }
+
+    #contenidoHorarioInstructor .muted {
+        font-size: 0.7rem;
+    }
+
+    /* Scroll personalizado */
+    #contenidoHorarioInstructor .horario-dias::-webkit-scrollbar {
+        height: 6px;
+    }
+
+    #contenidoHorarioInstructor .horario-dias::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 3px;
+    }
+
+    #contenidoHorarioInstructor .horario-dias::-webkit-scrollbar-thumb {
+        background: var(--sena-green);
+        border-radius: 3px;
+    }
+
+    @@media (max-width: 1200px) {
+        #modalHorarioInstructor .modal-dialog {
+            max-width: 500px;
+        }
+
+        #contenidoHorarioInstructor .horario-dias {
+            flex-wrap: wrap;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        #contenidoHorarioInstructor .dia {
+            min-width: calc(50% - 0.5rem);
+        }
+    }
+
+    @@media (max-width: 768px) {
+        /* En móviles, mostrar modals uno encima del otro */
+        #modalHorarioInstructor .modal-dialog {
+            position: static !important;
+            margin: 1rem auto;
+        }
+
+        #contenidoHorarioInstructor .dia {
+            min-width: 100%;
+        }
     }
 
     /* Tu dropdown de autocomplete tenía z-index ~1055; mantenlo por debajo del modal */
@@ -731,7 +870,7 @@
                         </button>
                         <input type="file" id="inputExcel" accept=".xlsx,.xls" class="d-none" />
                     </div>
-                </div>           
+                </div>
 
                 <!-- Programa -->
                 <div class="mb-2">
@@ -836,6 +975,58 @@
     }
 </main>
 
+<!-- Modal Asignar - Modificado -->
+<div class="modal fade" id="modalAsignar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content border-sena">
+            <div class="modal-header bg-sena text-white">
+                <h5 class="modal-title">Asignar Instructor y Horario</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="alertChoque" class="alert alert-danger d-none text-center fw-bold" style="font-size: 1rem; border-radius: 10px;"></div>
+                <input type="hidden" id="hfResultadoId" />
+                <input type="hidden" id="hfProgramaId" />
+                <input type="hidden" id="hfCompetenciaId" />
+
+                <!-- Grupo de instructor con botón al lado -->
+                <div class="mb-3">
+                    <label class="form-label" for="selInstructor">Instructor</label>
+                    <div class="d-flex gap-2 align-items-start">
+                        <select id="selInstructor" class="form-select flex-grow-1"></select>
+                        <button type="button"
+                                id="btnVerHorarioInstructor"
+                                class="btn btn-outline-success"
+                                title="Ver horario del instructor seleccionado"
+                                disabled
+                                style="white-space: nowrap;">
+                            <i class="bi bi-calendar-week"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label" for="horaDesde">Desde</label>
+                        <input id="horaDesde" type="time" class="form-control" value="06:00" />
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label" for="horaHasta">Hasta</label>
+                        <input id="horaHasta" type="time" class="form-control" value="09:00" />
+                    </div>
+                </div>
+
+                <button id="btnGuardarAsignacion"
+                        type="button"
+                        class="btn btn-success w-100"
+                        title="Guardar asignación">
+                    <i class="bi bi-check-circle me-2"></i>Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 <!-- ================== BARRAS DE PROGRESO UNIFICADAS ================== -->
 <div id="contenedorBarras" class="p-3 bg-white border rounded shadow-sm mt-4">
@@ -886,7 +1077,7 @@
     <small id="estadoInstructor" class="text-muted mt-1 d-block"></small>
 </div>
 
-<!-- Modal Asignar -->
+<!-- Modal Asignar - Modificado -->
 <div class="modal fade" id="modalAsignar" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content border-sena">
@@ -895,18 +1086,25 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-
-                <div id="alertChoque"
-                     class="alert alert-danger d-none text-center fw-bold"
-                     style="font-size: 1rem; border-radius: 10px;">
-                </div>
+                <div id="alertChoque" class="alert alert-danger d-none text-center fw-bold" style="font-size: 1rem; border-radius: 10px;"></div>
                 <input type="hidden" id="hfResultadoId" />
                 <input type="hidden" id="hfProgramaId" />
                 <input type="hidden" id="hfCompetenciaId" />
 
+                <!-- Grupo de instructor con botón al lado -->
                 <div class="mb-3">
                     <label class="form-label" for="selInstructor">Instructor</label>
-                    <select id="selInstructor" class="form-select"></select>
+                    <div class="d-flex gap-2 align-items-start">
+                        <select id="selInstructor" class="form-select flex-grow-1"></select>
+                        <button type="button"
+                                id="btnVerHorarioInstructor"
+                                class="btn btn-outline-success"
+                                title="Ver horario del instructor seleccionado"
+                                disabled
+                                style="white-space: nowrap;">
+                            <i class="bi bi-calendar-week"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="row g-2 mb-3">
@@ -919,8 +1117,6 @@
                         <input id="horaHasta" type="time" class="form-control" value="09:00" />
                     </div>
                 </div>
-
-
 
                 <button id="btnGuardarAsignacion"
                         type="button"
@@ -1034,6 +1230,30 @@
     </div>
 </div>
 
+<!-- Modal Ver Horario Instructor - Reducido y mejorado -->
+<div class="modal fade" id="modalHorarioInstructor" tabindex="-1" aria-hidden="true" style="z-index: 1061;" data-bs-backdrop="false" data-bs-keyboard="true">
+    >
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content border-sena" style="max-height: 85vh;">
+            <div class="modal-header bg-sena text-white py-2">
+                <h6 class="modal-title mb-0">
+                    <i class="bi bi-calendar-week me-2"></i>
+                    <span id="modalHorarioInstructorTitle">Horario del Instructor</span>
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0" id="contenidoHorarioInstructor" style="overflow-y: auto;">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-success" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <p class="mt-2 text-muted">Cargando horario del instructor...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 <!-- ========================= JS / LÓGICA ========================= -->
 @section Scripts {
@@ -1104,7 +1324,7 @@
         let COMP_DRAGGING = null;             // competencia que se arrastra completa
         let INSTRUCTORES_EN_HORARIO = [];
         let indexInstructorActual = 0;
-   
+
 
     const INSTRUCTORES_BY_ID = new Map(); // cache id → nombre
 
@@ -2773,6 +2993,236 @@
             mostrarInstructorActual();
         });
 
+
+            // ========== MODAL HORARIO INSTRUCTOR ==========
+            let instructorSeleccionadoId = null;
+            let instructorSeleccionadoNombre = null;
+            let modalAsignarInstance = null;
+            let modalHorarioInstance = null;
+
+            // Actualizar el instructor seleccionado cuando cambie el select
+            selInstructorEl?.addEventListener("change", function () {
+                instructorSeleccionadoId = this.value;
+                const option = this.options[this.selectedIndex];
+                instructorSeleccionadoNombre = option.text;
+
+                // Habilitar/deshabilitar botón según si hay instructor seleccionado
+                const btnVerHorario = document.getElementById("btnVerHorarioInstructor");
+                if (btnVerHorario) {
+                    btnVerHorario.disabled = !instructorSeleccionadoId;
+                    if (instructorSeleccionadoId) {
+                        btnVerHorario.title = `Ver horario de ${instructorSeleccionadoNombre}`;
+                    } else {
+                        btnVerHorario.title = "Selecciona un instructor primero";
+                    }
+                }
+            });
+
+            // Abrir modal de horario del instructor
+            document.getElementById("btnVerHorarioInstructor")?.addEventListener("click", function () {
+                if (!instructorSeleccionadoId) {
+                    showAlert("Por favor, selecciona un instructor primero.", "warning");
+                    return;
+                }
+
+                abrirModalHorarioInstructor(instructorSeleccionadoId, instructorSeleccionadoNombre);
+            });
+
+            // Función para abrir el modal y cargar la vista
+            async function abrirModalHorarioInstructor(instructorId, instructorNombre) {
+                try {
+                    const modalTitle = document.getElementById("modalHorarioInstructorTitle");
+                    const contenido = document.getElementById("contenidoHorarioInstructor");
+
+                    // Actualizar título
+                    modalTitle.textContent = `Horario de ${instructorNombre}`;
+
+                    // Mostrar spinner de carga
+                    contenido.innerHTML = `
+            <div class="text-center py-4">
+                <div class="spinner-border text-success" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+                <p class="mt-2 text-muted">Cargando horario de ${instructorNombre}...</p>
+            </div>
+        `;
+
+                    // Posicionar el modal al lado del modal de asignación
+                    posicionarModalAlLado();
+
+                    // Cargar la vista existente via AJAX
+                    await cargarVistaHorarioInstructor(instructorId, contenido);
+
+                } catch (error) {
+                    console.error("Error al abrir modal de horario:", error);
+                    showAlert("Error al cargar el horario del instructor.", "danger");
+                }
+            }
+
+            // Función para posicionar el modal al lado del modal de asignación
+            function posicionarModalAlLado() {
+                const modalAsignar = document.getElementById('modalAsignar');
+                const modalHorario = document.getElementById('modalHorarioInstructor');
+
+                if (!modalAsignar || !modalHorario) return;
+
+                // Obtener (o crear) la instancia del modal de asignación SIN volver a mostrarla
+                modalAsignarInstance = bootstrap.Modal.getOrCreateInstance(modalAsignar);
+
+                // Crear el modal de horario SIN backdrop propio
+                modalHorarioInstance = bootstrap.Modal.getOrCreateInstance(modalHorario, {
+                    backdrop: false,
+                    focus: false      // evitamos que robe el focus completamente
+                });
+
+                // 🔹 Importante: NO vuelvas a llamar a modalAsignarInstance.show()
+                // Ese modal ya estaba abierto cuando diste clic en "Ver Horario"
+                modalHorarioInstance.show();
+
+                // Posicionar el modal de horario al lado del modal de asignación
+                setTimeout(() => {
+                    const asignarDialog = modalAsignar.querySelector('.modal-dialog');
+                    const horarioDialog = modalHorario.querySelector('.modal-dialog');
+
+                    if (!asignarDialog || !horarioDialog) return;
+
+                    const asignarRect = asignarDialog.getBoundingClientRect();
+
+                    horarioDialog.style.position = 'fixed';
+                    horarioDialog.style.top = `${asignarRect.top}px`;
+                    horarioDialog.style.left = `${asignarRect.right + 20}px`; // 20px de separación
+                    horarioDialog.style.margin = '0';
+                    horarioDialog.style.transform = 'none';
+                }, 50);
+            }
+
+            // Función para cargar la vista existente
+        async function cargarVistaHorarioInstructor(instructorId, contenedor) {
+            try {
+                const url = `@Url.Action("VerHorarioInstructor", "Home")?idInstructor=${encodeURIComponent(instructorId)}`;
+
+                const response = await fetch(url, {
+                    headers: {
+                        'Accept': 'text/html',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+
+                const html = await response.text();
+
+                // Extraer el contenido de la vista
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = html;
+
+                // Buscar el contenido principal
+                const horarioContainer = tempDiv.querySelector('.horario-container');
+
+                if (horarioContainer) {
+                    // Clonar el contenido manteniendo los estilos
+                    const contenidoClonado = horarioContainer.cloneNode(true);
+
+                    // Limpiar y ajustar para el modal
+                    limpiarYAdaptarContenido(contenidoClonado);
+
+                    contenedor.innerHTML = '';
+                    contenedor.appendChild(contenidoClonado);
+                } else {
+                    contenedor.innerHTML = html;
+                }
+
+            } catch (error) {
+                console.error("Error cargando vista de horario:", error);
+                contenedor.innerHTML = `
+                    <div class="alert alert-danger text-center m-3">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        Error al cargar el horario del instructor: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // Función para limpiar y adaptar el contenido al modal
+        function limpiarYAdaptarContenido(contenedor) {
+            // Remover elementos innecesarios para el modal
+            const botonVolver = contenedor.querySelector('button[onclick*="ListasHorarios"]');
+            const tituloPrincipal = contenedor.querySelector('h3.fw-bold.text-success');
+
+            if (botonVolver) botonVolver.remove();
+            if (tituloPrincipal) tituloPrincipal.remove();
+
+            // Ajustar estilos para el modal reducido
+            const elementos = contenedor.querySelectorAll('.horario-container, .horario-dias, .dia, .asignacion');
+
+            elementos.forEach(el => {
+                if (el.classList.contains('horario-container')) {
+                    el.style.margin = '0';
+                    el.style.borderRadius = '0';
+                    el.style.boxShadow = 'none';
+                }
+
+                if (el.classList.contains('horario-dias')) {
+                    el.style.padding = '0.75rem';
+                    el.style.gap = '0.5rem';
+                }
+
+                if (el.classList.contains('dia')) {
+                    el.style.minWidth = '160px';
+                }
+
+                if (el.classList.contains('asignacion')) {
+                    el.style.padding = '0.4rem';
+                    el.style.margin = '0.25rem 0.2rem';
+                    el.style.fontSize = '0.8rem';
+                }
+            });
+
+            // Ajustar textos pequeños
+            const textos = contenedor.querySelectorAll('small, .muted');
+            textos.forEach(texto => {
+                texto.style.fontSize = '0.75rem';
+            });
+        }
+
+        // Manejar el cierre de los modals
+        modalAsignarEl?.addEventListener('hidden.bs.modal', function () {
+            // Cerrar también el modal de horario si está abierto
+            if (modalHorarioInstance) {
+                modalHorarioInstance.hide();
+            }
+
+            // Resetear instructor seleccionado
+            instructorSeleccionadoId = null;
+            instructorSeleccionadoNombre = null;
+        });
+
+            document.getElementById('modalHorarioInstructor')?.addEventListener('hidden.bs.modal', function () {
+                instructorSeleccionadoId = null;
+                instructorSeleccionadoNombre = null;
+
+                // Si no hay más modales visibles, aseguramos que el body quede limpio
+                if (document.querySelectorAll('.modal.show').length === 0) {
+                    document.body.classList.remove('modal-open');
+                    const backdrops = document.querySelectorAll('.modal-backdrop');
+                    backdrops.forEach(b => b.remove());
+                }
+            });
+
+
+            // Re-posicionar cuando cambie el tamaño de la ventana
+            window.addEventListener('resize', function () {
+                if (modalHorarioInstance && modalAsignarInstance) {
+                    const modalHorario = document.getElementById('modalHorarioInstructor');
+                    const modalAsignar = document.getElementById('modalAsignar');
+
+                    if (modalHorario.classList.contains('show') && modalAsignar.classList.contains('show')) {
+                        posicionarModalAlLado();
+                    }
+                }
+            });
 
     // ========== INICIALIZACIÓN ==========
     (async function init() {
