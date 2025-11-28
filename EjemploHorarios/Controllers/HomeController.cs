@@ -132,7 +132,6 @@ namespace EjemploHorarios.Controllers
         {
             try
             {
-
                 if (archivoExcel == null || archivoExcel.ContentLength == 0)
                     return Json(new { ok = false, msg = "No se cargó ningún archivo Excel." });
 

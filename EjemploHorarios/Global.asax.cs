@@ -13,12 +13,13 @@ namespace EjemploHorarios
     {
         protected void Application_Start()
         {
-            // ? EPPlus 8 license setup
+            // EPPlus 8 license setup
             ExcelPackage.License.SetNonCommercialOrganization("SENA-EjemploHorarios");
             AreaRegistration.RegisterAllAreas();
             FilterConfig.RegisterGlobalFilters(GlobalFilters.Filters);
             RouteConfig.RegisterRoutes(RouteTable.Routes);
             BundleConfig.RegisterBundles(BundleTable.Bundles);
+
         }
     }
 }
