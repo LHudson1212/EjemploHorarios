@@ -467,149 +467,149 @@
     }
 
     /* Estilos para los modals lado a lado */
-.modal-backdrop {
-    z-index: 1055;
-}
+    .modal-backdrop {
+        z-index: 1055;
+    }
 
-#modalAsignar {
-    z-index: 1060;
-}
+    #modalAsignar {
+        z-index: 1060;
+    }
 
-#modalHorarioInstructor {
-    z-index: 1061;
-}
+    #modalHorarioInstructor {
+        z-index: 1061;
+    }
 
-/* Botón ver horario */
-#btnVerHorarioInstructor {
-    padding: 0.5rem 0.75rem;
-    border: 2px solid var(--sena-green);
-    background: transparent;
-    color: var(--sena-green);
-    transition: all var(--transition-base);
-    flex-shrink: 0;
-}
+    /* Botón ver horario */
+    #btnVerHorarioInstructor {
+        padding: 0.5rem 0.75rem;
+        border: 2px solid var(--sena-green);
+        background: transparent;
+        color: var(--sena-green);
+        transition: all var(--transition-base);
+        flex-shrink: 0;
+    }
 
-#btnVerHorarioInstructor:hover:not(:disabled) {
-    background: var(--sena-green);
-    color: white;
-    transform: translateY(-1px);
-}
+        #btnVerHorarioInstructor:hover:not(:disabled) {
+            background: var(--sena-green);
+            color: white;
+            transform: translateY(-1px);
+        }
 
-#btnVerHorarioInstructor:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-    border-color: var(--sena-muted);
-    color: var(--sena-muted);
-}
+        #btnVerHorarioInstructor:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            border-color: var(--sena-muted);
+            color: var(--sena-muted);
+        }
 
-/* Ajustes para el modal de horario reducido */
-#modalHorarioInstructor .modal-dialog {
-    max-width: 600px;
-    width: auto;
-}
-
-#modalHorarioInstructor .modal-content {
-    border-radius: 12px;
-    box-shadow: var(--shadow-xl);
-}
-
-#modalHorarioInstructor .modal-header {
-    padding: 0.75rem 1rem;
-    border-bottom: 2px solid rgba(255,255,255,0.2);
-}
-
-#modalHorarioInstructor .modal-body {
-    max-height: 70vh;
-}
-
-/* Ajustes específicos para el contenido del horario en modal reducido */
-#contenidoHorarioInstructor .horario-header {
-    padding: 0.75rem 1rem;
-    font-size: 0.9rem;
-}
-
-#contenidoHorarioInstructor .horario-dias {
-    display: flex;
-    gap: 0.5rem;
-    padding: 0.75rem;
-    max-height: 50vh;
-    overflow-x: auto;
-    overflow-y: hidden;
-}
-
-#contenidoHorarioInstructor .dia {
-    min-width: 160px;
-    flex: 1;
-}
-
-#contenidoHorarioInstructor .dia h5 {
-    padding: 0.4rem 0.5rem;
-    font-size: 0.85rem;
-    border-radius: 8px 8px 0 0;
-}
-
-#contenidoHorarioInstructor .slot {
-    padding: 0.3rem 0.4rem;
-}
-
-#contenidoHorarioInstructor .asignacion {
-    padding: 0.4rem;
-    margin: 0.25rem 0.2rem;
-    border-radius: 8px;
-    font-size: 0.8rem;
-}
-
-#contenidoHorarioInstructor .asignacion strong {
-    font-size: 0.75rem;
-}
-
-#contenidoHorarioInstructor .muted {
-    font-size: 0.7rem;
-}
-
-/* Scroll personalizado */
-#contenidoHorarioInstructor .horario-dias::-webkit-scrollbar {
-    height: 6px;
-}
-
-#contenidoHorarioInstructor .horario-dias::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 3px;
-}
-
-#contenidoHorarioInstructor .horario-dias::-webkit-scrollbar-thumb {
-    background: var(--sena-green);
-    border-radius: 3px;
-}
-
-/* Responsive */
-@@media (max-width: 1200px) {
+    /* Ajustes para el modal de horario reducido */
     #modalHorarioInstructor .modal-dialog {
-        max-width: 500px;
+        max-width: 600px;
+        width: auto;
+    }
+
+    #modalHorarioInstructor .modal-content {
+        border-radius: 12px;
+        box-shadow: var(--shadow-xl);
+    }
+
+    #modalHorarioInstructor .modal-header {
+        padding: 0.75rem 1rem;
+        border-bottom: 2px solid rgba(255,255,255,0.2);
+    }
+
+    #modalHorarioInstructor .modal-body {
+        max-height: 70vh;
+    }
+
+    /* Ajustes específicos para el contenido del horario en modal reducido */
+    #contenidoHorarioInstructor .horario-header {
+        padding: 0.75rem 1rem;
+        font-size: 0.9rem;
     }
 
     #contenidoHorarioInstructor .horario-dias {
-        flex-wrap: wrap;
-        max-height: 60vh;
-        overflow-y: auto;
+        display: flex;
+        gap: 0.5rem;
+        padding: 0.75rem;
+        max-height: 50vh;
+        overflow-x: auto;
+        overflow-y: hidden;
     }
 
     #contenidoHorarioInstructor .dia {
-        min-width: calc(50% - 0.5rem);
-    }
-}
-
-@@media (max-width: 768px) {
-    /* En móviles, mostrar modals uno encima del otro */
-    #modalHorarioInstructor .modal-dialog {
-        position: static !important;
-        margin: 1rem auto;
+        min-width: 160px;
+        flex: 1;
     }
 
-    #contenidoHorarioInstructor .dia {
-        min-width: 100%;
+        #contenidoHorarioInstructor .dia h5 {
+            padding: 0.4rem 0.5rem;
+            font-size: 0.85rem;
+            border-radius: 8px 8px 0 0;
+        }
+
+    #contenidoHorarioInstructor .slot {
+        padding: 0.3rem 0.4rem;
     }
-}
+
+    #contenidoHorarioInstructor .asignacion {
+        padding: 0.4rem;
+        margin: 0.25rem 0.2rem;
+        border-radius: 8px;
+        font-size: 0.8rem;
+    }
+
+        #contenidoHorarioInstructor .asignacion strong {
+            font-size: 0.75rem;
+        }
+
+    #contenidoHorarioInstructor .muted {
+        font-size: 0.7rem;
+    }
+
+    /* Scroll personalizado */
+    #contenidoHorarioInstructor .horario-dias::-webkit-scrollbar {
+        height: 6px;
+    }
+
+    #contenidoHorarioInstructor .horario-dias::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 3px;
+    }
+
+    #contenidoHorarioInstructor .horario-dias::-webkit-scrollbar-thumb {
+        background: var(--sena-green);
+        border-radius: 3px;
+    }
+
+    /* Responsive */
+    @@media (max-width: 1200px) {
+        #modalHorarioInstructor .modal-dialog {
+            max-width: 500px;
+        }
+
+        #contenidoHorarioInstructor .horario-dias {
+            flex-wrap: wrap;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        #contenidoHorarioInstructor .dia {
+            min-width: calc(50% - 0.5rem);
+        }
+    }
+
+    @@media (max-width: 768px) {
+        /* En móviles, mostrar modals uno encima del otro */
+        #modalHorarioInstructor .modal-dialog {
+            position: static !important;
+            margin: 1rem auto;
+        }
+
+        #contenidoHorarioInstructor .dia {
+            min-width: 100%;
+        }
+    }
 
     @@media (max-width: 768px) {
         .floating-alert {
@@ -1065,7 +1065,8 @@
 </div>
 
 <!-- Modal Ver Horario Instructor - Reducido y mejorado -->
-<div class="modal fade" id="modalHorarioInstructor" tabindex="-1" aria-hidden="true" style="z-index: 1061;">
+<div class="modal fade" id="modalHorarioInstructor" tabindex="-1" aria-hidden="true" style="z-index: 1061;" data-bs-backdrop="false" data-bs-keyboard="true">
+    >
     <div class="modal-dialog modal-lg">
         <div class="modal-content border-sena" style="max-height: 85vh;">
             <div class="modal-header bg-sena text-white py-2">
@@ -2458,33 +2459,41 @@ async function abrirModalHorarioInstructor(instructorId, instructorNombre) {
 }
 
 // Función para posicionar el modal al lado del modal de asignación
-function posicionarModalAlLado() {
-    const modalAsignar = document.getElementById('modalAsignar');
-    const modalHorario = document.getElementById('modalHorarioInstructor');
+        function posicionarModalAlLado() {
+            const modalAsignar = document.getElementById('modalAsignar');
+            const modalHorario = document.getElementById('modalHorarioInstructor');
 
-    if (!modalAsignar || !modalHorario) return;
+            if (!modalAsignar || !modalHorario) return;
 
-    // Obtener instancias de los modals
-    modalAsignarInstance = new bootstrap.Modal(modalAsignar);
-    modalHorarioInstance = new bootstrap.Modal(modalHorario);
+            // Obtener (o crear) la instancia del modal de asignación SIN volver a mostrarla
+            modalAsignarInstance = bootstrap.Modal.getOrCreateInstance(modalAsignar);
 
-    // Mostrar ambos modals
-    modalAsignarInstance.show();
-    modalHorarioInstance.show();
+            // Crear el modal de horario SIN backdrop propio
+            modalHorarioInstance = bootstrap.Modal.getOrCreateInstance(modalHorario, {
+                backdrop: false,
+                focus: false      // evitamos que robe el focus completamente
+            });
 
-    // Ajustar posición después de que los modals estén visibles
-    setTimeout(() => {
-        const asignarRect = modalAsignar.querySelector('.modal-dialog').getBoundingClientRect();
-        const horarioDialog = modalHorario.querySelector('.modal-dialog');
+            // 🔹 Importante: NO vuelvas a llamar a modalAsignarInstance.show()
+            // Ese modal ya estaba abierto cuando diste clic en "Ver Horario"
+            modalHorarioInstance.show();
 
-        // Posicionar el modal de horario a la derecha del modal de asignación
-        horarioDialog.style.position = 'fixed';
-        horarioDialog.style.top = `${asignarRect.top}px`;
-        horarioDialog.style.left = `${asignarRect.right + 20}px`; // 20px de separación
-        horarioDialog.style.margin = '0';
-        horarioDialog.style.transform = 'none';
-    }, 50);
-}
+            // Posicionar el modal de horario al lado del modal de asignación
+            setTimeout(() => {
+                const asignarDialog = modalAsignar.querySelector('.modal-dialog');
+                const horarioDialog = modalHorario.querySelector('.modal-dialog');
+
+                if (!asignarDialog || !horarioDialog) return;
+
+                const asignarRect = asignarDialog.getBoundingClientRect();
+
+                horarioDialog.style.position = 'fixed';
+                horarioDialog.style.top = `${asignarRect.top}px`;
+                horarioDialog.style.left = `${asignarRect.right + 20}px`; // 20px de separación
+                horarioDialog.style.margin = '0';
+                horarioDialog.style.transform = 'none';
+            }, 50);
+        }
 
 // Función para cargar la vista existente
 async function cargarVistaHorarioInstructor(instructorId, contenedor) {
@@ -2589,10 +2598,18 @@ modalAsignarEl?.addEventListener('hidden.bs.modal', function () {
     instructorSeleccionadoNombre = null;
 });
 
-document.getElementById('modalHorarioInstructor')?.addEventListener('hidden.bs.modal', function () {
-    instructorSeleccionadoId = null;
-    instructorSeleccionadoNombre = null;
-});
+        document.getElementById('modalHorarioInstructor')?.addEventListener('hidden.bs.modal', function () {
+            instructorSeleccionadoId = null;
+            instructorSeleccionadoNombre = null;
+
+            // Si no hay más modales visibles, aseguramos que el body quede limpio
+            if (document.querySelectorAll('.modal.show').length === 0) {
+                document.body.classList.remove('modal-open');
+                const backdrops = document.querySelectorAll('.modal-backdrop');
+                backdrops.forEach(b => b.remove());
+            }
+        });
+
 
 // Re-posicionar cuando cambie el tamaño de la ventana
 window.addEventListener('resize', function() {
