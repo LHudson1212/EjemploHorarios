@@ -4,15 +4,15 @@
   <edmx:Designer xmlns="http://schemas.microsoft.com/ado/2009/11/edmx">
     <!-- Diagram content (shape and connector positions) -->
     <edmx:Diagrams>
-      <Diagram DiagramId="f685612752a044198a849b9e4deaafc9" Name="Diagram1">
+      <Diagram DiagramId="f685612752a044198a849b9e4deaafc9" Name="Diagram1" ZoomLevel="82">
         <EntityTypeShape EntityType="SenaPlanningModel.Ambiente" Width="1.5" PointX="5.25" PointY="15.375" IsExpanded="true" />
         <EntityTypeShape EntityType="SenaPlanningModel.Area_Conocimiento" Width="1.5" PointX="3" PointY="8.25" IsExpanded="true" />
-        <EntityTypeShape EntityType="SenaPlanningModel.Asignacion_horario" Width="1.5" PointX="9.75" PointY="8.375" IsExpanded="true" />
+        <EntityTypeShape EntityType="SenaPlanningModel.Asignacion_horario" Width="1.5" PointX="19.5" PointY="8.75" IsExpanded="true" />
         <EntityTypeShape EntityType="SenaPlanningModel.Competencias" Width="1.5" PointX="5.25" PointY="1.625" IsExpanded="true" />
         <EntityTypeShape EntityType="SenaPlanningModel.Diseño_Curricular" Width="1.5" PointX="15.25" PointY="8.25" IsExpanded="true" />
-        <EntityTypeShape EntityType="SenaPlanningModel.Ficha" Width="1.5" PointX="7.5" PointY="10.75" IsExpanded="true" />
-        <EntityTypeShape EntityType="SenaPlanningModel.Horario" Width="1.5" PointX="12" PointY="12.375" IsExpanded="true" />
-        <EntityTypeShape EntityType="SenaPlanningModel.HorarioInstructor" Width="1.5" PointX="12.75" PointY="8.375" IsExpanded="true" />
+        <EntityTypeShape EntityType="SenaPlanningModel.Ficha" Width="1.5" PointX="12.875" PointY="8.25" IsExpanded="true" />
+        <EntityTypeShape EntityType="SenaPlanningModel.Horario" Width="1.5" PointX="17.625" PointY="8.75" IsExpanded="true" />
+        <EntityTypeShape EntityType="SenaPlanningModel.HorarioInstructor" Width="1.5" PointX="10.25" PointY="8" IsExpanded="true" />
         <EntityTypeShape EntityType="SenaPlanningModel.Instructor" Width="1.5" PointX="5.25" PointY="4.625" IsExpanded="true" />
         <EntityTypeShape EntityType="SenaPlanningModel.Meta" Width="1.5" PointX="3" PointY="18.75" IsExpanded="true" />
         <EntityTypeShape EntityType="SenaPlanningModel.Oferta" Width="1.5" PointX="5.25" PointY="21.125" IsExpanded="true" />

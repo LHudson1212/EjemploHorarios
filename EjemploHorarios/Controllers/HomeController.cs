@@ -127,12 +127,12 @@ namespace EjemploHorarios.Controllers
         }
 
 
-
         [HttpPost]
         public JsonResult ImportarExcel(HttpPostedFileBase archivoExcel, int anio, int trimestre, int idFicha)
         {
             try
             {
+
                 if (archivoExcel == null || archivoExcel.ContentLength == 0)
                     return Json(new { ok = false, msg = "No se cargó ningún archivo Excel." });
 
@@ -140,23 +140,22 @@ namespace EjemploHorarios.Controllers
                 if (!Directory.Exists(path))
                     Directory.CreateDirectory(path);
 
-                string filePath = Path.Combine(path, Path.GetFileName(archivoExcel.FileName));
+                // ✅ evita pisar archivos con mismo nombre
+                string uniqueName = $"{Guid.NewGuid()}_{Path.GetFileName(archivoExcel.FileName)}";
+                string filePath = Path.Combine(path, uniqueName);
                 archivoExcel.SaveAs(filePath);
 
-                var ficha = db.Ficha.Include("Programa_Formacion").FirstOrDefault(f => f.IdFicha == idFicha);
+                var ficha = db.Ficha.Include("Programa_Formacion")
+                                    .FirstOrDefault(f => f.IdFicha == idFicha);
+
                 if (ficha == null)
                     return Json(new { ok = false, msg = "Ficha no encontrada." });
 
-                // ❌ YA NO ACTUALIZAMOS EL TRIMESTRE DE LA FICHA
-                // ficha.Trimestre = trimestre;   ← ELIMINADO
-                // db.SaveChanges();              ← ELIMINADO
-
-                // 👍 SOLO usamos el trimestre que viene desde el usuario
                 int horarioId = ObtenerHorarioValido(idFicha, anio, trimestre);
 
                 string programaNombre = ficha.Programa_Formacion?.DenominacionPrograma ?? "Programa desconocido";
 
-                using (var package = new OfficeOpenXml.ExcelPackage(new FileInfo(filePath)))
+                using (var package = new ExcelPackage(new FileInfo(filePath)))
                 {
                     var ws = package.Workbook.Worksheets["Hoja1"];
                     if (ws == null)
@@ -206,7 +205,6 @@ namespace EjemploHorarios.Controllers
                     db.SaveChanges();
                 }
 
-                // 🎯 USAR SIEMPRE EL TRIMESTRE QUE EL USUARIO SELECCIONÓ
                 var competenciasFiltradas = FiltrarCompetenciasPorTrimestre(idFicha, trimestre);
 
                 return Json(new
@@ -224,6 +222,7 @@ namespace EjemploHorarios.Controllers
                 return Json(new { ok = false, msg = "❌ Error al procesar el archivo: " + deepMsg });
             }
         }
+
 
         public class CompetenciaDTO
         {
