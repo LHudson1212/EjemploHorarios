@@ -29,7 +29,6 @@ namespace EjemploHorarios.Models
         public virtual DbSet<Area_Conocimiento> Area_Conocimiento { get; set; }
         public virtual DbSet<Asignacion_horario> Asignacion_horario { get; set; }
         public virtual DbSet<Competencias> Competencias { get; set; }
-        public virtual DbSet<Diseño_Curricular> Diseño_Curricular { get; set; }
         public virtual DbSet<Ficha> Ficha { get; set; }
         public virtual DbSet<Horario> Horario { get; set; }
         public virtual DbSet<HorarioInstructor> HorarioInstructor { get; set; }
@@ -40,5 +39,6 @@ namespace EjemploHorarios.Models
         public virtual DbSet<Red_Conocimiento> Red_Conocimiento { get; set; }
         public virtual DbSet<Resultado_aprendizaje> Resultado_aprendizaje { get; set; }
         public virtual DbSet<Usuario> Usuario { get; set; }
+        public virtual DbSet<Diseño_Curricular> Diseño_Curricular { get; set; }
     }
 }

@@ -26,6 +26,8 @@ namespace EjemploHorarios.Models
         public System.TimeSpan HoraHasta { get; set; }
         public int IdInstructor { get; set; }
         public int IdFicha { get; set; }
+        public Nullable<int> HorasProgramadas { get; set; }
+        public Nullable<int> HorasTotales { get; set; }
     
         public virtual Ficha Ficha { get; set; }
         public virtual Instructor Instructor { get; set; }

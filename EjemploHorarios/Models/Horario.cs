@@ -27,11 +27,12 @@ namespace EjemploHorarios.Models
         public int IdFicha { get; set; }
         public Nullable<int> Id_Asignacion { get; set; }
         public Nullable<int> IdInstructorLider { get; set; }
+        public string CompetenciasPendientes { get; set; }
     
         public virtual Asignacion_horario Asignacion_horario { get; set; }
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public virtual ICollection<Diseño_Curricular> Diseño_Curricular { get; set; }
         public virtual Ficha Ficha { get; set; }
         public virtual Instructor Instructor { get; set; }
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<Diseño_Curricular> Diseño_Curricular { get; set; }
     }
 }

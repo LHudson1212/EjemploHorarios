@@ -1563,7 +1563,7 @@
 
         async function cargarHorariosGlobales() {
             try {
-                const resp = await fetch("/Home/GetAsignacionessInstructor");
+                const resp = await fetch("/Home/GetAsignacionesInstructor");
                 const json = await resp.json();
 
                 if (json.ok) {
@@ -2189,12 +2189,18 @@
                 method: "POST",
                 body: fd
             });
-            const data = await resp.json();
 
+            const data = await resp.json();
             if (!data.ok) throw new Error(data.msg || "Error al importar la planeación.");
 
             showAlert(data.msg, "success");
-            cargarCompetenciasFicha(idFicha);
+
+            // ✅ ahora sí: recargar competencias del trimestre ACTUAL importado
+            await cargarCompetenciasFicha(idFicha, "actual");
+
+            // (Opcional) si quieres también cargar las del siguiente trimestre:
+            // await cargarCompetenciasFicha(idFicha, "siguiente");
+
         } catch (err) {
             showAlert(err.message, "danger");
         } finally {
@@ -2203,6 +2209,7 @@
             e.target.value = "";
         }
     });
+
 
     async function cargarFichaResumenParaModal(idFicha) {
         if (!idFicha) {
@@ -2479,33 +2486,130 @@
     }
 
     // ========== CARGAR COMPETENCIAS POR FICHA/TRIM ==========
-    async function cargarCompetenciasFicha(idFicha) {
-        const trimestreFicha = txtTrimestreFicha.value.trim();
+    // modo: "actual"  -> usa GetCompetenciasTrimestreActual (sin +1)
+    //       "siguiente" -> usa GetCompetenciasPorTrimestre (con +1)
+    // default = "siguiente" para no romper tu comportamiento histórico
+    async function cargarCompetenciasFicha(idFicha, modo = "siguiente") {
+        const trimestreFicha = (txtTrimestreFicha?.value || "").trim();
+
         if (!idFicha || !trimestreFicha) {
             showAlert("No se puede cargar competencias sin seleccionar ficha y trimestre.", "warning");
             return;
         }
 
+        // Helper: leer JSON de forma segura
+        async function safeJson(resp) {
+            const ct = resp.headers.get("content-type") || "";
+
+            if (!resp.ok) {
+                const text = await resp.text();
+                throw new Error(`HTTP ${resp.status}: ${text.substring(0, 160)}`);
+            }
+
+            if (!ct.includes("application/json")) {
+                const text = await resp.text();
+                throw new Error(`Respuesta no JSON: ${text.substring(0, 160)}`);
+            }
+
+            return await resp.json();
+        }
+
+        // UI opcional de carga
+        if (competenciasList) {
+            competenciasList.innerHTML = `
+                <div class="text-muted text-center py-2">
+                    <i class="bi bi-hourglass-split me-1"></i> Cargando competencias...
+                </div>`;
+        }
+
         try {
-            const url = '@Url.Action("GetCompetenciasPorTrimestre", "Home")'
+            // Elegir endpoint según modo
+            const action = (modo === "actual")
+                ? "GetCompetenciasTrimestreActual"
+                : "GetCompetenciasPorTrimestre";
+
+            const url = '@Url.Action("__REPLACE__", "Home")'
+                .replace("__REPLACE__", action)
                 + `?idFicha=${encodeURIComponent(idFicha)}&trimestre=${encodeURIComponent(trimestreFicha)}`;
 
-            const resp = await fetch(url, { headers: { "Accept": "application/json" } });
-            const json = await resp.json();
+            const resp = await fetch(url, {
+                headers: { "Accept": "application/json" },
+                credentials: "same-origin"
+            });
 
-            if (!json.ok) {
-                showAlert(json.msg || "No hay competencias en este trimestre.", "info");
+            const json = await safeJson(resp);
+
+            if (!json.ok || !Array.isArray(json.data) || json.data.length === 0) {
                 competenciasList.innerHTML =
                     `<div class="text-muted text-center py-2">Sin competencias para este trimestre.</div>`;
                 return;
             }
 
-            mostrarCompetenciasCargadas(json.data);
+            let competencias = json.data;
+
+            // ---------------------------------------------------
+            // 🔥 1) Cargar pendientes desde el último horario
+            //     (si falla, NO rompe el render)
+            // ---------------------------------------------------
+            try {
+                const urlPend = '@Url.Action("GetPendientesHorarioAnterior", "Home")'
+                    + `?idFicha=${encodeURIComponent(idFicha)}`;
+
+                const respPend = await fetch(urlPend, {
+                    headers: { "Accept": "application/json" },
+                    credentials: "same-origin"
+                });
+
+                const jsonPend = await safeJson(respPend);
+
+                if (jsonPend.ok && Array.isArray(jsonPend.pendientes) && jsonPend.pendientes.length) {
+                    const resultadosPend = jsonPend.pendientes
+                        .filter(p => p && p.Resultado)
+                        .map(p => `${p.Resultado} — Pendiente (${p.HorasFaltantes ?? 0}h)`);
+
+                    if (resultadosPend.length) {
+                        competencias = [
+                            {
+                                Competencia: "🔥 PENDIENTES DEL TRIMESTRE ANTERIOR",
+                                Resultados: resultadosPend
+                            },
+                            ...competencias
+                        ];
+                    }
+                }
+            } catch (e) {
+                console.warn("Pendientes omitidos:", e.message);
+            }
+
+            // ---------------------------------------------------
+            // 🔁 2) Normalizar / quitar duplicados suaves
+            // ---------------------------------------------------
+            competencias = competencias.map(c => ({
+                Competencia: (c.Competencia || "").trim(),
+                Resultados: Array.isArray(c.Resultados)
+                    ? [...new Set(c.Resultados.map(r => (r || "").trim()).filter(Boolean))]
+                    : []
+            })).filter(c => c.Competencia && c.Resultados.length);
+
+            if (!competencias.length) {
+                competenciasList.innerHTML =
+                    `<div class="text-muted text-center py-2">Sin competencias válidas para mostrar.</div>`;
+                return;
+            }
+
+            // ---------------------------------------------------
+            // ✅ 3) Render final
+            // ---------------------------------------------------
+            mostrarCompetenciasCargadas(competencias);
+
         } catch (err) {
-            console.error(err);
+            console.error("cargarCompetenciasFicha error:", err);
+            competenciasList.innerHTML =
+                `<div class="text-danger text-center py-2">Error cargando competencias.</div>`;
             showAlert("Error cargando competencias: " + err.message, "danger");
         }
     }
+
 
     // =========================
     // BOTÓN: Guardar Todo (con feedback visual)
@@ -2587,7 +2691,8 @@
             fd.append("AsignacionesJson", JSON.stringify(payload.asignaciones));
             fd.append("numeroFicha", codigoFicha);
             fd.append("nombreHorario", `Horario ${codigoFicha} - T${trimestreDestino}`);
-            fd.append("trimestre", trimestreDestino);               // enviamos el trimestre destino (1..7)
+            fd.append("trimestreFicha", txtTrimestreFicha.value.trim());      // 1–7
+            fd.append("trimestreAnio", selTrimestreAnio.value.trim());       // 1–4
             fd.append("idInstructorLider", idInstructorLider);
 
             // Enviamos también los datos solo-lectura que se muestran en el modal
