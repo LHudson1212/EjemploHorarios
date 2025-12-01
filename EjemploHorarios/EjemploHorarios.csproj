@@ -201,6 +201,7 @@
     <Compile Include="Models\Competencias.cs">
       <DependentUpon>Model1.tt</DependentUpon>
     </Compile>
+    <Compile Include="Models\Competencias_Pendientes.cs" />
     <Compile Include="Models\CrearSiguienteHorarioVM.cs" />
     <Compile Include="Models\Diseño_Curricular.cs">
       <DependentUpon>Model1.tt</DependentUpon>

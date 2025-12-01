@@ -178,10 +178,14 @@
                                 <th>Fecha fin</th>
                                 <th>Trimestre ficha</th>
                                 <th>Trimestre del año</th>
+
+                                <th>Fecha creación</th>
                                 <th>Instructor Líder</th>
                                 <th>Acción</th>
                             </tr>
                         </thead>
+
+
 
                         <tbody id="tbodyFichas">
                             <tr><td colspan="8" class="text-center text-muted py-3">Cargando horarios...</td></tr>
@@ -241,8 +245,9 @@
         async function cargarHorariosFicha() {
             const tbody = document.getElementById("tbodyFichas");
             try {
-                const resp = await fetch('@Url.Action("GetHorariosFicha","Home")', { credentials: 'same-origin' });
-                const json = await resp.json();
+            const resp = await fetch('@Url.Action("GetHorariosFicha","Home")', { credentials: 'same-origin' });
+const json = await resp.json();
+console.log("Respuesta horarios ficha:", json);
 
                 if (!json.ok || !json.data || !json.data.length) {
                     tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-3">No hay horarios registrados.</td></tr>`;
@@ -269,7 +274,8 @@
         function renderTable(data) {
             const tbody = document.getElementById("tbodyFichas");
             if (!data || !data.length) {
-                tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-3">No hay coincidencias para los filtros seleccionados.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted py-3">
+            No hay coincidencias para los filtros seleccionados.</td></tr>`;
                 return;
             }
 
@@ -277,21 +283,26 @@
             data.forEach(h => {
                 const tr = document.createElement("tr");
                 tr.innerHTML = `
-                    <td>${h.CodigoFicha ?? ""}</td>
-                    <td>${h.ProgramaNombre ?? ""}</td>
-                    <td>${h.FechaInicioFicha ?? ""}</td>
-                    <td>${h.FechaFinFicha ?? ""}</td>
-                    <td class="text-center">${h.TrimestreFicha ?? ""}</td>
-                    <td class="text-center">${h.Trimestre_Año ?? ""}</td>
-                    <td>${h.InstructorLider ?? "Sin asignar"}</td>
-                    <td class="text-center">
-                        <button class="btn btn-outline-sena btn-sm" onclick="verHorarioFicha(${h.IdFicha})">
-                            <i class="bi bi-eye-fill"></i> Ver
-                        </button>
-                    </td>`;
+            <td>${h.CodigoFicha ?? ""}</td>
+            <td>${h.ProgramaNombre ?? ""}</td>
+            <td>${h.FechaInicioFicha ?? ""}</td>
+            <td>${h.FechaFinFicha ?? ""}</td>
+
+           <td class="text-center">${h.TrimestreFicha}</td>   <!-- 1–7 -->
+    <td class="text-center">${h.Trimestre_Año}</td>    <!-- 1–4 (Año_Horario) -->
+
+            <td>${h.FechaCreacionHorario ?? ""}</td>
+
+            <td>${h.InstructorLider ?? "Sin asignar"}</td>
+            <td class="text-center">
+                <button class="btn btn-outline-sena btn-sm" onclick="verHorarioFicha(${h.IdFicha})">
+                    <i class="bi bi-eye-fill"></i> Ver
+                </button>
+            </td>`;
                 tbody.appendChild(tr);
             });
         }
+
 
         /* ====================== POPULAR FILTROS ====================== */
         function populateFilterControls() {
@@ -402,35 +413,36 @@
         }
 
         /* ====================== HORARIOS POR INSTRUCTOR (tab) ====================== */
-        async function cargarHorariosInstructor() {
-            const tbody = document.getElementById("tbodyInstructores");
-            try {
-                const resp = await fetch('@Url.Action("GetHorariosInstructores","Home")', { credentials: 'same-origin' });
-                const json = await resp.json();
+       async function cargarHorariosInstructor() {
+    const tbody = document.getElementById("tbodyInstructores");
+    try {
+        const resp = await fetch('@Url.Action("GetHorariosInstructor", "Home")', { credentials: "same-origin" });
+        const json = await resp.json();
 
-                if (!json.ok || !json.data || !json.data.length) {
-                    tbody.innerHTML = `<tr><td colspan="2" class="text-center text-muted py-3">No hay horarios asignados.</td></tr>`;
-                    return;
-                }
-
-                tbody.innerHTML = "";
-                json.data.forEach(h => {
-                    const idInstructor = h.IdInstructor || 0;
-                    const tr = document.createElement("tr");
-                    tr.innerHTML = `
-                        <td>${h.NombreInstructor ?? "Sin nombre"}</td>
-                        <td class="text-center">
-                            <button class="btn btn-outline-sena btn-sm" onclick="verHorarioInstructor(${idInstructor})">
-                                <i class="bi bi-eye-fill"></i> Ver
-                            </button>
-                        </td>`;
-                    tbody.appendChild(tr);
-                });
-            } catch (err) {
-                tbody.innerHTML = `<tr><td colspan="2" class="text-center text-danger py-3">Error: ${err.message}</td></tr>`;
-                console.error(err);
-            }
+        if (!json.ok || !json.data || !json.data.length) {
+            tbody.innerHTML = `<tr><td colspan="2" class="text-center text-muted py-3">No hay horarios asignados.</td></tr>`;
+            return;
         }
+
+        tbody.innerHTML = "";
+        json.data.forEach(h => {
+            const idInstructor = h.IdInstructor || 0;
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${h.NombreInstructor ?? "Sin nombre"}</td>
+                <td class="text-center">
+                    <button class="btn btn-outline-sena btn-sm" onclick="verHorarioInstructor(${idInstructor})">
+                        <i class="bi bi-eye-fill"></i> Ver
+                    </button>
+                </td>`;
+            tbody.appendChild(tr);
+        });
+    } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="2" class="text-center text-danger py-3">Error: ${err.message}</td></tr>`;
+        console.error(err);
+    }
+}
+
 
         /* ====================== REDIRECCIONES ====================== */
         function verHorarioFicha(idFicha) {
