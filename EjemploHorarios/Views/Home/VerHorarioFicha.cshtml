@@ -5,8 +5,17 @@
     ViewBag.Title = "Horario de Ficha";
     Layout = "~/Views/Shared/_Layout.cshtml";
     string[] dias = new[] { "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado" };
+
     // ✅ Corrección: formato de hora válido
     Func<TimeSpan?, string> fmt = t => t.HasValue ? t.Value.ToString(@"hh\:mm") : "--:--";
+
+    // Primera palabra + "..."
+    Func<string, string> shortWord = s =>
+    {
+        if (String.IsNullOrWhiteSpace(s)) return "";
+        var parts = s.Trim().Split(' ');
+        return parts[0] + (parts.Length > 1 ? "..." : "");
+    };
 }
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -107,6 +116,28 @@
         .btn-siguiente i {
             font-size: 1rem;
         }
+
+    /* Nuevos estilos de la vista anterior */
+    .link-detalle {
+        cursor: pointer;
+        text-decoration: underline;
+        color: var(--sena-green-dark);
+    }
+
+        .link-detalle:hover {
+            color: var(--sena-green-light);
+        }
+
+    .horas-asignacion {
+        background-color: #f0fdf9;
+        border-left: 3px solid var(--sena-green);
+        border-radius: 5px;
+        padding: .25rem .5rem;
+        margin-top: .3rem;
+        font-weight: 500;
+        color: var(--sena-green-dark);
+        display: inline-block;
+    }
 </style>
 
 <div class="container mt-4">
@@ -142,13 +173,46 @@
                         {
                             foreach (var a in asignaciones)
                             {
+                                var comp = a.Competencia ?? "";
+                                var res = a.Resultado ?? "";
+                                var horasMostrar = fmt(a.HoraDesde) + " - " + fmt(a.HoraHasta);
+
                                 <div class="asignacion">
+                                    <!-- Instructor -->
                                     <strong>@(a.Instructor?.NombreCompletoInstructor ?? "Instructor")</strong><br />
-                                    <div>@(a.Competencia ?? "")</div>
-                                    <small class="muted d-block">@((a.Resultado ?? ""))</small>
-                                    <small class="muted">
-                                        <i class="bi bi-clock"></i> @fmt(a.HoraDesde) – @fmt(a.HoraHasta)
+
+                                    <!-- Competencia abreviada -->
+                                    <div>
+                                        <span class="link-detalle"
+                                              role="button"
+                                              data-bs-toggle="modal"
+                                              data-bs-target="#detalleTextoModal"
+                                              data-competencia="@comp"
+                                              data-resultado="@res"
+                                              data-horadesde="@fmt(a.HoraDesde)"
+                                              data-horahasta="@fmt(a.HoraHasta)">
+                                            @shortWord(comp)
+                                        </span>
+                                    </div>
+
+                                    <!-- Resultado abreviado -->
+                                    <small class="muted d-block">
+                                        <span class="link-detalle"
+                                              role="button"
+                                              data-bs-toggle="modal"
+                                              data-bs-target="#detalleTextoModal"
+                                              data-competencia="@comp"
+                                              data-resultado="@res"
+                                              data-horadesde="@fmt(a.HoraDesde)"
+                                              data-horahasta="@fmt(a.HoraHasta)">
+                                            @shortWord(res)
+                                        </span>
                                     </small>
+
+                                    <!-- Horas con mejor formato y estilo -->
+                                    <div class="horas-asignacion">
+                                        <i class="bi bi-clock me-1"></i>@horasMostrar
+                                    </div>
                                 </div>
                             }
                         }
@@ -162,3 +226,63 @@
         </div>
     </div>
 </div>
+
+<!-- Modal ÚNICO para Competencia + Resultado + Horario -->
+<div class="modal fade" id="detalleTextoModal" tabindex="-1" aria-labelledby="detalleTextoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="detalleTextoModalLabel">
+                    <i class="bi bi-info-circle me-2"></i>Detalle de formación
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <h6 class="fw-bold mb-1 text-success">Competencia</h6>
+                        <p class="modal-comp-text mb-3 p-2 bg-light rounded"></p>
+
+                        <h6 class="fw-bold mb-1 text-success">Resultado de aprendizaje</h6>
+                        <p class="modal-res-text mb-3 p-2 bg-light rounded"></p>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-success">
+                            <div class="card-header bg-success text-white">
+                                <i class="bi bi-clock-history me-1"></i> Horario
+                            </div>
+                            <div class="card-body text-center">
+                                <h3 class="modal-horario-text text-success fw-bold"></h3>
+                                <small class="text-muted">Duración de la sesión</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var modalEl = document.getElementById('detalleTextoModal');
+        if (!modalEl) return;
+
+        modalEl.addEventListener('show.bs.modal', function (event) {
+            var trigger = event.relatedTarget;
+            if (!trigger) return;
+
+            var comp = trigger.getAttribute('data-competencia') || 'No especificada';
+            var res = trigger.getAttribute('data-resultado') || 'No especificado';
+            var hd = trigger.getAttribute('data-horadesde') || '--:--';
+            var hh = trigger.getAttribute('data-horahasta') || '--:--';
+
+            modalEl.querySelector('.modal-comp-text').textContent = comp;
+            modalEl.querySelector('.modal-res-text').textContent = res;
+            modalEl.querySelector('.modal-horario-text').textContent = hd + ' - ' + hh;
+        });
+    });
+</script>
