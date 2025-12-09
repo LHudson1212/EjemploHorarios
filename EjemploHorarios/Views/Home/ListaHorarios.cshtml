@@ -21,8 +21,6 @@
         min-height: 100vh;
     }
 
-
-
     h2 {
         font-weight: 800;
         background: linear-gradient(135deg, var(--sena-green), var(--sena-green-light));
@@ -178,14 +176,11 @@
                                 <th>Fecha fin</th>
                                 <th>Trimestre ficha</th>
                                 <th>Trimestre del año</th>
-
                                 <th>Fecha creación</th>
                                 <th>Instructor Líder</th>
                                 <th>Acción</th>
                             </tr>
                         </thead>
-
-
 
                         <tbody id="tbodyFichas">
                             <tr><td colspan="8" class="text-center text-muted py-3">Cargando horarios...</td></tr>
@@ -246,8 +241,8 @@
             const tbody = document.getElementById("tbodyFichas");
             try {
             const resp = await fetch('@Url.Action("GetHorariosFicha","Home")', { credentials: 'same-origin' });
-const json = await resp.json();
-console.log("Respuesta horarios ficha:", json);
+            const json = await resp.json();
+            console.log("Respuesta horarios ficha:", json);
 
                 if (!json.ok || !json.data || !json.data.length) {
                     tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-3">No hay horarios registrados.</td></tr>`;
@@ -295,7 +290,7 @@ console.log("Respuesta horarios ficha:", json);
 
             <td>${h.InstructorLider ?? "Sin asignar"}</td>
             <td class="text-center">
-                <button class="btn btn-outline-sena btn-sm" onclick="verHorarioFicha(${h.IdFicha})">
+                <button class="btn btn-outline-sena btn-sm" onclick="verHorarioFicha(${h.Id_Horario})">
                     <i class="bi bi-eye-fill"></i> Ver
                 </button>
             </td>`;
@@ -445,10 +440,11 @@ console.log("Respuesta horarios ficha:", json);
 
 
         /* ====================== REDIRECCIONES ====================== */
-        function verHorarioFicha(idFicha) {
+        function verHorarioFicha(idHorario) {
             const baseUrl = '@Url.Action("VerHorarioFicha", "Home")';
-            window.location.href = `${baseUrl}?idFicha=${idFicha}`;
+            window.location.href = `${baseUrl}?idHorario=${idHorario}`;
         }
+
 
         function verHorarioInstructor(idInstructor) {
             const baseUrl = '@Url.Action("VerHorarioInstructor", "Home")';

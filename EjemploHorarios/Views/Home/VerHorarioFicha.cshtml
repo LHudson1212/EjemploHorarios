@@ -1,11 +1,11 @@
-﻿@model IEnumerable<EjemploHorarios.Models.HorarioInstructor>
+﻿@model EjemploHorarios.Models.ViewModels.VerHorarioFichaVM
 @using System.Linq
 
 @{
     ViewBag.Title = "Horario de Ficha";
     Layout = "~/Views/Shared/_Layout.cshtml";
+
     string[] dias = new[] { "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado" };
-    // ✅ Corrección: formato de hora válido
     Func<TimeSpan?, string> fmt = t => t.HasValue ? t.Value.ToString(@"hh\:mm") : "--:--";
 }
 
@@ -29,6 +29,7 @@
         border-radius: 10px;
         box-shadow: 0 4px 10px rgba(0,0,0,.08);
         overflow: hidden;
+        margin-bottom: 1.5rem;
     }
 
     .horario-header {
@@ -83,8 +84,7 @@
         color: #6b7280;
     }
 
-    .btn-volver,
-    .btn-siguiente {
+    .btn-volver, .btn-siguiente {
         background: linear-gradient(135deg, var(--sena-green), var(--sena-green-light));
         color: #fff;
         border: none;
@@ -94,47 +94,70 @@
         transition: all 0.2s ease;
     }
 
-        .btn-volver:hover,
-        .btn-siguiente:hover {
+        .btn-volver:hover, .btn-siguiente:hover {
             background: linear-gradient(135deg, var(--sena-green-dark), var(--sena-green));
             transform: translateY(-2px);
         }
 
-    .btn-siguiente {
-        background: linear-gradient(135deg, var(--sena-green-light), var(--sena-green));
+    .summary-card {
+        background: #fff;
+        border-radius: 12px;
+        padding: 1rem;
+        box-shadow: 0 4px 10px rgba(0,0,0,.06);
+        border: 1px solid rgba(0,128,55,.1);
+        margin-bottom: 1rem;
     }
-
-        .btn-siguiente i {
-            font-size: 1rem;
-        }
 </style>
 
 <div class="container mt-4">
+
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h3 class="fw-bold text-success">
-            <i class="bi bi-journal-text me-2"></i> Horario Ficha @ViewBag.CodigoFicha
+            <i class="bi bi-journal-text me-2"></i>
+            Horario Ficha @Model.CodigoFicha
         </h3>
+
         <div>
-            <!-- 🔙 Botón volver -->
-            <button class="btn-volver me-2" onclick="location.href='@Url.Action("ListaHorarios","Home")'">
+            <button class="btn-volver me-2"
+                    onclick="location.href='@Url.Action("ListaHorarios","Home")'">
                 <i class="bi bi-arrow-left-circle me-1"></i> Volver
             </button>
 
-            <!-- ➕ Botón crear siguiente horario -->
             <button class="btn-siguiente"
-                    onclick="location.href='@Url.Action("CrearSiguienteHorario","Home", new { idFicha = Model.FirstOrDefault()?.IdFicha ?? 0, trimestre = ViewBag.TrimestreActual ?? 1 })'">
+                    onclick="location.href='@Url.Action("CrearSiguienteHorario","Home",
+                        new { idFicha = Model.IdFicha, trimestre = Model.TrimestreActual })'">
                 <i class="bi bi-plus-circle me-1"></i> Crear siguiente horario
             </button>
         </div>
     </div>
 
-    <div class="horario-container">
+    <!-- RESUMEN GENERAL -->
+    <div class="summary-card">
+        <div class="row text-center">
+            <div class="col-md-4">
+                <h6 class="text-muted mb-1">Horas requeridas</h6>
+                <div class="fw-bold fs-4 text-success">@Model.TotalRequeridas</div>
+            </div>
+            <div class="col-md-4">
+                <h6 class="text-muted mb-1">Horas programadas</h6>
+                <div class="fw-bold fs-4 text-primary">@Model.TotalProgramadas</div>
+            </div>
+            <div class="col-md-4">
+                <h6 class="text-muted mb-1">Horas pendientes</h6>
+                <div class="fw-bold fs-4 text-danger">@Model.TotalPendientes</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HORARIO POR DÍAS -->
+    <div class="horario-container mt-3">
         <div class="horario-header">Días de formación</div>
 
         <div class="horario-dias">
             @foreach (var d in dias)
             {
-                var asignaciones = Model.Where(h => h.Dia == d).ToList();
+                var asignaciones = Model.DetalleHorario.Where(h => h.Dia == d).ToList();
+
                 <div class="dia">
                     <h5>@d</h5>
                     <div class="slot">
@@ -161,4 +184,178 @@
             }
         </div>
     </div>
+
+    <!-- ✅ AVANCE POR COMPETENCIA -->
+    <div class="horario-container mt-4">
+        <div class="horario-header">Avance por competencia</div>
+        <div class="p-3">
+            <table class="table table-bordered align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Competencia</th>
+                        <th class="text-center">Req.</th>
+                        <th class="text-center">Prog.</th>
+                        <th class="text-center">Pend.</th>
+                        <th class="text-center">Extra</th>
+                        <th class="text-center">%</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.CompetenciasResumen != null && Model.CompetenciasResumen.Any())
+                    {
+                        foreach (var c in Model.CompetenciasResumen)
+                        {
+                            var pct = c.Porcentaje;
+                            var badge = pct >= 100 ? "bg-success"
+                                       : pct >= 75 ? "bg-primary"
+                                       : "bg-warning text-dark";
+
+                            <tr>
+                                <td>@c.Competencia</td>
+                                <td class="text-center">@c.HorasRequeridas</td>
+                                <td class="text-center">@c.HorasProgramadas</td>
+                                <td class="text-center">@c.HorasPendientes</td>
+                                <td class="text-center">
+                                    @if (c.HorasExtra > 0)
+                                    {
+                                        <span class="text-success fw-bold">+@c.HorasExtra horas extra</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">0</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge @badge">@pct %</span>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-3">
+                                No hay datos por competencia.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+
+    <!-- ✅ TRAZABILIDAD POR RESULTADOS -->
+    <div class="horario-container mt-4">
+        <div class="horario-header">Trazabilidad por resultados</div>
+        <div class="p-3">
+
+            <table class="table table-bordered align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Competencia</th>
+                        <th>Resultado</th>
+                        <th class="text-center">Req.</th>
+                        <th class="text-center">Prog.</th>
+                        <th class="text-center">Pend.</th>
+                        <th class="text-center">Extra</th>
+                        <th class="text-center">Progreso</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @if (Model.Trazabilidad != null && Model.Trazabilidad.Any())
+                    {
+                        foreach (var x in Model.Trazabilidad)
+                        {
+                            var pct = x.Porcentaje;              // real (0..150..)
+                            var pctBar = pct > 100 ? 100 : pct;  // visual top 100
+
+                            var barClass = pct >= 100 ? "bg-success"
+                                          : pct >= 75 ? "bg-primary"
+                                          : "bg-warning";
+
+                            <tr>
+                                <td>@x.Competencia</td>
+                                <td>@x.Resultado</td>
+                                <td class="text-center">@x.HorasRequeridas</td>
+                                <td class="text-center">@x.HorasProgramadas</td>
+                                <td class="text-center">@x.HorasPendientes</td>
+
+                                <td class="text-center">
+                                    @if (x.HorasExtra > 0)
+                                    {
+                                        <span class="text-success fw-bold">+@x.HorasExtra horas extra</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">0</span>
+                                    }
+                                </td>
+
+                                <td style="min-width:190px;">
+                                    <div class="progress" style="height:18px;">
+                                        <div class="progress-bar @barClass"
+                                             role="progressbar"
+                                             style="width:@pctBar%"
+                                             aria-valuenow="@pctBar" aria-valuemin="0" aria-valuemax="100">
+                                            @pct%
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-3">
+                                No hay trazabilidad para este horario.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+
+                @* Totales al final *@
+                @if (Model.Trazabilidad != null && Model.Trazabilidad.Any())
+                {
+                    var extraTotal = Math.Max(Model.TotalProgramadas - Model.TotalRequeridas, 0);
+                    var pctTotal = Model.TotalRequeridas > 0
+                        ? Math.Round((decimal)Model.TotalProgramadas * 100m / Model.TotalRequeridas, 2)
+                        : 0m;
+                    var pctTotalBar = pctTotal > 100 ? 100 : pctTotal;
+                    var barTotalClass = pctTotal >= 100 ? "bg-success" : "bg-warning";
+
+                    <tfoot>
+                        <tr class="fw-bold">
+                            <td colspan="2" class="text-end">Totales</td>
+                            <td class="text-center">@Model.TotalRequeridas</td>
+                            <td class="text-center">@Model.TotalProgramadas</td>
+                            <td class="text-center">@Model.TotalPendientes</td>
+
+                            <td class="text-center">
+                                @if (extraTotal > 0)
+                                {
+                                    <span class="text-success fw-bold">+@extraTotal horas extra</span>
+                                }
+                                else
+                                { <span class="text-muted">0</span>}
+                            </td>
+
+                            <td>
+                                <div class="progress" style="height:18px;">
+                                    <div class="progress-bar @barTotalClass"
+                                         style="width:@pctTotalBar%">
+                                        @pctTotal%
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    </tfoot>
+                }
+
+            </table>
+        </div>
+    </div>
+
 </div>

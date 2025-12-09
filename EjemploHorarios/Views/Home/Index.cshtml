@@ -93,10 +93,6 @@
         }
     }
 
-
-
-
-
     /* Utilitarios */
     .border-sena {
         border-color: var(--sena-green) !important;
@@ -146,8 +142,6 @@
 
     to {
         transform: translate(-50%,-50%) rotate(360deg)
-    }
-
     }
 
     /* Tarjetas / contenedores */
@@ -439,7 +433,6 @@
         font-weight: 600;
     }
 
-
     /* Competencia que ya tiene al menos una asignación */
     .competencia-usada {
         background: #dcfce7;
@@ -492,9 +485,7 @@
         min-width: 150px;
         padding: 1rem;
         font-size: .9rem;
-    }
-
-    }
+    }   
 
     /* ===== Efectos visuales del acordeón de competencias ===== */
     .card-header.pointer {
@@ -1216,6 +1207,35 @@
 
     </div>
 
+    <div class="modal fade" id="modalDetalleCompetencia" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="tituloDetalleCompetencia">Detalle Competencia</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div id="resumenCompetenciaBox" class="mb-3"></div>
+
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Resultado</th>
+                                    <th class="text-center">Req.</th>
+                                    <th class="text-center">Prog.</th>
+                                    <th class="text-center">Pend.</th>
+                                    <th class="text-center">%</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbodyDetalleCompetencia"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 
@@ -1276,6 +1296,25 @@
             t = setTimeout(() => fn.apply(this, args), ms);
         };
     }
+
+
+        // ✅ AQUÍ PEGAS TU FUNCIÓN:
+        async function cargarResultadosCompetencia(nombreCompetencia) {
+            const idFicha = hfFichaId.value;
+            const trimestreAcad = txtSiguienteTrimestre.value; // destino
+
+            const url = `/Home/GetResultadosPorCompetencia?nombreCompetencia=${encodeURIComponent(nombreCompetencia)}&idFicha=${idFicha}&trimestreAcad=${trimestreAcad}`;
+
+            const resp = await fetch(url);
+            const json = await resp.json();
+
+            if (!json.ok) {
+                showAlert(json.msg || "Error cargando resultados", "danger");
+                return null;
+            }
+
+            return json; // {data, resumen}
+        }
 
         // ========== ESTADO GLOBAL ==========
         let payload = {
@@ -1539,59 +1578,196 @@
                 console.error("Error cargando horarios globales:", err);
             }
         }
-//  GUARDAR ASIGNACIÓN DESDE EL MODAL  (VALIDA EN BD)
-    // =============================================================
-// GUARDAR ASIGNACIÓN DESDE EL MODAL (VALIDA LOCAL + BD + GLOBAL)
-// =============================================================
-(function wireGuardarAsignacion() {
+        //  GUARDAR ASIGNACIÓN DESDE EL MODAL  (VALIDA EN BD)
+            // =============================================================
+        // GUARDAR ASIGNACIÓN DESDE EL MODAL (VALIDA LOCAL + BD + GLOBAL)
+        // =============================================================
+        (function wireGuardarAsignacion() {
 
-    if (window._guardarAsigWired) return;   // evitar doble registro
-    window._guardarAsigWired = true;
+            if (window._guardarAsigWired) return;   // evitar doble registro
+            window._guardarAsigWired = true;
 
-    btnGuardarAsig.addEventListener("click", async () => {
+            btnGuardarAsig.addEventListener("click", async () => {
+
+                if (!dropContext) return;
+
+                const instructorId = selInstructorEl.value;
+                const horaDesde = horaDesdeEl.value;
+                const horaHasta = horaHastaEl.value;
+
+                if (!instructorId) {
+                    showAlert("Debes seleccionar un instructor.", "warning");
+                    return;
+                }
+
+                if (!horaDesde || !horaHasta) {
+                    showAlert("Debes indicar el horario completo.", "warning");
+                    return;
+                }
+
+                const asignacion = payload.asignaciones.find(a => a.id === dropContext.asignacionId);
+                const dia = asignacion?.dia || dropContext.itemEl.dataset.dia;
+                const idFicha = hfFichaId.value;
+
+                // ----------------------------------------------
+                // 1️⃣ VALIDACIÓN LOCAL
+                // ----------------------------------------------
+                const conflictoLocal = tieneConflictoEnDia({
+                    dia,
+                    instructorId,
+                    desde: horaDesde,
+                    hasta: horaHasta,
+                    ignoreId: dropContext.asignacionId
+                });
+
+                if (conflictoLocal) {
+                    showAlert("❌ " + conflictoLocal, "danger");
+                    return;
+                }
+
+                // ----------------------------------------------
+                // 2️⃣ VALIDACIÓN BD (misma ficha)
+                // ----------------------------------------------
+                let respBD;
+                try {
+                    respBD = await $.get('/Home/ValidarFranjaExactaInstructor', {
+                        idInstructor: instructorId,
+                        dia: dia,
+                        desde: horaDesde,
+                        hasta: horaHasta,
+                        idFichaActual: idFicha
+                    });
+                } catch (err) {
+                    showAlert("Error validando horario en la BD.", "danger");
+                    return;
+                }
+
+                if (!respBD.ok || respBD.choque) {
+                    showAlert(respBD.msg || "❌ Choque en la base de datos.", "danger");
+                    return;
+                }
+
+                // ----------------------------------------------
+                // 3️⃣ VALIDACIÓN GLOBAL (otras fichas)
+                // ----------------------------------------------
+                let respGlobal;
+                try {
+                    respGlobal = await $.get('/Home/ValidarChoqueInstructorGlobal', {
+                        idInstructor: instructorId,
+                        dia: dia,
+                        desde: horaDesde,
+                        hasta: horaHasta,
+                        idFichaActual: idFicha
+                    });
+                } catch (err) {
+                    showAlert("Error validando choque global.", "danger");
+                    return;
+                }
+
+                if (!respGlobal.ok || respGlobal.choque) {
+                    showAlert(
+                        respGlobal.msg ||
+                        "❌ Este instructor ya tiene una clase en otra ficha en este horario.",
+                        "danger"
+                    );
+                    return;
+                }
+
+                // ----------------------------------------------
+                // 4️⃣ GUARDAR (NO HAY CHOQUES)
+                // ----------------------------------------------
+                const instructorNombre = INSTRUCTORES_BY_ID.get(String(instructorId)) || "—";
+
+                asignacion.instructorId = Number(instructorId);
+                asignacion.instructorNombre = instructorNombre;
+                asignacion.horaDesde = horaDesde;
+                asignacion.horaHasta = horaHasta;
+
+                // Actualizar DOM
+                dropContext.itemEl.querySelector(".instructor").textContent = instructorNombre;
+                dropContext.itemEl.querySelector(".horario").textContent =
+                    `${horaDesde} – ${horaHasta}`;
+
+                dropContext.itemEl.title = `${instructorNombre} • ${horaDesde} – ${horaHasta}`;
+
+                dropContextGuardado = true;
+
+                // ----------------------------------------------
+                // 5️⃣ BARRAS Y ESTADO
+                // ----------------------------------------------
+                refrescarListaInstructoresEnHorario();
+                await mostrarInstructorActual();
+                actualizarBarraHorario();
+
+                // ----------------------------------------------
+                // 6️⃣ CERRAR MODAL
+                // ----------------------------------------------
+                allowCloseAsignarModal = true;
+                bootstrap.Modal.getInstance(modalAsignarEl).hide();
+
+                dropContext = null;
+
+                showAlert(`Instructor ${instructorNombre} asignado correctamente.`, "success");
+            });
+        })();
+
+
+
+
+       modalAsignarEl.addEventListener("hide.bs.modal", async function (e) {
+
+        // Si nosotros lo estamos cerrando manualmente (after save)
+        if (allowCloseAsignarModal) {
+            allowCloseAsignarModal = false;
+            dropContext = null;
+            return;
+        }
 
         if (!dropContext) return;
 
-        const instructorId = selInstructorEl.value;
-        const horaDesde = horaDesdeEl.value;
-        const horaHasta = horaHastaEl.value;
-
-        if (!instructorId) {
-            showAlert("Debes seleccionar un instructor.", "warning");
-            return;
-        }
-
-        if (!horaDesde || !horaHasta) {
-            showAlert("Debes indicar el horario completo.", "warning");
-            return;
-        }
-
         const asignacion = payload.asignaciones.find(a => a.id === dropContext.asignacionId);
-        const dia = asignacion?.dia || dropContext.itemEl.dataset.dia;
-        const idFicha = hfFichaId.value;
+        if (!asignacion) {
+            dropContext = null;
+            return;
+        }
 
-        // ----------------------------------------------
-        // 1️⃣ VALIDACIÓN LOCAL
-        // ----------------------------------------------
+        const instructorId = selInstructorEl.value || null;
+        const horaDesde = horaDesdeEl.value || "06:00";
+        const horaHasta = horaHastaEl.value || "09:00";
+        const idFicha = hfFichaId.value;
+        const dia = asignacion.dia || dropContext.itemEl.dataset.dia;
+
+        // --- 1️⃣ Si NO hay instructor → cancelar y eliminar ---
+        if (!instructorId) {
+            dropContext.itemEl.remove();
+            payload.asignaciones = payload.asignaciones.filter(a => a.id !== asignacion.id);
+            dropContext = null;
+
+            refrescarUsos();
+            return; // Permitir cierre normal
+        }
+
+        // --- 2️⃣ Estamos editando → NO permitir cierre inmediato ---
+        e.preventDefault();
+
+        // --- 3️⃣ VALIDACIÓN LOCAL ---
         const conflictoLocal = tieneConflictoEnDia({
             dia,
             instructorId,
             desde: horaDesde,
             hasta: horaHasta,
-            ignoreId: dropContext.asignacionId
+            ignoreId: asignacion.id
         });
 
         if (conflictoLocal) {
-            showAlert("❌ " + conflictoLocal, "danger");
-            return;
+            showAlert("❌ " + conflictoLocal + " Debes ajustar instructor u horas.", "danger");
+            return; // No cerrar modal
         }
 
-        // ----------------------------------------------
-        // 2️⃣ VALIDACIÓN BD (misma ficha)
-        // ----------------------------------------------
+        // --- 4️⃣ VALIDACIÓN BD (misma ficha) ---
         let respBD;
         try {
-            respBD = await $.get('/Home/ValidarFranjaExactaInstructor', {
+            respBD = await $.get("/Home/ValidarFranjaExactaInstructor", {
                 idInstructor: instructorId,
                 dia: dia,
                 desde: horaDesde,
@@ -1599,21 +1775,19 @@
                 idFichaActual: idFicha
             });
         } catch (err) {
-            showAlert("Error validando horario en la BD.", "danger");
+            showAlert("Error validando BD.", "danger");
             return;
         }
 
         if (!respBD.ok || respBD.choque) {
-            showAlert(respBD.msg || "❌ Choque en la base de datos.", "danger");
+            showAlert(respBD.msg || "❌ Choque en BD. Ajuste requerido.", "danger");
             return;
         }
 
-        // ----------------------------------------------
-        // 3️⃣ VALIDACIÓN GLOBAL (otras fichas)
-        // ----------------------------------------------
+        // --- 5️⃣ VALIDACIÓN GLOBAL (otras fichas) ---
         let respGlobal;
         try {
-            respGlobal = await $.get('/Home/ValidarChoqueInstructorGlobal', {
+            respGlobal = await $.get("/Home/ValidarChoqueInstructorGlobal", {
                 idInstructor: instructorId,
                 dia: dia,
                 desde: horaDesde,
@@ -1621,181 +1795,46 @@
                 idFichaActual: idFicha
             });
         } catch (err) {
-            showAlert("Error validando choque global.", "danger");
+            showAlert("Error validando horario global.", "danger");
             return;
         }
 
         if (!respGlobal.ok || respGlobal.choque) {
             showAlert(
                 respGlobal.msg ||
-                "❌ Este instructor ya tiene una clase en otra ficha en este horario.",
+                "❌ Ya tiene clase en otra ficha. Ajuste requerido.",
                 "danger"
             );
             return;
         }
 
-        // ----------------------------------------------
-        // 4️⃣ GUARDAR (NO HAY CHOQUES)
-        // ----------------------------------------------
-        const instructorNombre = INSTRUCTORES_BY_ID.get(String(instructorId)) || "—";
-
+        // --- 6️⃣ SI TODO OK → GUARDAR Y CERRAR ---
         asignacion.instructorId = Number(instructorId);
-        asignacion.instructorNombre = instructorNombre;
+        asignacion.instructorNombre = INSTRUCTORES_BY_ID.get(String(instructorId)) || "—";
         asignacion.horaDesde = horaDesde;
         asignacion.horaHasta = horaHasta;
 
-        // Actualizar DOM
-        dropContext.itemEl.querySelector(".instructor").textContent = instructorNombre;
+        // Actualizar UI
+        dropContext.itemEl.querySelector(".instructor").textContent =
+            asignacion.instructorNombre;
+
         dropContext.itemEl.querySelector(".horario").textContent =
             `${horaDesde} – ${horaHasta}`;
 
-        dropContext.itemEl.title = `${instructorNombre} • ${horaDesde} – ${horaHasta}`;
+        dropContext.itemEl.title =
+            `${asignacion.instructorNombre} • ${horaDesde} – ${horaHasta}`;
 
-        dropContextGuardado = true;
-
-        // ----------------------------------------------
-        // 5️⃣ BARRAS Y ESTADO
-        // ----------------------------------------------
-        refrescarListaInstructoresEnHorario();
-        await mostrarInstructorActual();
-        actualizarBarraHorario();
-
-        // ----------------------------------------------
-        // 6️⃣ CERRAR MODAL
-        // ----------------------------------------------
+        // Permitir cierre
         allowCloseAsignarModal = true;
         bootstrap.Modal.getInstance(modalAsignarEl).hide();
 
         dropContext = null;
 
-        showAlert(`Instructor ${instructorNombre} asignado correctamente.`, "success");
-    });
-})();
-
-
-
-
-   modalAsignarEl.addEventListener("hide.bs.modal", async function (e) {
-
-    // Si nosotros lo estamos cerrando manualmente (after save)
-    if (allowCloseAsignarModal) {
-        allowCloseAsignarModal = false;
-        dropContext = null;
-        return;
-    }
-
-    if (!dropContext) return;
-
-    const asignacion = payload.asignaciones.find(a => a.id === dropContext.asignacionId);
-    if (!asignacion) {
-        dropContext = null;
-        return;
-    }
-
-    const instructorId = selInstructorEl.value || null;
-    const horaDesde = horaDesdeEl.value || "06:00";
-    const horaHasta = horaHastaEl.value || "09:00";
-    const idFicha = hfFichaId.value;
-    const dia = asignacion.dia || dropContext.itemEl.dataset.dia;
-
-    // --- 1️⃣ Si NO hay instructor → cancelar y eliminar ---
-    if (!instructorId) {
-        dropContext.itemEl.remove();
-        payload.asignaciones = payload.asignaciones.filter(a => a.id !== asignacion.id);
-        dropContext = null;
-
-        refrescarUsos();
-        return; // Permitir cierre normal
-    }
-
-    // --- 2️⃣ Estamos editando → NO permitir cierre inmediato ---
-    e.preventDefault();
-
-    // --- 3️⃣ VALIDACIÓN LOCAL ---
-    const conflictoLocal = tieneConflictoEnDia({
-        dia,
-        instructorId,
-        desde: horaDesde,
-        hasta: horaHasta,
-        ignoreId: asignacion.id
-    });
-
-    if (conflictoLocal) {
-        showAlert("❌ " + conflictoLocal + " Debes ajustar instructor u horas.", "danger");
-        return; // No cerrar modal
-    }
-
-    // --- 4️⃣ VALIDACIÓN BD (misma ficha) ---
-    let respBD;
-    try {
-        respBD = await $.get("/Home/ValidarFranjaExactaInstructor", {
-            idInstructor: instructorId,
-            dia: dia,
-            desde: horaDesde,
-            hasta: horaHasta,
-            idFichaActual: idFicha
-        });
-    } catch (err) {
-        showAlert("Error validando BD.", "danger");
-        return;
-    }
-
-    if (!respBD.ok || respBD.choque) {
-        showAlert(respBD.msg || "❌ Choque en BD. Ajuste requerido.", "danger");
-        return;
-    }
-
-    // --- 5️⃣ VALIDACIÓN GLOBAL (otras fichas) ---
-    let respGlobal;
-    try {
-        respGlobal = await $.get("/Home/ValidarChoqueInstructorGlobal", {
-            idInstructor: instructorId,
-            dia: dia,
-            desde: horaDesde,
-            hasta: horaHasta,
-            idFichaActual: idFicha
-        });
-    } catch (err) {
-        showAlert("Error validando horario global.", "danger");
-        return;
-    }
-
-    if (!respGlobal.ok || respGlobal.choque) {
         showAlert(
-            respGlobal.msg ||
-            "❌ Ya tiene clase en otra ficha. Ajuste requerido.",
-            "danger"
+            `Instructor ${asignacion.instructorNombre} asignado correctamente.`,
+            "success"
         );
-        return;
-    }
-
-    // --- 6️⃣ SI TODO OK → GUARDAR Y CERRAR ---
-    asignacion.instructorId = Number(instructorId);
-    asignacion.instructorNombre = INSTRUCTORES_BY_ID.get(String(instructorId)) || "—";
-    asignacion.horaDesde = horaDesde;
-    asignacion.horaHasta = horaHasta;
-
-    // Actualizar UI
-    dropContext.itemEl.querySelector(".instructor").textContent =
-        asignacion.instructorNombre;
-
-    dropContext.itemEl.querySelector(".horario").textContent =
-        `${horaDesde} – ${horaHasta}`;
-
-    dropContext.itemEl.title =
-        `${asignacion.instructorNombre} • ${horaDesde} – ${horaHasta}`;
-
-    // Permitir cierre
-    allowCloseAsignarModal = true;
-    bootstrap.Modal.getInstance(modalAsignarEl).hide();
-
-    dropContext = null;
-
-    showAlert(
-        `Instructor ${asignacion.instructorNombre} asignado correctamente.`,
-        "success"
-    );
-});
+    });
 
 
     // ========== DRAG & DROP DÍAS ==========
@@ -2089,20 +2128,20 @@
                     </small>`;
 
         btn.addEventListener("click", () => {
-    inputFicha.value = f.CodigoFicha;
-    hfFichaId.value = f.IdFicha;
-    inputPrograma.value = f.ProgramaNombre;
-    txtTrimestreFicha.value = f.TrimestreDeLaFicha ?? "";
-    actualizarSiguienteTrimestre();
-    ocultarSugerencias();
+        inputFicha.value = f.CodigoFicha;
+        hfFichaId.value = f.IdFicha;
+        inputPrograma.value = f.ProgramaNombre;
+        txtTrimestreFicha.value = f.TrimestreDeLaFicha ?? "";
+        actualizarSiguienteTrimestre();
+        ocultarSugerencias();
 
-    // Cargar competencias del TRIMESTRE DESTINO
-    const trimestreDestino = txtSiguienteTrimestre.value;
+        // Cargar competencias del TRIMESTRE DESTINO
+        const trimestreDestino = txtSiguienteTrimestre.value;
 
-    if (typeof cargarCompetenciasFicha === "function") {
-        cargarCompetenciasFicha(f.IdFicha, trimestreDestino);
-    }
-});
+        if (typeof cargarCompetenciasFicha === "function") {
+            cargarCompetenciasFicha(f.IdFicha, trimestreDestino);
+        }
+    });
 
 
 
@@ -2225,207 +2264,348 @@
 
 
 
-async function cargarFichaResumenParaModal(idFicha) {
+    async function cargarFichaResumenParaModal(idFicha) {
 
-    try {
-        const resp = await fetch(`/Home/GetResumenFicha?idFicha=${idFicha}`);
-        const json = await resp.json();
+        try {
+            const resp = await fetch(`/Home/GetResumenFicha?idFicha=${idFicha}`);
+            const json = await resp.json();
 
-        if (!json.ok) {
-            showAlert("⚠ No se pudo cargar el resumen de la ficha.", "warning");
+            if (!json.ok) {
+                showAlert("⚠ No se pudo cargar el resumen de la ficha.", "warning");
+                return false;
+            }
+
+            const f = json.data;
+
+            // --- LLENAR CAMPOS DEL MODAL ---
+            document.getElementById("txtProgramaModal").value = f.Programa;
+            document.getElementById("txtFichaModal").value = f.CodigoFicha;
+            document.getElementById("txtFechaInicioModal").value = f.FechaInicio;
+            document.getElementById("txtFechaFinModal").value = f.FechaFin;
+
+            // --- Calcular trimestre destino ---
+            let trimestreDestino = (parseInt(f.TrimestreActual) >= 7)
+                ? 7
+                : parseInt(f.TrimestreActual) + 1;
+
+            document.getElementById("txtTrimestreDestinoModal").value = trimestreDestino;
+
+            return true;
+
+        } catch (err) {
+            console.error("Error cargarFichaResumenParaModal:", err);
+            showAlert("⚠ No se pudo cargar toda la información de la ficha.", "warning");
             return false;
         }
-
-        const f = json.data;
-
-        // --- LLENAR CAMPOS DEL MODAL ---
-        document.getElementById("txtProgramaModal").value = f.Programa;
-        document.getElementById("txtFichaModal").value = f.CodigoFicha;
-        document.getElementById("txtFechaInicioModal").value = f.FechaInicio;
-        document.getElementById("txtFechaFinModal").value = f.FechaFin;
-
-        // --- Calcular trimestre destino ---
-        let trimestreDestino = (parseInt(f.TrimestreActual) >= 7)
-            ? 7
-            : parseInt(f.TrimestreActual) + 1;
-
-        document.getElementById("txtTrimestreDestinoModal").value = trimestreDestino;
-
-        return true;
-
-    } catch (err) {
-        console.error("Error cargarFichaResumenParaModal:", err);
-        showAlert("⚠ No se pudo cargar toda la información de la ficha.", "warning");
-        return false;
     }
-}
 
 
-    // ========== RENDER COMPETENCIAS ==========
-    function renderCompetencias(list) {
-        competenciasList.innerHTML = "";
+        // ===========================
+        //  CACHE DE RESULTADOS POR COMPETENCIA
+        // ===========================
+        const RESULTADOS_CACHE = new Map(); // key: competenciaNorm -> { data, resumen }
 
-        if (!list || !list.length) {
-            competenciasList.innerHTML =
-                `<div class="text-muted text-center py-2">Sin competencias para mostrar.</div>`;
-            return;
+        // Normalizador simple para key de cache (no toca tildes, solo trim+lower)
+        function normKey(txt) {
+            return (txt || "").trim().toLowerCase();
         }
 
-        list.forEach((c, idx) => {
-            const compId = `comp_${idx}`;
-            const isOpen = OPEN_COMP_IDS.has(compId);
+        // ===========================
+        // ========== RENDER COMPETENCIAS ==========
+        // ===========================
+        function renderCompetencias(list) {
+            competenciasList.innerHTML = "";
 
-            const card = document.createElement("div");
-            card.className = "card mb-2 border-0 shadow-sm";
+            if (!Array.isArray(list) || list.length === 0) {
+                competenciasList.innerHTML =
+                    `<div class="text-muted text-center py-2">Sin competencias para mostrar.</div>`;
+                return;
+            }
 
-            card.innerHTML = `
-            <div class="card-header d-flex justify-content-between align-items-center bg-white border-start border-4 border-success pointer"
-                 role="button"
-                 aria-expanded="${isOpen}"
-                 aria-controls="${compId}">
-                <span class="fw-bold text-sena comp-encabezado">${c.Competencia}</span>
-                <i class="bi bi-chevron-down text-success fs-5 ${isOpen ? 'rotate-180' : ''}"></i>
-            </div>
-            <div id="${compId}" class="collapse ${isOpen ? 'show' : ''}">
-                <div class="card-body pt-2 pb-2 ps-4">
-                    ${Array.isArray(c.Resultados) && c.Resultados.length
+            list.forEach((c, idx) => {
+                const compId = `comp_${idx}`;
+                const isOpen = OPEN_COMP_IDS.has(compId);
+                const compTxt = (c.Competencia || "").trim();
+
+                const card = document.createElement("div");
+                card.className = "card mb-2 border-0 shadow-sm";
+
+                card.innerHTML = `
+<div class="card-header d-flex justify-content-between align-items-center bg-white border-start border-4 border-success pointer"
+     role="button"
+     aria-expanded="${isOpen}"
+     aria-controls="${compId}">
+    <span class="fw-bold text-sena comp-encabezado">${compTxt}</span>
+    <i class="bi bi-chevron-down text-success fs-5 ${isOpen ? "rotate-180" : ""}"></i>
+</div>
+
+<div id="${compId}" class="collapse ${isOpen ? "show" : ""}">
+    <div class="card-body pt-2 pb-2 ps-4">
+
+        <div class="comp-resumen small text-muted mb-2 d-none"></div>
+
+        ${Array.isArray(c.Resultados) && c.Resultados.length
                         ? `<ul class="list-unstyled mb-0">
-                                ${c.Resultados.map(r => `
-                                    <li class="resultado-item small text-muted border p-1 mb-1 rounded bg-light"
-                                        draggable="true"
-                                        data-competencia="${encodeURIComponent(c.Competencia)}"
-                                        data-resultado="${encodeURIComponent(r)}">
-                                        <i class="bi bi-arrows-move me-1 text-success"></i> ${r}
-                                    </li>`).join("")}
-                           </ul>`
+                ${c.Resultados.map(r => `
+                    <li class="resultado-item small text-muted border p-1 mb-1 rounded bg-light"
+                        draggable="true"
+                        data-competencia="${encodeURIComponent(compTxt)}"
+                        data-resultado="${encodeURIComponent(r)}">
+                        <i class="bi bi-arrows-move me-1 text-success"></i> ${r}
+                    </li>`).join("")}
+               </ul>`
                         : `<small class="text-muted fst-italic">Sin resultados de aprendizaje</small>`
                     }
-                </div>
-            </div>`;
+    </div>
+</div>`;
 
-            const collapseEl = card.querySelector(`#${compId}`);
-            const headerEl = card.querySelector(".card-header");
-            const chevron = card.querySelector(".bi-chevron-down");
+                const collapseEl = card.querySelector(`#${compId}`);
+                const headerEl = card.querySelector(".card-header");
+                const chevron = card.querySelector(".bi-chevron-down");
 
-            // Instancia de Bootstrap Collapse sin auto-toggle
-            const bsCollapse = new bootstrap.Collapse(collapseEl, { toggle: false });
+                // Bootstrap Collapse sin auto-toggle
+                const bsCollapse = new bootstrap.Collapse(collapseEl, { toggle: false });
 
-            // Toggle manual al hacer clic en la cabecera
-            headerEl.addEventListener("click", () => {
-                bsCollapse.toggle();
+                // ===========================
+                // 1) CLICK HEADER = toggle
+                // ===========================
+                if (headerEl.dataset.wiredClick !== "1") {
+                    headerEl.dataset.wiredClick = "1";
+                    headerEl.addEventListener("click", () => bsCollapse.toggle());
+                }
+
+                // ===========================
+                // 2) DOBLE CLICK = abrir detalle competencia
+                // ===========================
+                if (headerEl.dataset.wiredDbl !== "1") {
+                    headerEl.dataset.wiredDbl = "1";
+                    headerEl.addEventListener("dblclick", async (ev) => {
+                        ev.preventDefault();
+                        ev.stopPropagation();
+
+                        const idFicha = (hfFichaId?.value || "").trim();
+                        const trimestreAcad = (txtSiguienteTrimestre?.value || txtTrimestreFicha?.value || "").trim();
+
+                        if (!idFicha || !trimestreAcad) {
+                            showAlert("Selecciona ficha y trimestre primero.", "warning");
+                            return;
+                        }
+
+                        if (typeof abrirDetalleCompetencia === "function") {
+                            await abrirDetalleCompetencia(compTxt, idFicha, trimestreAcad);
+                        } else {
+                            console.warn("abrirDetalleCompetencia no está definida aún.");
+                        }
+                    });
+                }
+
+                // ===========================
+                // 3) AL ABRIR COLLAPSE
+                // ===========================
+                collapseEl.addEventListener("shown.bs.collapse", async () => {
+                    OPEN_COMP_IDS.add(compId);
+                    chevron.classList.add("rotate-180");
+                    headerEl.setAttribute("aria-expanded", "true");
+
+                    const ul = collapseEl.querySelector("ul");
+                    const resumenBox = collapseEl.querySelector(".comp-resumen");
+
+                    if (!ul) return;
+
+                    const key = normKey(compTxt);
+
+                    // Si hay cache, render directo
+                    if (RESULTADOS_CACHE.has(key)) {
+                        const cached = RESULTADOS_CACHE.get(key);
+                        pintarResultadosEnUL(ul, compTxt, cached.data);
+                        pintarResumenCompetencia(resumenBox, cached.resumen);
+                        wireResultadosDrag();
+                        refrescarUsos();
+                        return;
+                    }
+
+                    // Mostrar loading inline
+                    ul.innerHTML = `
+                <li class="small text-muted py-2">
+                    <i class="bi bi-hourglass-split me-1"></i> Cargando resultados...
+                </li>`;
+
+                    try {
+                        const info = await cargarResultadosCompetencia(compTxt);
+
+                        if (!info || !Array.isArray(info.data)) {
+                            ul.innerHTML = `<li class="small text-muted">Sin resultados para esta competencia.</li>`;
+                            return;
+                        }
+
+                        // Guardar cache
+                        RESULTADOS_CACHE.set(key, { data: info.data, resumen: info.resumen });
+
+                        pintarResultadosEnUL(ul, compTxt, info.data);
+                        pintarResumenCompetencia(resumenBox, info.resumen);
+
+                        // reactivar drag (porque reescribimos UL)
+                        wireResultadosDrag();
+                        refrescarUsos();
+
+                    } catch (err) {
+                        ul.innerHTML = `
+                    <li class="small text-danger">
+                        Error cargando resultados: ${err.message || err}
+                    </li>`;
+                    }
+                });
+
+                // ===========================
+                // 4) AL CERRAR COLLAPSE
+                // ===========================
+                collapseEl.addEventListener("hidden.bs.collapse", () => {
+                    OPEN_COMP_IDS.delete(compId);
+                    chevron.classList.remove("rotate-180");
+                    headerEl.setAttribute("aria-expanded", "false");
+                });
+
+                competenciasList.appendChild(card);
             });
 
-            collapseEl.addEventListener("shown.bs.collapse", () => {
-                OPEN_COMP_IDS.add(compId);
-                chevron.classList.add("rotate-180");
-                headerEl.setAttribute("aria-expanded", "true");
-            });
-
-            collapseEl.addEventListener("hidden.bs.collapse", () => {
-                OPEN_COMP_IDS.delete(compId);
-                chevron.classList.remove("rotate-180");
-                headerEl.setAttribute("aria-expanded", "false");
-            });
-
-            competenciasList.appendChild(card);
-        });
-
-        wireResultadosDrag();
-        wireCompetenciaDrag();
-
-        // 🔥 Aplica resaltado según lo que ya está asignado
-        refrescarUsos();
-    }
-
-    function mostrarCompetenciasCargadas(competencias) {
-        COMPETENCIAS = Array.isArray(competencias) ? competencias : [];
-        OPEN_COMP_IDS = new Set();
-        renderCompetencias(COMPETENCIAS);
-    }
-
-    txtSearch?.addEventListener("input", debounce(() => {
-        const q = (txtSearch.value || "").trim().toLowerCase();
-        if (!q) {
-            renderCompetencias(COMPETENCIAS);
-            return;
+            wireResultadosDrag();
+            wireCompetenciaDrag();
+            refrescarUsos();
         }
 
-        const filtered = COMPETENCIAS
-            .map(c => {
-                const matchComp = (c.Competencia || "").toLowerCase().includes(q);
-                const resFiltrados = (c.Resultados || [])
-                    .filter(r => (r || "").toLowerCase().includes(q));
-                if (matchComp) {
-                    return { Competencia: c.Competencia, Resultados: c.Resultados || [] };
-                }
-                if (resFiltrados.length) {
-                    return { Competencia: c.Competencia, Resultados: resFiltrados };
-                }
-                return null;
-            })
-            .filter(Boolean);
+        // ===========================
+        // Helpers de pintado
+        // ===========================
+        function pintarResultadosEnUL(ul, competenciaTxt, data) {
+            ul.innerHTML = data.map(r => `
+        <li class="resultado-item small text-muted border p-1 mb-1 rounded bg-light"
+            draggable="true"
+            data-competencia="${encodeURIComponent(competenciaTxt)}"
+            data-resultado="${encodeURIComponent(r.Resultado)}">
+            <i class="bi bi-arrows-move me-1 text-success"></i>
+            ${r.Resultado}
+            <div class="small text-secondary mt-1">
+                Req: ${r.HorasRequeridas ?? 0}h · Prog: ${r.HorasProgramadas ?? 0}h · ${(r.Porcentaje ?? 0)}%
+            </div>
+        </li>
+    `).join("");
+        }
 
-        OPEN_COMP_IDS = new Set(filtered.map((_, i) => `comp_${i}`));
-        renderCompetencias(filtered);
-    }, 200));
+        function pintarResumenCompetencia(resumenBox, resumen) {
+            if (!resumenBox) return;
 
-    // ========== ASIGNACIONES ==========
-    function editarAsignacion(item) {
-        const id = parseInt(item.dataset.asignacionId, 10);
-        const a = payload.asignaciones.find(x => x.id === id);
-        const preset = {
-            instructorId: a?.instructorId ? String(a.instructorId) : "",
-            horaDesde: a?.horaDesde || "06:00",
-            horaHasta: a?.horaHasta || "09:00"
-        };
-        abrirModalAsignar({ asignacionId: id, itemEl: item }, preset);
-    }
+            if (!resumen) {
+                resumenBox.classList.add("d-none");
+                resumenBox.innerHTML = "";
+                return;
+            }
 
-    function eliminarAsignacion(item) {
-        const id = parseInt(item.dataset.asignacionId, 10);
-        const col = item.closest(".day-col");
+            resumenBox.classList.remove("d-none");
+            resumenBox.innerHTML = `
+        <div class="alert alert-light border small py-2 mb-2">
+            <strong>Total competencia:</strong>
+            Req ${resumen.TotalRequeridas ?? 0}h ·
+            Prog ${resumen.TotalProgramadas ?? 0}h ·
+            Pend ${resumen.TotalPendientes ?? 0}h ·
+            ${(resumen.Porcentaje ?? 0)}%
+        </div>
+    `;
+        }
 
-        // eliminar del payload
-        payload.asignaciones = payload.asignaciones.filter(a => a.id !== id);
+        // ===========================
+        // Mostrar competencias
+        // ===========================
+        function mostrarCompetenciasCargadas(competencias) {
+            COMPETENCIAS = Array.isArray(competencias) ? competencias : [];
+            OPEN_COMP_IDS = new Set();
+            renderCompetencias(COMPETENCIAS);
+        }
 
-        // eliminar del DOM
-        item.remove();
+        // ===========================
+        // Buscador
+        // ===========================
+        txtSearch?.addEventListener("input", debounce(() => {
+            const q = (txtSearch.value || "").trim().toLowerCase();
+            if (!q) {
+                renderCompetencias(COMPETENCIAS);
+                return;
+            }
 
-        if (col) updateDropHint(col);
+            const filtered = COMPETENCIAS
+                .map(c => {
+                    const matchComp = (c.Competencia || "").toLowerCase().includes(q);
+                    const resFiltrados = (c.Resultados || [])
+                        .filter(r => (r || "").toLowerCase().includes(q));
 
-        // 🔥 recalcular barras
-        refrescarListaInstructoresEnHorario();
-        mostrarInstructorActual();  // recalcula barra instructor
-        actualizarBarraHorario();   // recalcula la del horario
-    }
+                    if (matchComp) return { Competencia: c.Competencia, Resultados: c.Resultados || [] };
+                    if (resFiltrados.length) return { Competencia: c.Competencia, Resultados: resFiltrados };
+                    return null;
+                })
+                .filter(Boolean);
 
-    function parseHM(hhmm) {
-        if (!hhmm || !/^\d{2}:\d{2}$/.test(hhmm)) return null;
-        const [h, m] = hhmm.split(":").map(n => parseInt(n, 10));
-        return h * 60 + m;
-    }
+            OPEN_COMP_IDS = new Set(filtered.map((_, i) => `comp_${i}`));
+            renderCompetencias(filtered);
+        }, 200));
 
-    function rangosSePisan(d1, h1, d2, h2) {
-        return d1 < h2 && d2 < h1;
-    }
 
-    function tieneConflictoEnDia({ dia, instructorId, desde, hasta, ignoreId = null }) {
-        const d = parseHM(desde);
-        const h = parseHM(hasta);
-        if (d == null || h == null) return "Debes indicar un horario válido.";
-        if (d >= h) return "La hora inicial debe ser menor que la final.";
+        // ========== ASIGNACIONES ==========
+        function editarAsignacion(item) {
+            const id = parseInt(item.dataset.asignacionId, 10);
+            const a = payload.asignaciones.find(x => x.id === id);
+            const preset = {
+                instructorId: a?.instructorId ? String(a.instructorId) : "",
+                horaDesde: a?.horaDesde || "06:00",
+                horaHasta: a?.horaHasta || "09:00"
+            };
+            abrirModalAsignar({ asignacionId: id, itemEl: item }, preset);
+        }
 
-        const choqueInstructor = payload.asignaciones.some(a =>
-            a.dia === dia &&
-            a.id !== ignoreId &&
-            a.instructorId != null &&
-            String(a.instructorId) === String(instructorId) &&
-            rangosSePisan(parseHM(a.horaDesde), parseHM(a.horaHasta), d, h)
-        );
-        if (choqueInstructor) return "Ese instructor ya tiene una asignación en ese horario.";
+        function eliminarAsignacion(item) {
+            const id = parseInt(item.dataset.asignacionId, 10);
+            const col = item.closest(".day-col");
 
-        return null;
-    }
+            // eliminar del payload
+            payload.asignaciones = payload.asignaciones.filter(a => a.id !== id);
+
+            // eliminar del DOM
+            item.remove();
+
+            if (col) updateDropHint(col);
+
+            // 🔥 recalcular barras
+            refrescarListaInstructoresEnHorario();
+            mostrarInstructorActual();  // recalcula barra instructor
+            actualizarBarraHorario();   // recalcula la del horario
+        }
+
+        function parseHM(hhmm) {
+            if (!hhmm || !/^\d{2}:\d{2}$/.test(hhmm)) return null;
+            const [h, m] = hhmm.split(":").map(n => parseInt(n, 10));
+            return h * 60 + m;
+        }
+
+        function rangosSePisan(d1, h1, d2, h2) {
+            return d1 < h2 && d2 < h1;
+        }
+
+        function tieneConflictoEnDia({ dia, instructorId, desde, hasta, ignoreId = null }) {
+            const d = parseHM(desde);
+            const h = parseHM(hasta);
+            if (d == null || h == null) return "Debes indicar un horario válido.";
+            if (d >= h) return "La hora inicial debe ser menor que la final.";
+
+            const choqueInstructor = payload.asignaciones.some(a =>
+                a.dia === dia &&
+                a.id !== ignoreId &&
+                a.instructorId != null &&
+                String(a.instructorId) === String(instructorId) &&
+                rangosSePisan(parseHM(a.horaDesde), parseHM(a.horaHasta), d, h)
+            );
+            if (choqueInstructor) return "Ese instructor ya tiene una asignación en ese horario.";
+
+            return null;
+        }
+
 
     // 🔹 misma franja exacta (desde/hasta) el mismo día para el mismo instructor
     function tieneMismaFranjaMismoDia({ dia, instructorId, desde, hasta, ignoreId = null }) {
@@ -2503,351 +2683,403 @@ async function cargarFichaResumenParaModal(idFicha) {
         });
     }
 
-   // ========== CARGAR COMPETENCIAS POR FICHA Y TRIMESTRE REAL ==========
-// trimestreForzado → número real del trimestre a mostrar (1–7)
-async function cargarCompetenciasFicha(idFicha, trimestreForzado = null) {
+        // ========== CARGAR COMPETENCIAS POR FICHA Y TRIMESTRE REAL ==========
+        // trimestreForzado → número real del trimestre a mostrar (1–7)
+        async function cargarCompetenciasFicha(idFicha, trimestreForzado = null) {
 
-    let trimestre = trimestreForzado
-        ? trimestreForzado
-        : txtTrimestreFicha.value?.trim();
+            let trimestre = trimestreForzado
+                ? trimestreForzado
+                : txtTrimestreFicha.value?.trim();
 
-    if (!idFicha || !trimestre) {
-        showAlert("No se puede cargar competencias sin seleccionar ficha y trimestre.", "warning");
-        return;
-    }
-
-    // Mostrar cargando
-    competenciasList.innerHTML = `
-        <div class="text-muted text-center py-2">
-            <i class="bi bi-hourglass-split me-1"></i> Cargando competencias...
-        </div>`;
-
-    try {
-        // 🔥 Usamos SIEMPRE GetCompetenciasPorTrimestre
-        const url = '@Url.Action("GetCompetenciasPorTrimestre", "Home")'
-            + `?idFicha=${idFicha}&trimestre=${trimestre}`;
-
-        const resp = await fetch(url, {
-            headers: { "Accept": "application/json" },
-            credentials: "same-origin"
-        });
-
-        const json = await resp.json();
-
-        if (!json.ok || !Array.isArray(json.data) || json.data.length === 0) {
-            competenciasList.innerHTML =
-                `<div class="text-muted text-center py-2">
-                    Sin competencias para este trimestre.
-                 </div>`;
-            return;
-        }
-
-        let competencias = json.data;
-
-        // ====== 🔥 Cargar pendientes del trimestre anterior ======
-        try {
-            const urlPend = '@Url.Action("GetPendientesHorarioAnterior", "Home")'
-                + `?idFicha=${idFicha}`;
-            const respPend = await fetch(urlPend, {
-                headers: { "Accept": "application/json" }
-            });
-            const jsonPend = await respPend.json();
-
-            if (jsonPend.ok && Array.isArray(jsonPend.pendientes) && jsonPend.pendientes.length) {
-
-                const resultadosPend = jsonPend.pendientes
-                    .filter(p => p && p.Resultado)
-                    .map(p => `${p.Resultado} — Pendiente (${p.HorasFaltantes ?? 0}h)`);
-
-                if (resultadosPend.length) {
-                    competencias = [
-                        {
-                            Competencia: "🔥 PENDIENTES DEL TRIMESTRE ANTERIOR",
-                            Resultados: resultadosPend
-                        },
-                        ...competencias
-                    ];
-                }
+            if (!idFicha || !trimestre) {
+                showAlert("No se puede cargar competencias sin seleccionar ficha y trimestre.", "warning");
+                return;
             }
-        } catch (e) {
-            console.warn("Pendientes omitidos:", e.message);
+
+            // Mostrar cargando
+            competenciasList.innerHTML = `
+                <div class="text-muted text-center py-2">
+                    <i class="bi bi-hourglass-split me-1"></i> Cargando competencias...
+                </div>`;
+
+            try {
+                // 🔥 Usamos SIEMPRE GetCompetenciasPorTrimestre
+                const url = '@Url.Action("GetCompetenciasPorTrimestre", "Home")'
+                    + `?idFicha=${idFicha}&trimestre=${trimestre}`;
+
+                const resp = await fetch(url, {
+                    headers: { "Accept": "application/json" },
+                    credentials: "same-origin"
+                });
+
+                const json = await resp.json();
+
+                if (!json.ok || !Array.isArray(json.data) || json.data.length === 0) {
+                    competenciasList.innerHTML =
+                        `<div class="text-muted text-center py-2">
+                            Sin competencias para este trimestre.
+                         </div>`;
+                    return;
+                }
+
+                let competencias = json.data;
+
+                // ====== 🔥 Cargar pendientes del trimestre anterior ======
+                try {
+                    const urlPend = '@Url.Action("GetPendientesHorarioAnterior", "Home")'
+                        + `?idFicha=${idFicha}`;
+                    const respPend = await fetch(urlPend, {
+                        headers: { "Accept": "application/json" }
+                    });
+                    const jsonPend = await respPend.json();
+
+                    if (jsonPend.ok && Array.isArray(jsonPend.pendientes) && jsonPend.pendientes.length) {
+
+                        const resultadosPend = jsonPend.pendientes
+                            .filter(p => p && p.Resultado)
+                            .map(p => `${p.Resultado} — Pendiente (${p.HorasFaltantes ?? 0}h)`);
+
+                        if (resultadosPend.length) {
+                            competencias = [
+                                {
+                                    Competencia: "🔥 PENDIENTES DEL TRIMESTRE ANTERIOR",
+                                    Resultados: resultadosPend
+                                },
+                                ...competencias
+                            ];
+                        }
+                    }
+                } catch (e) {
+                    console.warn("Pendientes omitidos:", e.message);
+                }
+
+                // ====== Normalizar y quitar duplicados ======
+                competencias = competencias.map(c => ({
+                    Competencia: (c.Competencia || "").trim(),
+                    Resultados: [...new Set((c.Resultados || []).map(r => (r || "").trim()))]
+                })).filter(c => c.Competencia && c.Resultados.length);
+
+                if (!competencias.length) {
+                    competenciasList.innerHTML =
+                        `<div class="text-muted text-center py-2">Sin competencias válidas para mostrar.</div>`;
+                    return;
+                }
+
+                // ====== Render ======
+                mostrarCompetenciasCargadas(competencias);
+
+            } catch (err) {
+                console.error("Error:", err);
+                showAlert("Error cargando competencias: " + err.message, "danger");
+                competenciasList.innerHTML =
+                    `<div class="text-danger text-center py-2">Error cargando competencias.</div>`;
+            }
         }
 
-        // ====== Normalizar y quitar duplicados ======
-        competencias = competencias.map(c => ({
-            Competencia: (c.Competencia || "").trim(),
-            Resultados: [...new Set((c.Resultados || []).map(r => (r || "").trim()))]
-        })).filter(c => c.Competencia && c.Resultados.length);
+        async function abrirDetalleCompetencia(nombreCompetencia, idFicha, trimestreAcad) {
+            try {
+                const url = '@Url.Action("GetResultadosPorCompetencia", "Home")'
+                    + `?nombreCompetencia=${encodeURIComponent(nombreCompetencia)}`
+                    + `&idFicha=${encodeURIComponent(idFicha)}`
+                    + `&trimestreAcad=${encodeURIComponent(trimestreAcad)}`;
 
-        if (!competencias.length) {
-            competenciasList.innerHTML =
-                `<div class="text-muted text-center py-2">Sin competencias válidas para mostrar.</div>`;
+                const resp = await fetch(url, { headers: { "Accept": "application/json" }});
+                const json = await resp.json();
+
+                if (!json.ok) {
+                    showAlert(json.msg || "No se pudo cargar detalle.", "danger");
+                    return;
+                }
+
+                const data = json.data || [];
+                const resumen = json.resumen;
+
+                // título modal
+                document.getElementById("tituloDetalleCompetencia").textContent =
+                    `Competencia: ${resumen.Competencia} (T${trimestreAcad})`;
+
+                // resumen arriba
+                document.getElementById("resumenCompetenciaBox").innerHTML = `
+                    <div class="p-2 border rounded bg-light">
+                        <div><strong>Total Requeridas:</strong> ${resumen.TotalRequeridas}h</div>
+                        <div><strong>Total Programadas:</strong> ${resumen.TotalProgramadas}h</div>
+                        <div><strong>Pendientes:</strong> ${resumen.TotalPendientes}h</div>
+                        <div><strong>% Avance:</strong> ${resumen.Porcentaje}%</div>
+                    </div>
+                `;
+
+                const tbody = document.getElementById("tbodyDetalleCompetencia");
+                tbody.innerHTML = "";
+
+                data.forEach(r => {
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `
+                        <td>${r.Resultado}</td>
+                        <td class="text-center">${r.HorasRequeridas}</td>
+                        <td class="text-center">${r.HorasProgramadas}</td>
+                        <td class="text-center">${r.HorasPendientes}</td>
+                        <td class="text-center">${r.Porcentaje}%</td>`;
+                    tbody.appendChild(tr);
+                });
+
+                // abrir modal
+                new bootstrap.Modal(document.getElementById("modalDetalleCompetencia")).show();
+
+            } catch (err) {
+                showAlert("Error cargando detalle competencia: " + err.message, "danger");
+            }
+        }
+
+        // =========================
+        // BOTÓN: Guardar Todo (con feedback visual)
+        // =========================
+        btnGuardarHorario?.addEventListener("click", async () => {
+
+            // 1️⃣ Validaciones básicas
+            if (!payload.asignaciones || !payload.asignaciones.length) {
+                showAlert("No hay asignaciones para guardar.", "warning");
+                return;
+            }
+
+            const idFichaSeleccionada = hfFichaId.value;
+            if (!idFichaSeleccionada) {
+                showAlert("Debes seleccionar una ficha antes de guardar el horario.", "warning");
+                return;
+            }
+
+            // 2️⃣ Mostrar animación de carga en el botón
+            const originalHTML = btnGuardarHorario.innerHTML;
+            btnGuardarHorario.disabled = true;
+            btnGuardarHorario.innerHTML = `<i class="bi bi-hourglass-split me-2"></i> Cargando...`;
+
+            try {
+                // 3️⃣ Cargar instructores líder
+                await cargarInstructoresLider();
+
+                // 4️⃣ Intentar cargar resumen de ficha (NO BLOQUEA SI FALLA)
+                const ok = await cargarFichaResumenParaModal(idFichaSeleccionada);
+                if (!ok) {
+                    showAlert("⚠ No se pudo cargar toda la información de la ficha, pero puedes continuar.", "warning");
+                }
+
+                // 5️⃣ Mostrar SIEMPRE el modal líder
+                const modalEl = document.getElementById("modalLider");
+                const modal = new bootstrap.Modal(modalEl, { keyboard: false, backdrop: "static" });
+                modal.show();
+
+            } catch (err) {
+                console.error("Error en btnGuardarHorario:", err);
+                showAlert("Error preparando el modal: " + (err.message || err), "danger");
+
+            } finally {
+                btnGuardarHorario.disabled = false;
+                btnGuardarHorario.innerHTML = originalHTML;
+            }
+        });
+
+
+    // =========================
+    // BOTÓN: Confirmar Líder (envío final)
+    // =========================
+    btnConfirmarLider?.addEventListener("click", async () => {
+        const idInstructorLider = selInstructorLider.value;
+
+        if (!idInstructorLider) {
+            showAlert("Debes seleccionar un instructor líder.", "warning");
             return;
         }
 
-        // ====== Render ======
-        mostrarCompetenciasCargadas(competencias);
+        const codigoFicha =
+            (inputFicha.value || "").trim() ||
+            (document.getElementById("txtFichaModal")?.value || "").trim();
 
-    } catch (err) {
-        console.error("Error:", err);
-        showAlert("Error cargando competencias: " + err.message, "danger");
-        competenciasList.innerHTML =
-            `<div class="text-danger text-center py-2">Error cargando competencias.</div>`;
-    }
-}
-
-
-
-  // =========================
-// BOTÓN: Guardar Todo (con feedback visual)
-// =========================
-btnGuardarHorario?.addEventListener("click", async () => {
-
-    // 1️⃣ Validaciones básicas
-    if (!payload.asignaciones || !payload.asignaciones.length) {
-        showAlert("No hay asignaciones para guardar.", "warning");
-        return;
-    }
-
-    const idFichaSeleccionada = hfFichaId.value;
-    if (!idFichaSeleccionada) {
-        showAlert("Debes seleccionar una ficha antes de guardar el horario.", "warning");
-        return;
-    }
-
-    // 2️⃣ Mostrar animación de carga en el botón
-    const originalHTML = btnGuardarHorario.innerHTML;
-    btnGuardarHorario.disabled = true;
-    btnGuardarHorario.innerHTML = `<i class="bi bi-hourglass-split me-2"></i> Cargando...`;
-
-    try {
-        // 3️⃣ Cargar instructores líder
-        await cargarInstructoresLider();
-
-        // 4️⃣ Intentar cargar resumen de ficha (NO BLOQUEA SI FALLA)
-        const ok = await cargarFichaResumenParaModal(idFichaSeleccionada);
-        if (!ok) {
-            showAlert("⚠ No se pudo cargar toda la información de la ficha, pero puedes continuar.", "warning");
+        if (!codigoFicha) {
+            showAlert("Debes seleccionar una ficha antes de guardar el horario.", "warning");
+            return;
         }
 
-        // 5️⃣ Mostrar SIEMPRE el modal líder
-        const modalEl = document.getElementById("modalLider");
-        const modal = new bootstrap.Modal(modalEl, { keyboard: false, backdrop: "static" });
-        modal.show();
+        const trimestreDestino =
+            (document.getElementById("txtTrimestreDestinoModal")?.value ||
+             selTrimestreAnio.value || "")
+            .toString().trim();
 
-    } catch (err) {
-        console.error("Error en btnGuardarHorario:", err);
-        showAlert("Error preparando el modal: " + (err.message || err), "danger");
+        // Deshabilitar botón para evitar doble clic
+        btnConfirmarLider.disabled = true;
+        const originalConfirmHTML = btnConfirmarLider.innerHTML;
+        btnConfirmarLider.innerHTML =
+            `<i class="bi bi-hourglass-split me-2"></i> Guardando...`;
 
-    } finally {
-        btnGuardarHorario.disabled = false;
-        btnGuardarHorario.innerHTML = originalHTML;
-    }
-});
+        try {
+            const fd = new FormData();
+            fd.append("__RequestVerificationToken", getAntiForgeryToken());
+            fd.append("AsignacionesJson", JSON.stringify(payload.asignaciones));
+            fd.append("numeroFicha", codigoFicha);
+            fd.append("nombreHorario", `Horario ${codigoFicha} - T${trimestreDestino}`);
+            fd.append("trimestreFicha", txtTrimestreFicha.value.trim());
+            fd.append("trimestreAnio", selTrimestreAnio.value.trim());
+            fd.append("idInstructorLider", idInstructorLider);
 
+            // Datos informativos del modal
+            fd.append("ProgramaNombre", document.getElementById("txtProgramaModal")?.value || "");
+            fd.append("FechaInicioFicha", document.getElementById("txtFechaInicioModal")?.value || "");
+            fd.append("FechaFinFicha", document.getElementById("txtFechaFinModal")?.value || "");
 
-// =========================
-// BOTÓN: Confirmar Líder (envío final)
-// =========================
-btnConfirmarLider?.addEventListener("click", async () => {
-    const idInstructorLider = selInstructorLider.value;
+            const resp = await fetch('@Url.Action("GuardarHorario", "Home")', {
+                method: "POST",
+                body: fd,
+                credentials: "same-origin"
+            });
 
-    if (!idInstructorLider) {
-        showAlert("Debes seleccionar un instructor líder.", "warning");
-        return;
-    }
+            const json = await resp.json();
 
-    const codigoFicha =
-        (inputFicha.value || "").trim() ||
-        (document.getElementById("txtFichaModal")?.value || "").trim();
+            if (json.ok) {
+                showAlert(json.msg, "success");
 
-    if (!codigoFicha) {
-        showAlert("Debes seleccionar una ficha antes de guardar el horario.", "warning");
-        return;
-    }
+                // Cerrar modal líder
+                const modalInstance = bootstrap.Modal.getInstance(document.getElementById("modalLider"));
+                if (modalInstance) modalInstance.hide();
 
-    const trimestreDestino =
-        (document.getElementById("txtTrimestreDestinoModal")?.value ||
-         selTrimestreAnio.value || "")
-        .toString().trim();
+                setTimeout(() => {
+                    window.location.href = '@Url.Action("ListaHorarios", "Home")';
+                }, 1500);
 
-    // Deshabilitar botón para evitar doble clic
-    btnConfirmarLider.disabled = true;
-    const originalConfirmHTML = btnConfirmarLider.innerHTML;
-    btnConfirmarLider.innerHTML =
-        `<i class="bi bi-hourglass-split me-2"></i> Guardando...`;
+            } else {
+                showAlert(json.msg || "Error guardando horario.", "danger");
+            }
 
-    try {
-        const fd = new FormData();
-        fd.append("__RequestVerificationToken", getAntiForgeryToken());
-        fd.append("AsignacionesJson", JSON.stringify(payload.asignaciones));
-        fd.append("numeroFicha", codigoFicha);
-        fd.append("nombreHorario", `Horario ${codigoFicha} - T${trimestreDestino}`);
-        fd.append("trimestreFicha", txtTrimestreFicha.value.trim());
-        fd.append("trimestreAnio", selTrimestreAnio.value.trim());
-        fd.append("idInstructorLider", idInstructorLider);
+        } catch (err) {
+            console.error("Error en btnConfirmarLider:", err);
+            showAlert("Error enviando la solicitud: " + err.message, "danger");
 
-        // Datos informativos del modal
-        fd.append("ProgramaNombre", document.getElementById("txtProgramaModal")?.value || "");
-        fd.append("FechaInicioFicha", document.getElementById("txtFechaInicioModal")?.value || "");
-        fd.append("FechaFinFicha", document.getElementById("txtFechaFinModal")?.value || "");
-
-        const resp = await fetch('@Url.Action("GuardarHorario", "Home")', {
-            method: "POST",
-            body: fd,
-            credentials: "same-origin"
-        });
-
-        const json = await resp.json();
-
-        if (json.ok) {
-            showAlert(json.msg, "success");
-
-            // Cerrar modal líder
-            const modalInstance = bootstrap.Modal.getInstance(document.getElementById("modalLider"));
-            if (modalInstance) modalInstance.hide();
-
-            setTimeout(() => {
-                window.location.href = '@Url.Action("ListaHorarios", "Home")';
-            }, 1500);
-
-        } else {
-            showAlert(json.msg || "Error guardando horario.", "danger");
+        } finally {
+            btnConfirmarLider.disabled = false;
+            btnConfirmarLider.innerHTML = originalConfirmHTML;
         }
-
-    } catch (err) {
-        console.error("Error en btnConfirmarLider:", err);
-        showAlert("Error enviando la solicitud: " + err.message, "danger");
-
-    } finally {
-        btnConfirmarLider.disabled = false;
-        btnConfirmarLider.innerHTML = originalConfirmHTML;
-    }
-});
-
-
-// ========== TRIMESTRE SIGUIENTE ==========
-function actualizarSiguienteTrimestre() {
-    const actual = parseInt(txtTrimestreFicha.value || "0");
-    if (!actual || isNaN(actual)) {
-        txtSiguienteTrimestre.value = "";
-        return;
-    }
-    const siguiente = actual >= 7 ? 1 : actual + 1;
-    txtSiguienteTrimestre.value = siguiente;
-}
-
-txtTrimestreFicha.addEventListener("change", actualizarSiguienteTrimestre);
-
-
-  // ========== VALIDACIÓN EN VIVO EN MODAL ==========
-validarEnVivo._callId = 0;
-
-async function validarEnVivo() {
-    if (!dropContext) return;
-
-    const alertaChoque = document.getElementById("alertChoque");
-    const instructorId = selInstructorEl.value;
-    const horaDesde = horaDesdeEl.value;
-    const horaHasta = horaHastaEl.value;
-    const idFicha = payload.idFichaActual || hfFichaId.value || null;
-
-    // Si faltan datos básicos → no validar
-    if (!instructorId || !horaDesde || !horaHasta) {
-        alertaChoque.classList.add("d-none");
-        return;
-    }
-
-    const asignacion = payload.asignaciones.find(a => a.id === dropContext.asignacionId);
-    const dia = asignacion?.dia || dropContext.itemEl.dataset.dia;
-
-    // --- 1️⃣ VALIDACIÓN LOCAL ---
-    const conflictoLocal = tieneConflictoEnDia({
-        dia,
-        instructorId,
-        desde: horaDesde,
-        hasta: horaHasta,
-        ignoreId: dropContext.asignacionId
     });
 
-    if (conflictoLocal) {
-        alertaChoque.textContent = "❌ " + conflictoLocal;
-        alertaChoque.classList.remove("d-none");
-        return;
+
+    // ========== TRIMESTRE SIGUIENTE ==========
+    function actualizarSiguienteTrimestre() {
+        const actual = parseInt(txtTrimestreFicha.value || "0");
+        if (!actual || isNaN(actual)) {
+            txtSiguienteTrimestre.value = "";
+            return;
+        }
+        const siguiente = actual >= 7 ? 1 : actual + 1;
+        txtSiguienteTrimestre.value = siguiente;
     }
 
-    // Control de llamadas
-    const myCallId = ++validarEnVivo._callId;
+    txtTrimestreFicha.addEventListener("change", actualizarSiguienteTrimestre);
 
-    // --- Helper fetch JSON ---
-    async function getJson(url, params) {
-        const qs = Object.keys(params)
-            .map(k => `${encodeURIComponent(k)}=${encodeURIComponent(params[k])}`)
-            .join("&");
 
-        const resp = await fetch(`${url}?${qs}`, { credentials: "same-origin" });
-        const text = await resp.text();
+      // ========== VALIDACIÓN EN VIVO EN MODAL ==========
+    validarEnVivo._callId = 0;
 
+    async function validarEnVivo() {
+        if (!dropContext) return;
+
+        const alertaChoque = document.getElementById("alertChoque");
+        const instructorId = selInstructorEl.value;
+        const horaDesde = horaDesdeEl.value;
+        const horaHasta = horaHastaEl.value;
+        const idFicha = payload.idFichaActual || hfFichaId.value || null;
+
+        // Si faltan datos básicos → no validar
+        if (!instructorId || !horaDesde || !horaHasta) {
+            alertaChoque.classList.add("d-none");
+            return;
+        }
+
+        const asignacion = payload.asignaciones.find(a => a.id === dropContext.asignacionId);
+        const dia = asignacion?.dia || dropContext.itemEl.dataset.dia;
+
+        // --- 1️⃣ VALIDACIÓN LOCAL ---
+        const conflictoLocal = tieneConflictoEnDia({
+            dia,
+            instructorId,
+            desde: horaDesde,
+            hasta: horaHasta,
+            ignoreId: dropContext.asignacionId
+        });
+
+        if (conflictoLocal) {
+            alertaChoque.textContent = "❌ " + conflictoLocal;
+            alertaChoque.classList.remove("d-none");
+            return;
+        }
+
+        // Control de llamadas
+        const myCallId = ++validarEnVivo._callId;
+
+        // --- Helper fetch JSON ---
+        async function getJson(url, params) {
+            const qs = Object.keys(params)
+                .map(k => `${encodeURIComponent(k)}=${encodeURIComponent(params[k])}`)
+                .join("&");
+
+            const resp = await fetch(`${url}?${qs}`, { credentials: "same-origin" });
+            const text = await resp.text();
+
+            try {
+                return JSON.parse(text);
+            } catch {
+                throw new Error("Respuesta no JSON: " + text.substring(0, 200));
+            }
+        }
+
+        // --- 2️⃣ VALIDACIÓN EN BD (MISMA FICHA) ---
         try {
-            return JSON.parse(text);
-        } catch {
-            throw new Error("Respuesta no JSON: " + text.substring(0, 200));
-        }
-    }
+            const respBD = await getJson("/Home/ValidarFranjaExactaInstructor", {
+                idInstructor: instructorId,
+                dia: dia,
+                desde: horaDesde,
+                hasta: horaHasta,
+                idFichaActual: idFicha
+            });
 
-    // --- 2️⃣ VALIDACIÓN EN BD (MISMA FICHA) ---
-    try {
-        const respBD = await getJson("/Home/ValidarFranjaExactaInstructor", {
-            idInstructor: instructorId,
-            dia: dia,
-            desde: horaDesde,
-            hasta: horaHasta,
-            idFichaActual: idFicha
-        });
+            if (myCallId !== validarEnVivo._callId) return;
 
-        if (myCallId !== validarEnVivo._callId) return;
-
-        if (!respBD.ok || respBD.choque) {
-            alertaChoque.textContent =
-                respBD.msg || "❌ Choque de horario en la base de datos.";
-            alertaChoque.classList.remove("d-none");
-            return;
-        }
-    } catch (err) {
-        alertaChoque.textContent = "Error validando BD: " + (err.message || err);
-        alertaChoque.classList.remove("d-none");
-        return;
-    }
-
-    // --- 3️⃣ VALIDACIÓN GLOBAL (OTRAS FICHAS) ---
-    try {
-        const respGlobal = await getJson("/Home/ValidarChoqueInstructorGlobal", {
-            idInstructor: instructorId,
-            dia: dia,
-            desde: horaDesde,
-            hasta: horaHasta,
-            idFichaActual: idFicha || 0
-        });
-
-        if (myCallId !== validarEnVivo._callId) return;
-
-        if (!respGlobal.ok || respGlobal.choque) {
-            alertaChoque.textContent =
-                respGlobal.msg ||
-                "❌ Este instructor ya tiene una clase en otra ficha en este horario.";
+            if (!respBD.ok || respBD.choque) {
+                alertaChoque.textContent =
+                    respBD.msg || "❌ Choque de horario en la base de datos.";
+                alertaChoque.classList.remove("d-none");
+                return;
+            }
+        } catch (err) {
+            alertaChoque.textContent = "Error validando BD: " + (err.message || err);
             alertaChoque.classList.remove("d-none");
             return;
         }
 
-        // No hay conflictos → limpiar alerta
-        alertaChoque.classList.add("d-none");
+        // --- 3️⃣ VALIDACIÓN GLOBAL (OTRAS FICHAS) ---
+        try {
+            const respGlobal = await getJson("/Home/ValidarChoqueInstructorGlobal", {
+                idInstructor: instructorId,
+                dia: dia,
+                desde: horaDesde,
+                hasta: horaHasta,
+                idFichaActual: idFicha || 0
+            });
 
-    } catch (err) {
-        alertaChoque.textContent =
-            "Error validando horario global: " + (err.message || err);
-        alertaChoque.classList.remove("d-none");
+            if (myCallId !== validarEnVivo._callId) return;
+
+            if (!respGlobal.ok || respGlobal.choque) {
+                alertaChoque.textContent =
+                    respGlobal.msg ||
+                    "❌ Este instructor ya tiene una clase en otra ficha en este horario.";
+                alertaChoque.classList.remove("d-none");
+                return;
+            }
+
+            // No hay conflictos → limpiar alerta
+            alertaChoque.classList.add("d-none");
+
+        } catch (err) {
+            alertaChoque.textContent =
+                "Error validando horario global: " + (err.message || err);
+            alertaChoque.classList.remove("d-none");
+        }
     }
-}
 
 
         function actualizarBarraHorario() {
@@ -3070,199 +3302,191 @@ async function validarEnVivo() {
             });
 
       async function abrirModalHorarioInstructor(instructorId, instructorNombre) {
-    try {
-        instructorSeleccionadoId = instructorId;
-        instructorSeleccionadoNombre = instructorNombre;
+        try {
+            instructorSeleccionadoId = instructorId;
+            instructorSeleccionadoNombre = instructorNombre;
 
-        const modal = document.getElementById("modalHorarioInstructor");
-        const titulo = document.getElementById("modalHorarioInstructorTitle");
-        const contenido = document.getElementById("contenidoHorarioInstructor");
+            const modal = document.getElementById("modalHorarioInstructor");
+            const titulo = document.getElementById("modalHorarioInstructorTitle");
+            const contenido = document.getElementById("contenidoHorarioInstructor");
 
-        titulo.textContent = `Horario de ${instructorNombre}`;
-        contenido.innerHTML = `<div class="text-center py-3">Cargando horario...</div>`;
+            titulo.textContent = `Horario de ${instructorNombre}`;
+            contenido.innerHTML = `<div class="text-center py-3">Cargando horario...</div>`;
 
-        // Llamar a la función que carga el contenido del horario
-        await cargarVistaHorarioInstructor(instructorId, contenido);
+            // Llamar a la función que carga el contenido del horario
+            await cargarVistaHorarioInstructor(instructorId, contenido);
 
-        const modalInstance = new bootstrap.Modal(modal);
-        modalInstance.show();
+            const modalInstance = new bootstrap.Modal(modal);
+            modalInstance.show();
 
-        // Reposicionar modal
-        posicionarModalAlLado();
-    } catch (err) {
-        console.error("Error abriendo modal:", err);
-        mostrarNotificacion("Error al abrir el horario: " + err.message, "danger");
+            // Reposicionar modal
+            posicionarModalAlLado();
+        } catch (err) {
+            console.error("Error abriendo modal:", err);
+            mostrarNotificacion("Error al abrir el horario: " + err.message, "danger");
+        }
     }
-}
 
     async function cargarVistaHorarioInstructor(instructorId, contenedor) {
-    try {
-        const resp = await fetch(`/Home/GetHorariosInstructores?idInstructor=${instructorId}`);
-        const json = await resp.json();
+        try {
+            const resp = await fetch(`/Home/GetHorariosInstructores?idInstructor=${instructorId}`);
+            const json = await resp.json();
 
-        if (!json.ok) {
-            contenedor.innerHTML = `<div class="alert alert-danger">${json.msg || "Error al cargar datos"}</div>`;
-            return;
-        }
-
-        const asignaciones = json.data || [];
-
-        // Días ordenados
-     const diasSemana = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado"];
-
-
-        let html = `<div class="row px-2">`;
-
-        diasSemana.forEach(dia => {
-            const registros = asignaciones.filter(a => a.Dia === dia);
-
-            html += `
-                <div class="col-4 mb-3">
-                    <div class="card p-2 shadow-sm" style="border-left: 4px solid #0d6efd;">
-                        <h6 class="text-success fw-bold mb-2">${dia}</h6>
-            `;
-
-            if (registros.length === 0) {
-                html += `<div class="text-muted small">Sin asignaciones</div>`;
-            } else {
-                registros.forEach(r => {
-                    html += `
-                        <div class="border rounded p-2 mb-2 bg-light">
-                            <div><strong>${r.HoraDesde} - ${r.HoraHasta}</strong></div>
-                            <div class="small">Ficha: ${r.CodigoFicha}</div>
-                        </div>
-                    `;
-                });
+            if (!json.ok) {
+                contenedor.innerHTML = `<div class="alert alert-danger">${json.msg || "Error al cargar datos"}</div>`;
+                return;
             }
 
-            html += `</div></div>`;
-        });
+            const asignaciones = json.data || [];
 
-        html += `</div>`;
+            // Días ordenados
+            const diasSemana = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado"];
+            let html = `<div class="row px-2">`;
 
-        contenedor.innerHTML = html;
+            diasSemana.forEach(dia => {
+                const registros = asignaciones.filter(a => a.Dia === dia);
 
-    } catch (err) {
-        contenedor.innerHTML = `<div class="alert alert-danger">Error: ${err.message}</div>`;
-        console.error("Error cargando horario instructor:", err);
+                html += `
+                    <div class="col-4 mb-3">
+                        <div class="card p-2 shadow-sm" style="border-left: 4px solid #0d6efd;">
+                            <h6 class="text-success fw-bold mb-2">${dia}</h6>
+                `;
+
+                if (registros.length === 0) {
+                    html += `<div class="text-muted small">Sin asignaciones</div>`;
+                } else {
+                    registros.forEach(r => {
+                        html += `
+                            <div class="border rounded p-2 mb-2 bg-light">
+                                <div><strong>${r.HoraDesde} - ${r.HoraHasta}</strong></div>
+                                <div class="small">Ficha: ${r.CodigoFicha}</div>
+                            </div>
+                        `;
+                    });
+                }
+
+                html += `</div></div>`;
+            });
+
+            html += `</div>`;
+
+            contenedor.innerHTML = html;
+
+        } catch (err) {
+            contenedor.innerHTML = `<div class="alert alert-danger">Error: ${err.message}</div>`;
+            console.error("Error cargando horario instructor:", err);
+        }
     }
-}
-
-
-
 
 
 
         // ======================================================================
-// 🔧 LIMPIAR CONTENIDO DEL HORARIO PARA EL MODAL REDUCIDO
-// ======================================================================
-function limpiarYAdaptarContenido(contenedor) {
+        // 🔧 LIMPIAR CONTENIDO DEL HORARIO PARA EL MODAL REDUCIDO
+        // ======================================================================
+        function limpiarYAdaptarContenido(contenedor) {
 
-    // Días estándar
-    const diasSemana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+            // Días estándar
+            const diasSemana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 
-    // Buscar días reales
-    const originalDias = contenedor.querySelectorAll(".dia");
+            // Buscar días reales
+            const originalDias = contenedor.querySelectorAll(".dia");
 
-    // Mapear día → asignaciones
-    const mapaDias = {};
+            // Mapear día → asignaciones
+            const mapaDias = {};
 
-    originalDias.forEach(dia => {
-        const titulo = dia.querySelector("h5, h4, .titulo-dia")?.textContent?.trim();
-        const asignaciones = dia.querySelectorAll(".asignacion");
+            originalDias.forEach(dia => {
+                const titulo = dia.querySelector("h5, h4, .titulo-dia")?.textContent?.trim();
+                const asignaciones = dia.querySelectorAll(".asignacion");
 
-        mapaDias[titulo] = [];
+                mapaDias[titulo] = [];
 
-        asignaciones.forEach(a => {
-            let txt = a.textContent.replace(/\s+/g, " ").trim();
+                asignaciones.forEach(a => {
+                    let txt = a.textContent.replace(/\s+/g, " ").trim();
 
-            // Extraer horario real
-            let horario = txt.match(/\d{2}:\d{2}.*?\d{2}:\d{2}/);
-            horario = horario ? horario[0] : "Sin horario";
+                    // Extraer horario real
+                    let horario = txt.match(/\d{2}:\d{2}.*?\d{2}:\d{2}/);
+                    horario = horario ? horario[0] : "Sin horario";
 
-            // Extraer ficha
-            let ficha = txt.match(/Ficha\s+\d+/i);
-            ficha = ficha ? ficha[0] : "Sin ficha";
+                    // Extraer ficha
+                    let ficha = txt.match(/Ficha\s+\d+/i);
+                    ficha = ficha ? ficha[0] : "Sin ficha";
 
-            mapaDias[titulo].push({ horario, ficha });
-        });
-    });
-
-    // 🔥 Reemplazar contenedor completamente
-    contenedor.innerHTML = "";
-
-    // Crear fila horizontal
-    const fila = document.createElement("div");
-    fila.className = "d-flex gap-2 justify-content-between";
-
-    diasSemana.forEach(dia => {
-        const col = document.createElement("div");
-        col.className = "flex-grow-1 p-2 border rounded bg-light small";
-
-        col.innerHTML = `<h6 class="fw-bold text-success mb-2">${dia}</h6>`;
-
-        const asigns = mapaDias[dia];
-
-        if (!asigns || asigns.length === 0) {
-            col.innerHTML += `
-                <div class="p-2 text-muted border rounded bg-white">
-                    Sin asignaciones
-                </div>
-            `;
-        } else {
-            asigns.forEach(asig => {
-                col.innerHTML += `
-                    <div class="p-2 mb-2 border rounded bg-white">
-                        <div><strong>${asig.horario}</strong></div>
-                        <div class="text-muted">${asig.ficha}</div>
-                    </div>
-                `;
+                    mapaDias[titulo].push({ horario, ficha });
+                });
             });
+
+            // 🔥 Reemplazar contenedor completamente
+            contenedor.innerHTML = "";
+
+            // Crear fila horizontal
+            const fila = document.createElement("div");
+            fila.className = "d-flex gap-2 justify-content-between";
+
+            diasSemana.forEach(dia => {
+                const col = document.createElement("div");
+                col.className = "flex-grow-1 p-2 border rounded bg-light small";
+
+                col.innerHTML = `<h6 class="fw-bold text-success mb-2">${dia}</h6>`;
+
+                const asigns = mapaDias[dia];
+
+                if (!asigns || asigns.length === 0) {
+                    col.innerHTML += `
+                        <div class="p-2 text-muted border rounded bg-white">
+                            Sin asignaciones
+                        </div>
+                    `;
+                } else {
+                    asigns.forEach(asig => {
+                        col.innerHTML += `
+                            <div class="p-2 mb-2 border rounded bg-white">
+                                <div><strong>${asig.horario}</strong></div>
+                                <div class="text-muted">${asig.ficha}</div>
+                            </div>
+                        `;
+                    });
+                }
+
+                fila.appendChild(col);
+            });
+
+            contenedor.appendChild(fila);
         }
-
-        fila.appendChild(col);
-    });
-
-    contenedor.appendChild(fila);
-}
 
 
 
 
        // Función para posicionar el modal al lado (o debajo) del modal de asignación
-function posicionarModalAlLado() {
+        function posicionarModalAlLado() {
 
-    try {
-        const modalAsignarDialog = document.querySelector('#modalAsignar .modal-dialog');
-        const modalHorarioDialog = document.querySelector('#dialogHorarioInstructor');
+            try {
+                const modalAsignarDialog = document.querySelector('#modalAsignar .modal-dialog');
+                const modalHorarioDialog = document.querySelector('#dialogHorarioInstructor');
 
-        if (!modalAsignarDialog || !modalHorarioDialog) return;
+                if (!modalAsignarDialog || !modalHorarioDialog) return;
 
-        const rect = modalAsignarDialog.getBoundingClientRect();
+                const rect = modalAsignarDialog.getBoundingClientRect();
 
-        // Estilos aplicados directamente al dialog del modal instructor
-        modalHorarioDialog.style.position = 'fixed';
-        modalHorarioDialog.style.margin = '0';
-        modalHorarioDialog.style.transform = 'none';
-        modalHorarioDialog.style.zIndex = '2000';
+                // Estilos aplicados directamente al dialog del modal instructor
+                modalHorarioDialog.style.position = 'fixed';
+                modalHorarioDialog.style.margin = '0';
+                modalHorarioDialog.style.transform = 'none';
+                modalHorarioDialog.style.zIndex = '2000';
 
-        // 🔥 Mostrar siempre DEBAJO del modal asignar
-        modalHorarioDialog.style.top = (rect.bottom + 12) + "px";
+                // 🔥 Mostrar siempre DEBAJO del modal asignar
+                modalHorarioDialog.style.top = (rect.bottom + 12) + "px";
 
-        // 🔥 Alinear con el borde izquierdo
-        modalHorarioDialog.style.left = rect.left + "px";
+                // 🔥 Alinear con el borde izquierdo
+                modalHorarioDialog.style.left = rect.left + "px";
 
-        // 🔥 Tamaño recomendado
-        modalHorarioDialog.style.width = "450px";
-        modalHorarioDialog.style.maxWidth = "450px";
+                // 🔥 Tamaño recomendado
+                modalHorarioDialog.style.width = "450px";
+                modalHorarioDialog.style.maxWidth = "450px";
 
-    } catch (err) {
-        console.error("Error posicionando modal instructor:", err);
-    }
-}
-
-
-
+            } catch (err) {
+                console.error("Error posicionando modal instructor:", err);
+            }
+        }
 
 
             document.getElementById('modalHorarioInstructor')?.addEventListener('hidden.bs.modal', function () {

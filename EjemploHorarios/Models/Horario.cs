@@ -18,6 +18,7 @@ namespace EjemploHorarios.Models
         public Horario()
         {
             this.Diseño_Curricular = new HashSet<Diseño_Curricular>();
+            this.HorarioInstructor = new HashSet<HorarioInstructor>();
         }
     
         public int Id_Horario { get; set; }
@@ -34,5 +35,7 @@ namespace EjemploHorarios.Models
         public virtual Instructor Instructor { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<Diseño_Curricular> Diseño_Curricular { get; set; }
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<HorarioInstructor> HorarioInstructor { get; set; }
     }
 }

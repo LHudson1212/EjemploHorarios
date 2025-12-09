@@ -12,24 +12,13 @@ namespace EjemploHorarios.Models
     using System;
     using System.Collections.Generic;
     
-    public partial class HorarioInstructor
+    public partial class InstructorResultado
     {
-        public int IdHorarioInstructor { get; set; }
+        public int IdResultado { get; set; }
         public int IdInstructor { get; set; }
-        public int IdFicha { get; set; }
-        public string Competencia { get; set; }
-        public string Resultado { get; set; }
-        public string Dia { get; set; }
-        public System.TimeSpan HoraDesde { get; set; }
-        public System.TimeSpan HoraHasta { get; set; }
-        public int Id_Horario { get; set; }
-        public Nullable<int> IdCompetencia { get; set; }
-        public Nullable<int> IdResultado { get; set; }
+        public bool EsPrincipal { get; set; }
     
-        public virtual Ficha Ficha { get; set; }
         public virtual Instructor Instructor { get; set; }
-        public virtual Horario Horario { get; set; }
-        public virtual Competencia Competencia1 { get; set; }
         public virtual ResultadoAprendizaje ResultadoAprendizaje { get; set; }
     }
 }

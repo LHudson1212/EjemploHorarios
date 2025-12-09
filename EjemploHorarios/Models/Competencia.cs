@@ -12,28 +12,24 @@ namespace EjemploHorarios.Models
     using System;
     using System.Collections.Generic;
     
-    public partial class Programa_Formacion
+    public partial class Competencia
     {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors")]
-        public Programa_Formacion()
+        public Competencia()
         {
-            this.Ficha = new HashSet<Ficha>();
-            this.Competencia = new HashSet<Competencia>();
+            this.HorarioInstructor = new HashSet<HorarioInstructor>();
+            this.ResultadoAprendizaje = new HashSet<ResultadoAprendizaje>();
         }
     
+        public int IdCompetencia { get; set; }
         public int IdPrograma { get; set; }
-        public string DenominacionPrograma { get; set; }
-        public string VersionPrograma { get; set; }
-        public string NivelPrograma { get; set; }
-        public string CodigoPrograma { get; set; }
-        public string HorasPrograma { get; set; }
-        public bool EstadoPrograma { get; set; }
-        public Nullable<int> IdArea { get; set; }
+        public string Nombre { get; set; }
+        public Nullable<int> DuracionTotal { get; set; }
     
-        public virtual Area_Conocimiento Area_Conocimiento { get; set; }
+        public virtual Programa_Formacion Programa_Formacion { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public virtual ICollection<Ficha> Ficha { get; set; }
+        public virtual ICollection<HorarioInstructor> HorarioInstructor { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public virtual ICollection<Competencia> Competencia { get; set; }
+        public virtual ICollection<ResultadoAprendizaje> ResultadoAprendizaje { get; set; }
     }
 }
