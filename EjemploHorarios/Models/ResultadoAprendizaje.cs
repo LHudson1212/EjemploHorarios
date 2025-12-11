@@ -19,7 +19,8 @@ namespace EjemploHorarios.Models
         {
             this.HorarioInstructor = new HashSet<HorarioInstructor>();
             this.InstructorResultado = new HashSet<InstructorResultado>();
-            this.ResultadoTrimestre = new HashSet<ResultadoTrimestre>();
+            this.ResultadoTrimestres = new HashSet<ResultadoTrimestre>();
+            this.ResultadoTrimestres1 = new HashSet<ResultadoTrimestre>();
         }
     
         public int IdResultado { get; set; }
@@ -33,6 +34,8 @@ namespace EjemploHorarios.Models
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<InstructorResultado> InstructorResultado { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public virtual ICollection<ResultadoTrimestre> ResultadoTrimestre { get; set; }
+        public virtual ICollection<ResultadoTrimestre> ResultadoTrimestres { get; set; }
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<ResultadoTrimestre> ResultadoTrimestres1 { get; set; }
     }
 }

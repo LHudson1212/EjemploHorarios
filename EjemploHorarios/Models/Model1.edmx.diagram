@@ -4,7 +4,7 @@
   <edmx:Designer xmlns="http://schemas.microsoft.com/ado/2009/11/edmx">
     <!-- Diagram content (shape and connector positions) -->
     <edmx:Diagrams>
-      <Diagram DiagramId="f685612752a044198a849b9e4deaafc9" Name="Diagram1" ZoomLevel="48">
+      <Diagram DiagramId="f685612752a044198a849b9e4deaafc9" Name="Diagram1" ZoomLevel="53">
         <EntityTypeShape EntityType="SenaPlanningModel.Ambiente" Width="1.5" PointX="13.75" PointY="12.25" IsExpanded="true" />
         <EntityTypeShape EntityType="SenaPlanningModel.Area_Conocimiento" Width="1.5" PointX="4" PointY="8.5" IsExpanded="true" />
         <EntityTypeShape EntityType="SenaPlanningModel.Asignacion_horario" Width="2.25" PointX="17.125" PointY="9.375" IsExpanded="true" />
@@ -44,7 +44,6 @@
         <EntityTypeShape EntityType="SenaPlanningModel.Competencia" Width="1.5" PointX="16.75" PointY="19.375" />
         <EntityTypeShape EntityType="SenaPlanningModel.InstructorResultado" Width="1.5" PointX="23.75" PointY="15.25" />
         <EntityTypeShape EntityType="SenaPlanningModel.ResultadoAprendizaje" Width="1.5" PointX="19.125" PointY="19.25" />
-        <EntityTypeShape EntityType="SenaPlanningModel.ResultadoTrimestre" Width="1.5" PointX="14.875" PointY="15.75" />
         <EntityTypeShape EntityType="SenaPlanningModel.sysdiagrams" Width="1.5" PointX="26" PointY="10.625" />
         <AssociationConnector Association="SenaPlanningModel.FK_Competencia_Programa" />
         <AssociationConnector Association="SenaPlanningModel.FK_HorarioInstructor_Competencia" />
@@ -52,8 +51,10 @@
         <AssociationConnector Association="SenaPlanningModel.FK_HorarioInstructor_Resultado" />
         <AssociationConnector Association="SenaPlanningModel.FK_InstructorResultado_Instructor" />
         <AssociationConnector Association="SenaPlanningModel.FK_InstructorResultado_Resultado" />
-        <AssociationConnector Association="SenaPlanningModel.FK_ResultadoTrimestre_Resultado" />
+        <EntityTypeShape EntityType="SenaPlanningModel.ResultadoTrimestre" Width="2.625" PointX="15.5" PointY="15.75" />
         <AssociationConnector Association="SenaPlanningModel.FK_ResultadoTrimestre_Ficha" />
+        <AssociationConnector Association="SenaPlanningModel.FK_ResultadoTrimestre_Resultado" />
+        <AssociationConnector Association="SenaPlanningModel.FK_ResultadoTrimestre_ResultadoAprendizaje" />
       </Diagram>
     </edmx:Diagrams>
   </edmx:Designer>

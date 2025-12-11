@@ -1,4 +1,5 @@
 ﻿using EjemploHorarios.Models;
+using System.Data.Entity.Validation;
 using EjemploHorarios.Models.ViewModels;
 using Newtonsoft.Json;
 using OfficeOpenXml;
@@ -35,67 +36,99 @@ namespace EjemploHorarios.Controllers
         {
             try
             {
-                // 🔹 2. Validar parámetros
-                if (anio <= 0 || trimestre < 1 || trimestre > 4)
-                    return Json(new { ok = false, msg = "Parámetros inválidos." }, JsonRequestBehavior.AllowGet);
-
-                // 🔹 3. Calcular rango del trimestre del año solicitado
-                var inicioTrimestre = new DateTime(anio, ((trimestre - 1) * 3) + 1, 1);
-                var finTrimestre = inicioTrimestre.AddMonths(3).AddDays(-1);
-
-                // 🔹 4. Rango extendido (6 meses antes y después)
-                var inicioRango = inicioTrimestre.AddMonths(-6);
-                var finRango = finTrimestre.AddMonths(6);
-
                 term = (term ?? "").Trim();
 
-                // 🔹 5. Consultar fichas activas (EstadoFicha = true)
-                var fichasQuery = from f in db.Ficha
-                                  join p in db.Programa_Formacion on f.IdPrograma equals p.IdPrograma
-                                  where f.FechaInFicha.HasValue
-                                        && f.FechaFinFicha.HasValue
-                                        && f.EstadoFicha == true
-                                        && f.FechaFinFicha.Value >= inicioRango
-                                        && f.FechaInFicha.Value <= finRango
-                                  select new
-                                  {
-                                      f.IdFicha,
-                                      f.CodigoFicha,
-                                      f.IdPrograma,
-                                      ProgramaNombre = p.DenominacionPrograma,
-                                      TrimestreDeLaFicha = f.Trimestre,
-                                      f.FechaInFicha,
-                                      f.FechaFinFicha
-                                  };
+                if (anio <= 0 || trimestre < 1 || trimestre > 4)
+                {
+                    return Json(
+                        new { ok = false, msg = "Parámetros inválidos. Debes indicar año y trimestre (1–4)." },
+                        JsonRequestBehavior.AllowGet
+                    );
+                }
 
-                // 🔹 6. Aplicar búsqueda en memoria (para coincidencias con 'term')
-                var fichas = fichasQuery
-                    .AsEnumerable()
-                    .Where(f =>
-                        string.IsNullOrEmpty(term)
-                        || (f.CodigoFicha != null && f.CodigoFicha.ToString().IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0)
-                        || (!string.IsNullOrEmpty(f.ProgramaNombre) && f.ProgramaNombre.IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0)
-                    )
+                // 1) Rango del trimestre del AÑO seleccionado
+                var rango = GetRangoTrimestreAnio(anio, trimestre);
+                var inicioTrimestreAnio = rango.Inicio;
+
+                // 2) Traemos fichas con fechas válidas (y opcionalmente activas)
+                var fichasBD = db.Ficha
+                    .Include(f => f.Programa_Formacion)
+                    .Where(f => f.FechaInFicha.HasValue && f.FechaFinFicha.HasValue)
+                    // si quieres que además respeten el flag global:
+                    .Where(f => f.EstadoFicha == true || f.EstadoFicha == null)
+                    .ToList(); // → a memoria para usar DateTime libremente
+
+                // 3) Proyección aplicando REGLA de 180 días y trimestre de ficha
+                var fichasFiltradas = fichasBD
+                    .Select(f =>
+                    {
+                        var fechaInicio = f.FechaInFicha.Value.Date;
+                        var fechaFin = f.FechaFinFicha.Value.Date;
+                        var limiteProgramacion = fechaFin.AddDays(-180); // FechaFin - 180 días
+
+                        // ✔ La ficha se puede programar en este trimestre SI:
+                        //    - el trimestre del año empieza después que la ficha
+                        //    - y antes o en la fecha límite de programación
+                        bool puedeProgramarseEnEsteTrimestre =
+                            inicioTrimestreAnio >= fechaInicio &&
+                            inicioTrimestreAnio <= limiteProgramacion;
+
+                        // Cálculo del trimestre de la ficha en este momento
+                        int trimestreFicha = CalcularTrimestreFicha(fechaInicio, inicioTrimestreAnio);
+
+                        return new
+                        {
+                            f.IdFicha,
+                            f.CodigoFicha,
+                            f.IdPrograma,
+                            ProgramaNombre = f.Programa_Formacion.DenominacionPrograma,
+                            TrimestreDeLaFicha = trimestreFicha,
+                            FechaInicio = f.FechaInFicha,
+                            FechaFin = f.FechaFinFicha,
+                            PuedeProgramarse = puedeProgramarseEnEsteTrimestre
+                        };
+                    })
+                    // ✔ Solo fichas que realmente se pueden programar en ese trimestre
+                    .Where(f => f.PuedeProgramarse)
+                    // ✔ si ya está en 7, no mostrarla
+                    .Where(f => f.TrimestreDeLaFicha > 0 && f.TrimestreDeLaFicha < 7)
+                    .ToList();
+
+                // 4) Filtro por término (código o programa)
+                if (!string.IsNullOrEmpty(term))
+                {
+                    var low = term.ToLowerInvariant();
+                    fichasFiltradas = fichasFiltradas
+                        .Where(f =>
+                            (f.CodigoFicha != null &&
+                             f.CodigoFicha.ToString().Contains(term)) ||
+                            (!string.IsNullOrEmpty(f.ProgramaNombre) &&
+                             f.ProgramaNombre.ToLower().Contains(low)))
+                        .ToList();
+                }
+
+                fichasFiltradas = fichasFiltradas
                     .OrderBy(f => f.CodigoFicha)
                     .ToList();
 
-                if (!fichas.Any())
-                    return Json(new { ok = false, msg = "No se encontraron fichas lectivas para ese año y trimestre." },
-                                JsonRequestBehavior.AllowGet);
-
-                return Json(new { ok = true, data = fichas }, JsonRequestBehavior.AllowGet);
+                // 🔹 IMPORTANTE: devolvemos ok = true SIEMPRE, aunque no haya datos.
+                return Json(
+                    new
+                    {
+                        ok = true,
+                        data = fichasFiltradas
+                    },
+                    JsonRequestBehavior.AllowGet
+                );
             }
             catch (Exception ex)
             {
-                return Json(new { ok = false, msg = "❌ Error al obtener las fichas: " + ex.Message },
-                            JsonRequestBehavior.AllowGet);
+                return Json(
+                    new { ok = false, msg = "❌ Error al obtener las fichas: " + ex.Message },
+                    JsonRequestBehavior.AllowGet
+                );
             }
         }
-
-
-
-
-
 
 
         // 🧩 MÉTODO PRIVADO: actualización automática de estados lectivo / práctica
@@ -138,9 +171,7 @@ namespace EjemploHorarios.Controllers
                 if (archivoExcel == null || archivoExcel.ContentLength == 0)
                     return Json(new { ok = false, msg = "No se cargó ningún archivo Excel." });
 
-                // ============================
-                // 1. Guardar archivo temporal
-                // ============================
+                // 1) Guardar archivo temporal
                 string path = Server.MapPath("~/Uploads/");
                 if (!Directory.Exists(path))
                     Directory.CreateDirectory(path);
@@ -148,9 +179,7 @@ namespace EjemploHorarios.Controllers
                 string filePath = Path.Combine(path, Path.GetFileName(archivoExcel.FileName));
                 archivoExcel.SaveAs(filePath);
 
-                // ============================
-                // 2. Buscar ficha
-                // ============================
+                // 2) Buscar ficha
                 var ficha = db.Ficha
                               .Include("Programa_Formacion")
                               .FirstOrDefault(f => f.IdFicha == idFicha);
@@ -158,26 +187,27 @@ namespace EjemploHorarios.Controllers
                 if (ficha == null)
                     return Json(new { ok = false, msg = "❌ Ficha no encontrada." });
 
-                // ============================
-                // ❌ 3. ELIMINAR HORARIOS TEMPORALES QUE BLOQUEAN TODO
-                // ============================
-                var temporales = db.Horario
-                    .Where(h => h.IdFicha == idFicha &&
-                                h.Trimestre_Año == trimestre &&
-                                h.Id_Asignacion == null)   // ← TEMPORAL detectado
-                    .ToList();
+                int idPrograma = ficha.IdPrograma ?? 0;
+                if (idPrograma <= 0)
+                    return Json(new { ok = false, msg = "❌ La ficha no tiene programa asociado." });
 
-                if (temporales.Any())
+                // 3) Limpieza: si reimportas, reemplazamos SOLO la planeación de esa ficha
+                var prevRt = db.ResultadoTrimestre.Where(x => x.IdFicha == idFicha).ToList();
+                if (prevRt.Any())
                 {
-                    db.Horario.RemoveRange(temporales);
+                    db.ResultadoTrimestre.RemoveRange(prevRt);
                     db.SaveChanges();
                 }
 
-                string programaNombre = ficha.Programa_Formacion?.DenominacionPrograma ?? "Programa desconocido";
+                // 4) Caches para evitar hits repetidos
+                var competenciasBD = db.Competencia.AsNoTracking()
+                                       .Where(c => c.IdPrograma == idPrograma)
+                                       .ToList();
 
-                // ============================
-                // 4. Procesar Excel
-                // ============================
+                var resultadosBD = db.ResultadoAprendizaje.AsNoTracking()
+                                     .ToList();
+
+                // 5) Procesar Excel
                 using (var package = new OfficeOpenXml.ExcelPackage(new FileInfo(filePath)))
                 {
                     var ws = package.Workbook.Worksheets["Hoja1"];
@@ -187,68 +217,76 @@ namespace EjemploHorarios.Controllers
                     int rowCount = ws.Dimension.Rows;
                     string competenciaActual = null;
 
+                    // 🛡️ NUEVO: evita PK duplicada (IdFicha, IdResultado, TrimestreAcad)
+                    var inserted = new HashSet<string>();
+                    // key = $"{idFicha}|{idResultado}|{trimAcad}"
+
                     for (int row = 2; row <= rowCount; row++)
                     {
-                        string competencia = ws.Cells[row, 4].Text?.Trim();
-                        string resultado = ws.Cells[row, 6].Text?.Trim();
-                        string instructorNombre = ws.Cells[row, 35].Text?.Trim();
+                        string competenciaTxt = ws.Cells[row, 4].Text?.Trim();
+                        string resultadoTxt = ws.Cells[row, 6].Text?.Trim();
 
-                        if (!string.IsNullOrEmpty(competencia))
-                            competenciaActual = competencia;
+                        if (!string.IsNullOrEmpty(competenciaTxt))
+                            competenciaActual = competenciaTxt;
 
-                        if (string.IsNullOrEmpty(competenciaActual) || string.IsNullOrEmpty(resultado))
+                        if (string.IsNullOrWhiteSpace(competenciaActual) || string.IsNullOrWhiteSpace(resultadoTxt))
                             continue;
 
-                        int idInstructorTemp = ObtenerInstructorId(instructorNombre);
-                        int? idInstructorFinal = idInstructorTemp == 0 ? (int?)null : idInstructorTemp;
+                        // 5.1) Upsert competencia
+                        var comp = BuscarOCrearCompetencia(idPrograma, competenciaActual, competenciasBD);
 
-                        var registro = new Diseño_Curricular
+                        // 5.2) Upsert resultado aprendizaje
+                        var res = BuscarOCrearResultado(comp.IdCompetencia, resultadoTxt, resultadosBD);
+
+                        // 5.3) Insertar ResultadoTrimestre (I–VII) columnas 8–14
+                        for (int trimAcad = 1; trimAcad <= 7; trimAcad++)
                         {
-                            Competencia = competenciaActual,
-                            Orden = ParseNullableInt(ws.Cells[row, 5].Text),
-                            Resultado = resultado,
-                            Duracion = ParseNullableInt(ws.Cells[row, 7].Text),
-                            HrTrimI = ParseNullableInt(ws.Cells[row, 8].Text),
-                            HrTrimII = ParseNullableInt(ws.Cells[row, 9].Text),
-                            HrTrimIII = ParseNullableInt(ws.Cells[row, 10].Text),
-                            HrTrimIV = ParseNullableInt(ws.Cells[row, 11].Text),
-                            HrTrimV = ParseNullableInt(ws.Cells[row, 12].Text),
-                            HrTrimVI = ParseNullableInt(ws.Cells[row, 13].Text),
-                            HrTrimVII = ParseNullableInt(ws.Cells[row, 14].Text),
-                            Total_Hr = ParseNullableInt(ws.Cells[row, 15].Text),
-                            Prog = programaNombre,
-                            IdInstructor = idInstructorFinal ?? 1219,
-                            IdFicha = idFicha
-                            // 👈 YA NO necesitamos Id_Horario AQUÍ
-                        };
+                            int col = 7 + trimAcad; // 8..14
+                            int horas = ParseNullableInt(ws.Cells[row, col].Text) ?? 0;
 
-                        db.Diseño_Curricular.Add(registro);
+                            if (horas > 0)
+                            {
+                                // 👇 clave única por ficha + resultado + trimestre
+                                string key = $"{idFicha}|{res.IdResultado}|{trimAcad}";
+
+                                // Si ya insertamos este resultado en este trimestre para esta ficha,
+                                // lo ignoramos para no romper la PK.
+                                if (inserted.Contains(key))
+                                    continue;
+
+                                inserted.Add(key);
+
+                                db.ResultadoTrimestre.Add(new ResultadoTrimestre
+                                {
+                                    IdFicha = idFicha,
+                                    IdResultado = res.IdResultado,
+                                    TrimestreAcad = trimAcad,
+                                    HorasPlaneadas = horas,
+                                    Horas = 0
+                                });
+                            }
+                        }
                     }
 
                     db.SaveChanges();
                 }
 
-                // ============================
-                // 5. Calcular trimestre DESTINO (académico 1–7)
-                // ============================
+                // 6) Calcular trimestre DESTINO (académico 1–7)
                 int trimestreActualFicha = ficha.Trimestre ?? 1;
                 int trimestreDestino = trimestreActualFicha >= 7
                     ? 7
                     : trimestreActualFicha + 1;
 
-                // ============================
-                // 6. Filtrar resultados del TRIMESTRE DESTINO
-                // ============================
+                // 7) Filtrar resultados del TRIMESTRE DESTINO
                 var competenciasFiltradas = FiltrarCompetenciasPorTrimestre(idFicha, trimestreDestino);
 
                 return Json(new
                 {
                     ok = true,
-                    msg = "✅ Competencias cargadas correctamente. Ahora puedes guardar el horario.",
-                    trimestreDestino = trimestreDestino,
+                    msg = "✅ Planeación cargada correctamente (sin Diseño_Curricular).",
+                    trimestreDestino,
                     competencias = competenciasFiltradas
                 });
-
             }
             catch (Exception ex)
             {
@@ -259,6 +297,9 @@ namespace EjemploHorarios.Controllers
                 return Json(new { ok = false, msg = "❌ Error al procesar el archivo: " + deepMsg });
             }
         }
+
+
+
 
 
         public class CompetenciaDTO
@@ -365,98 +406,98 @@ namespace EjemploHorarios.Controllers
         }
 
 
-        private List<CompetenciaDTO> FiltrarCompetenciasPorTrimestre(int idFicha, int trimestre)
+
+        private List<CompetenciaDTO> FiltrarCompetenciasPorTrimestre(int idFicha, int trimestreAcad)
         {
-            // ✅ Traemos SOLO los resultados planeados para ese trimestre académico y ficha
-            var query =
-                from rt in db.ResultadoTrimestre
-                join r in db.ResultadoAprendizaje on rt.IdResultado equals r.IdResultado
-                join c in db.Competencia on r.IdCompetencia equals c.IdCompetencia
-                where rt.IdFicha == idFicha
-                      && rt.TrimestreAcad == trimestre
-                      && rt.HorasPlaneadas > 0
+            const int SEMANAS = 12;
+
+            // 1) Horas requeridas por resultado SOLO del trimestre destino
+            var requeridas = db.ResultadoTrimestre.AsNoTracking()
+                .Where(rt => rt.IdFicha == idFicha
+                          && rt.TrimestreAcad == trimestreAcad
+                          && rt.HorasPlaneadas > 0)
+                .GroupBy(rt => rt.IdResultado)
+                .Select(g => new
+                {
+                    IdResultado = g.Key,
+                    HorasReq = g.Sum(x => x.HorasPlaneadas)
+                })
+                .ToList();
+
+            if (!requeridas.Any()) return new List<CompetenciaDTO>();
+
+            var reqDict = requeridas.ToDictionary(x => x.IdResultado, x => x.HorasReq);
+            var idsResultados = reqDict.Keys.ToList();
+
+            // 2) Horas programadas acumuladas hasta el trimestre destino (por resultado)
+            var horasProg = (
+                from hi in db.HorarioInstructor
+                join h in db.Horario on hi.Id_Horario equals h.Id_Horario
+                where hi.IdFicha == idFicha
+                      && h.Trimestre_Año <= trimestreAcad
+                      && hi.IdResultado.HasValue
+                      && idsResultados.Contains(hi.IdResultado.Value)
+                select new
+                {
+                    IdResultado = hi.IdResultado.Value,
+                    hi.HoraDesde,
+                    hi.HoraHasta
+                }
+            )
+            .ToList() // a memoria para poder calcular minutos
+            .Select(x => new
+            {
+                x.IdResultado,
+                Minutos = Math.Max(0, (x.HoraHasta - x.HoraDesde).TotalMinutes)
+            })
+            .GroupBy(x => x.IdResultado)
+            .Select(g => new
+            {
+                IdResultado = g.Key,
+                HorasProg = (int)Math.Round(((decimal)g.Sum(x => x.Minutos) / 60m) * SEMANAS)
+            })
+            .ToList();
+
+            var progDict = horasProg.ToDictionary(x => x.IdResultado, x => x.HorasProg);
+
+            // 3) Quedarnos SOLO con resultados que tengan pendientes (>0)
+            var idsPendientes = idsResultados
+                .Where(id =>
+                {
+                    int req = reqDict.TryGetValue(id, out var r) ? r : 0;
+                    int prog = progDict.TryGetValue(id, out var p) ? p : 0;
+                    return (req - prog) > 0;
+                })
+                .ToList();
+
+            if (!idsPendientes.Any()) return new List<CompetenciaDTO>();
+
+            // 4) Traer competencia y texto de resultado SOLO para esos pendientes
+            var data = (
+                from r in db.ResultadoAprendizaje.AsNoTracking()
+                join c in db.Competencia.AsNoTracking() on r.IdCompetencia equals c.IdCompetencia
+                where idsPendientes.Contains(r.IdResultado)
                 select new
                 {
                     Competencia = c.Nombre,
                     Resultado = r.Descripcion
-                };
-
-            var data = query
-                .AsEnumerable()
-                .GroupBy(x => x.Competencia)
-                .Select(g => new CompetenciaDTO
-                {
-                    Competencia = g.Key,
-                    Resultados = g
-                        .Select(x => x.Resultado)
-                        .Where(r => !string.IsNullOrWhiteSpace(r))
-                        .Distinct()
-                        .ToList()
-                })
-                .Where(c => c.Resultados.Any())
-                .OrderBy(c => c.Competencia)
-                .ToList();
+                }
+            )
+            .ToList()
+            .GroupBy(x => x.Competencia)
+            .Select(g => new CompetenciaDTO
+            {
+                Competencia = g.Key,
+                Resultados = g.Select(x => x.Resultado)
+                              .Where(t => !string.IsNullOrWhiteSpace(t))
+                              .Distinct()
+                              .ToList()
+            })
+            .Where(c => c.Resultados.Any())
+            .OrderBy(c => c.Competencia)
+            .ToList();
 
             return data;
-        }
-
-
-
-        private int ObtenerHorarioValido(int idFicha, int anio, int trimestre)
-        {
-            // Buscar si ya existe un horario para esa ficha y trimestre
-            var horarioExistente = db.Horario.FirstOrDefault(h => h.IdFicha == idFicha && h.Trimestre_Año == trimestre);
-            if (horarioExistente != null)
-                return horarioExistente.Id_Horario;
-
-            // 🔹 Buscar un instructor válido (al menos uno existente)
-            var instructor = db.Instructor.FirstOrDefault();
-            if (instructor == null)
-                throw new Exception("No hay instructores registrados en la base de datos.");
-
-            // 🔹 Crear una asignación base (necesaria para cumplir la FK)
-            var asignacion = new Asignacion_horario
-            {
-                Dia = "Pendiente",
-                HoraDesde = new TimeSpan(6, 0, 0),  // 06:00 AM
-                HoraHasta = new TimeSpan(8, 0, 0),  // 08:00 AM
-                IdInstructor = instructor.IdInstructor,
-                IdFicha = idFicha                   // 👈 IMPORTANTE: este campo ahora es requerido
-            };
-
-            db.Asignacion_horario.Add(asignacion);
-            db.SaveChanges(); // ✅ Aquí se genera el Id_Asignacion real
-
-            // 🔹 Crear el horario enlazado con esa asignación
-            var nuevoHorario = new Horario
-            {
-                IdFicha = idFicha,
-                Año_Horario = anio,
-                Trimestre_Año = trimestre,
-                Fecha_Creacion = DateTime.Now,
-                Id_Asignacion = asignacion.Id_Asignacion // 👈 Aquí usamos el ID recién creado
-            };
-
-            db.Horario.Add(nuevoHorario);
-            db.SaveChanges();
-
-            return nuevoHorario.Id_Horario;
-        }
-
-        // helper para horas requeridas del trimestre
-        private int HorasReqTrimestre(Diseño_Curricular dc, int trimestreAcad)
-        {
-            switch (trimestreAcad)
-            {
-                case 1: return dc.HrTrimI ?? 0;
-                case 2: return dc.HrTrimII ?? 0;
-                case 3: return dc.HrTrimIII ?? 0;
-                case 4: return dc.HrTrimIV ?? 0;
-                case 5: return dc.HrTrimV ?? 0;
-                case 6: return dc.HrTrimVI ?? 0;
-                case 7: return dc.HrTrimVII ?? 0;
-                default: return 0;
-            }
         }
 
 
@@ -482,23 +523,21 @@ namespace EjemploHorarios.Controllers
                 if (string.IsNullOrWhiteSpace(nombreCompetencia) || idFicha <= 0 || trimestreAcad < 1 || trimestreAcad > 7)
                     return Json(new { ok = false, msg = "Parámetros inválidos." }, JsonRequestBehavior.AllowGet);
 
-                string comp = nombreCompetencia.Trim();
+                string compTxt = nombreCompetencia.Trim();
+                string compNorm = Normalizar(compTxt);
 
-                // 1) Buscar competencia real por nombre
-                var competencia = db.Competencia.FirstOrDefault(c => c.Nombre == comp);
+                var competencia = db.Competencia.AsNoTracking()
+                    .ToList()
+                    .FirstOrDefault(c => Normalizar(c.Nombre) == compNorm);
+
                 if (competencia == null)
                     return Json(new { ok = true, data = new List<object>() }, JsonRequestBehavior.AllowGet);
 
                 int idCompetencia = competencia.IdCompetencia;
 
-                // 2) Resultados de aprendizaje de esa competencia
-                var resultadosBase = db.ResultadoAprendizaje
+                var resultadosBase = db.ResultadoAprendizaje.AsNoTracking()
                     .Where(r => r.IdCompetencia == idCompetencia)
-                    .Select(r => new
-                    {
-                        r.IdResultado,
-                        r.Descripcion
-                    })
+                    .Select(r => new { r.IdResultado, r.Descripcion })
                     .ToList();
 
                 if (!resultadosBase.Any())
@@ -506,8 +545,8 @@ namespace EjemploHorarios.Controllers
 
                 var idsResultados = resultadosBase.Select(x => x.IdResultado).ToList();
 
-                // 3) Horas requeridas SOLO DEL TRIMESTRE ACTUAL (tabla ResultadoTrimestre)
-                var requeridasTrim = db.ResultadoTrimestre
+                // Horas requeridas SOLO del trimestre actual
+                var requeridasTrim = db.ResultadoTrimestre.AsNoTracking()
                     .Where(rt => rt.IdFicha == idFicha
                               && rt.TrimestreAcad == trimestreAcad
                               && idsResultados.Contains(rt.IdResultado))
@@ -521,8 +560,7 @@ namespace EjemploHorarios.Controllers
 
                 var reqDict = requeridasTrim.ToDictionary(x => x.IdResultado, x => x.HorasReq);
 
-                // 4) Horas ya dictadas (acumulado en horarios guardados)
-                //    Sumamos HorarioInstructor * 12 semanas
+                // Horas programadas acumuladas hasta el trimestre (por resultado)
                 const int SEMANAS = 12;
 
                 var horasDictadas = (
@@ -535,26 +573,27 @@ namespace EjemploHorarios.Controllers
                     select new
                     {
                         IdResultado = hi.IdResultado.Value,
-
-                        // ✅ AQUÍ va el Math.Max
-                        Minutos = Math.Max(0,
-                            (hi.HoraHasta.Hours * 60 + hi.HoraHasta.Minutes) -
-                            (hi.HoraDesde.Hours * 60 + hi.HoraDesde.Minutes)
-                        )
+                        hi.HoraDesde,
+                        hi.HoraHasta
                     }
                 )
-                .ToList()
+                .ToList() // ✅ aquí ya estamos en memoria
+                .Select(x => new
+                {
+                    x.IdResultado,
+                    Minutos = Math.Max(0, (x.HoraHasta - x.HoraDesde).TotalMinutes)
+                })
                 .GroupBy(x => x.IdResultado)
                 .Select(g => new
                 {
                     IdResultado = g.Key,
-                    HorasProg = (int)Math.Round((g.Sum(x => x.Minutos) / 60m) * SEMANAS)
+                    HorasProg = (int)Math.Round(((decimal)g.Sum(x => x.Minutos) / 60m) * SEMANAS)
                 })
                 .ToList();
 
                 var progDict = horasDictadas.ToDictionary(x => x.IdResultado, x => x.HorasProg);
 
-                // 5) Armar salida final
+
                 var salida = resultadosBase.Select(rb =>
                 {
                     int req = reqDict.TryGetValue(rb.IdResultado, out var r) ? r : 0;
@@ -572,13 +611,18 @@ namespace EjemploHorarios.Controllers
                     };
                 }).ToList();
 
-                // 6) Totales competencia
+                // ✅ SOLO pendientes (horas para programar)
+                salida = salida
+                    .Where(x => x.HorasPendientes > 0)
+                    .ToList();
+
+
                 int totalReq = salida.Sum(x => x.HorasRequeridas);
                 int totalProg = salida.Sum(x => x.HorasProgramadas);
 
                 var resumenCompetencia = new
                 {
-                    Competencia = comp,
+                    Competencia = compTxt,
                     TotalRequeridas = totalReq,
                     TotalProgramadas = totalProg,
                     TotalPendientes = Math.Max(totalReq - totalProg, 0),
@@ -599,21 +643,19 @@ namespace EjemploHorarios.Controllers
             }
         }
 
+
+
         [HttpGet]
         public JsonResult GetInstructores(string q = null, int? top = null)
         {
             try
             {
-                // Si tienes auth global y este endpoint debe ser público:
-                // [AllowAnonymous] sobre el método (o quita el filtro para esta acción)
-
                 var query = db.Instructor.AsNoTracking()
                              .Where(i => i.EstadoInstructor == true);
 
                 if (!string.IsNullOrWhiteSpace(q))
                 {
-                    var term = q.Trim().ToLower();
-                    // Evita nulls en NombreCompletoInstructor
+                    string term = q.Trim().ToLowerInvariant();
                     query = query.Where(i => (i.NombreCompletoInstructor ?? "").ToLower().Contains(term));
                 }
 
@@ -626,24 +668,17 @@ namespace EjemploHorarios.Controllers
                 {
                     id = i.IdInstructor,
                     nombre = i.NombreCompletoInstructor ?? "(Sin nombre)"
-                })
-                            .ToList();
-
-                // Fuerza tipo de contenido JSON y 200
-                Response.ContentType = "application/json";
-                Response.StatusCode = 200;
+                }).ToList();
 
                 return Json(new { ok = true, data }, JsonRequestBehavior.AllowGet);
             }
             catch (Exception ex)
             {
-                // Devuelve JSON también en error
-                Response.ContentType = "application/json";
-                Response.StatusCode = 200; // o 500 si prefieres manejarlo en el cliente
                 return Json(new { ok = false, msg = "Error al obtener instructores: " + ex.Message },
                             JsonRequestBehavior.AllowGet);
             }
         }
+
 
 
 
@@ -763,50 +798,63 @@ namespace EjemploHorarios.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         public JsonResult GuardarHorario(
-            string AsignacionesJson,
-            string numeroFicha,
-            string nombreHorario,
-            string trimestreFicha,
-            string trimestreAnio,
-            int idInstructorLider)
+    string AsignacionesJson,
+    string numeroFicha,
+    string nombreHorario,
+    string trimestreFicha,
+    string trimestreAnio,
+    int idInstructorLider)
         {
             using (var tx = db.Database.BeginTransaction())
             {
                 try
                 {
-                    var asignaciones = JsonConvert.DeserializeObject<List<AsignacionViewModel>>(AsignacionesJson);
+                    var asignaciones =
+                        JsonConvert.DeserializeObject<List<AsignacionViewModel>>(AsignacionesJson);
+
                     if (asignaciones == null || !asignaciones.Any())
                         return Json(new { ok = false, msg = "⚠️ No hay asignaciones para guardar." });
 
-                    var ficha = db.Ficha.FirstOrDefault(f => f.CodigoFicha.ToString() == numeroFicha);
+                    numeroFicha = (numeroFicha ?? "").Trim();
+
+                    var ficha = db.Ficha
+                        .FirstOrDefault(f => f.CodigoFicha.ToString() == numeroFicha);
+
                     if (ficha == null)
                         return Json(new { ok = false, msg = "❌ Ficha no encontrada." });
 
                     int trimestreActualFicha = ficha.Trimestre.GetValueOrDefault();
-                    int trimestreSolicitado = int.Parse(trimestreFicha); // académico 1–7
+
+                    if (!int.TryParse(trimestreFicha, out int trimestreSolicitado))
+                        return Json(new { ok = false, msg = "❌ Trimestre académico inválido." });
+
+                    // ✅ trimestreAnio debe ser AÑO REAL
+                    if (!int.TryParse(trimestreAnio, out int anioReal))
+                        return Json(new { ok = false, msg = "❌ Año inválido." });
+
+                    if (anioReal < 100) anioReal = DateTime.Now.Year; // defensa legacy
 
                     if (trimestreActualFicha >= 7)
                         return Json(new { ok = false, msg = "❌ La ficha ya está en trimestre 7." });
 
+                    // Permite mismo trimestre o siguiente (como lo tenías)
                     if (trimestreSolicitado < trimestreActualFicha ||
                         trimestreSolicitado > (trimestreActualFicha + 1))
                         return Json(new { ok = false, msg = "❌ Trimestre inválido." });
 
-                    if (db.Horario.Any(h => h.IdFicha == ficha.IdFicha && h.Trimestre_Año == trimestreSolicitado))
-                        return Json(new { ok = false, msg = "❌ Ya existe un horario para este trimestre." });
+                    // ✅ duplicado POR AÑO Y TRIMESTRE
+                    if (db.Horario.Any(h => h.IdFicha == ficha.IdFicha
+                                         && h.Trimestre_Año == trimestreSolicitado
+                                         && h.Año_Horario == anioReal))
+                        return Json(new { ok = false, msg = "❌ Ya existe un horario para este trimestre y año." });
 
-                    // =========================
-                    // 1) Crear horario nuevo
-                    // =========================
                     var horarioNuevo = new Horario
                     {
-                        Año_Horario = int.Parse(trimestreAnio), // trimestre del año (1-4)
-                        Trimestre_Año = trimestreSolicitado,    // académico (1-7)
+                        Año_Horario = anioReal,
+                        Trimestre_Año = trimestreSolicitado, // académico 1–7
                         Fecha_Creacion = DateTime.Now,
                         IdFicha = ficha.IdFicha,
-                        IdInstructorLider = idInstructorLider,
-                        // Si tu modelo NO tiene NombreHorario, NO lo pongas.
-                        // NombreHorario = nombreHorario
+                        IdInstructorLider = idInstructorLider
                     };
 
                     db.Horario.Add(horarioNuevo);
@@ -815,9 +863,6 @@ namespace EjemploHorarios.Controllers
                     const int SEMANAS = 12;
                     var pendientes = new List<object>();
 
-                    // =========================
-                    // 2) Cache para rendimiento
-                    // =========================
                     var resultadosTrimestreFicha = db.ResultadoTrimestre
                         .Where(rt => rt.IdFicha == ficha.IdFicha && rt.TrimestreAcad == trimestreSolicitado)
                         .ToList();
@@ -825,59 +870,62 @@ namespace EjemploHorarios.Controllers
                     var competenciasBD = db.Competencia.AsNoTracking().ToList();
                     var resultadosBD = db.ResultadoAprendizaje.AsNoTracking().ToList();
 
-                    // =========================
-                    // 3) Recorrer asignaciones
-                    // =========================
+                    // ✅ ACUMULADORES para calcular pendientes reales al final
+                    var acumuladoProgPorResultado = new Dictionary<int, int>();
+                    var acumuladoReqPorResultado = new Dictionary<int, int>();
+                    var textoPorResultado = new Dictionary<int, (string comp, string res)>();
+
+                    var acumuladoProgPorCompetencia = new Dictionary<int, int>();
+                    var acumuladoReqPorCompetencia = new Dictionary<int, int>();
+                    var textoPorCompetencia = new Dictionary<int, string>();
+
+
                     foreach (var a in asignaciones)
                     {
-                        if (a.instructorId <= 0) continue;
+                        // ignorar asignaciones sin instructor
+                        if (!a.instructorId.HasValue || a.instructorId.Value <= 0)
+                            continue;
 
-                        // sanear undefined / null
-                        string compTxt = string.IsNullOrWhiteSpace(a.competencia) || a.competencia == "undefined"
-                            ? ""
-                            : a.competencia.Trim();
+                        string compTxt = LimpiarTexto(a.competencia);
+                        string resTxt = LimpiarTexto(a.resultado);
 
-                        string resTxt = string.IsNullOrWhiteSpace(a.resultado) || a.resultado == "undefined"
-                            ? ""
-                            : a.resultado.Trim();
-
-                        // horas válidas
                         if (string.IsNullOrWhiteSpace(a.horaDesde) || string.IsNullOrWhiteSpace(a.horaHasta))
                             return Json(new { ok = false, msg = "❌ Horas inválidas en asignación." });
 
-                        TimeSpan d = TimeSpan.Parse(a.horaDesde);
-                        TimeSpan h = TimeSpan.Parse(a.horaHasta);
+                        TimeSpan desde = TimeSpan.Parse(a.horaDesde);
+                        TimeSpan hasta = TimeSpan.Parse(a.horaHasta);
 
-                        if (d >= h)
+                        if (desde >= hasta)
                             return Json(new { ok = false, msg = "❌ Hora inicial no válida." });
 
-                        int horasProgramadas = (int)Math.Round((h - d).TotalHours * SEMANAS);
+                        double minutosSemana = (hasta - desde).TotalMinutes;
+                        int horasProgramadas = (int)Math.Round((minutosSemana / 60.0) * SEMANAS);
 
-                        // =========================
-                        // 3.1 Resolver IdResultado real
-                        // =========================
                         int? idResultado = ResolverIdResultadoSeguro(compTxt, resTxt, competenciasBD, resultadosBD);
 
-                        // =========================
-                        // 3.2 Horas requeridas reales del trimestre
-                        // =========================
                         int horasRequeridas = 0;
+                        int? idCompetencia = null;
 
                         if (idResultado.HasValue)
                         {
-                            // Resultado individual => horas planeadas reales del trimestre actual
                             horasRequeridas = resultadosTrimestreFicha
                                 .Where(rt => rt.IdResultado == idResultado.Value)
                                 .Sum(rt => rt.HorasPlaneadas);
+
+                            idCompetencia = resultadosBD
+                                .Where(r => r.IdResultado == idResultado.Value)
+                                .Select(r => (int?)r.IdCompetencia)
+                                .FirstOrDefault();
                         }
                         else if (!string.IsNullOrWhiteSpace(compTxt))
                         {
-                            // Competencia completa => sumar horas de todos sus resultados
                             var compBD = competenciasBD.FirstOrDefault(c =>
                                 Normalizar(c.Nombre) == Normalizar(compTxt));
 
                             if (compBD != null)
                             {
+                                idCompetencia = compBD.IdCompetencia;
+
                                 var idsResComp = resultadosBD
                                     .Where(r => r.IdCompetencia == compBD.IdCompetencia)
                                     .Select(r => r.IdResultado)
@@ -889,77 +937,115 @@ namespace EjemploHorarios.Controllers
                             }
                         }
 
-                        // =========================
-                        // 3.3 Fallback a Diseño_Curricular
-                        // =========================
-                        if (horasRequeridas <= 0)
+                        // ✅ ACUMULAR horas por RESULTADO o por COMPETENCIA
+                        if (idResultado.HasValue)
                         {
-                            var dc = db.Diseño_Curricular.FirstOrDefault(x =>
-                                x.IdFicha == ficha.IdFicha &&
-                                Normalizar(x.Competencia) == Normalizar(compTxt) &&
-                                Normalizar(x.Resultado) == Normalizar(resTxt));
+                            int idRes = idResultado.Value;
 
-                            horasRequeridas = dc?.Duracion ?? 0;
+                            if (!acumuladoProgPorResultado.ContainsKey(idRes))
+                                acumuladoProgPorResultado[idRes] = 0;
+                            acumuladoProgPorResultado[idRes] += horasProgramadas;
+
+                            if (!acumuladoReqPorResultado.ContainsKey(idRes))
+                                acumuladoReqPorResultado[idRes] = horasRequeridas;
+
+                            textoPorResultado[idRes] = (compTxt, resTxt);
+                        }
+                        else if (idCompetencia.HasValue)
+                        {
+                            int idComp = idCompetencia.Value;
+
+                            if (!acumuladoProgPorCompetencia.ContainsKey(idComp))
+                                acumuladoProgPorCompetencia[idComp] = 0;
+                            acumuladoProgPorCompetencia[idComp] += horasProgramadas;
+
+                            if (!acumuladoReqPorCompetencia.ContainsKey(idComp))
+                                acumuladoReqPorCompetencia[idComp] = horasRequeridas;
+
+                            textoPorCompetencia[idComp] = compTxt;
                         }
 
-                        // =========================
-                        // 3.4 Guardar Asignacion_horario
-                        // =========================
+
                         db.Asignacion_horario.Add(new Asignacion_horario
                         {
                             Dia = a.dia,
-                            HoraDesde = d,
-                            HoraHasta = h,
-                            IdInstructor = a.instructorId,
+                            HoraDesde = desde,
+                            HoraHasta = hasta,
+                            IdInstructor = a.instructorId.Value,  // 👈 .Value porque ya filtramos los null
                             IdFicha = ficha.IdFicha,
                             HorasProgramadas = horasProgramadas,
                             HorasTotales = horasRequeridas
                         });
 
-                        // =========================
-                        // 3.5 Guardar HorarioInstructor con IdResultado
-                        // =========================
                         db.HorarioInstructor.Add(new HorarioInstructor
                         {
-                            IdInstructor = a.instructorId,
+                            IdInstructor = a.instructorId.Value,
                             IdFicha = ficha.IdFicha,
                             Id_Horario = horarioNuevo.Id_Horario,
                             Dia = a.dia,
-                            HoraDesde = d,
-                            HoraHasta = h,
+                            HoraDesde = desde,
+                            HoraHasta = hasta,
                             Competencia = string.IsNullOrWhiteSpace(compTxt) ? null : compTxt,
                             Resultado = string.IsNullOrWhiteSpace(resTxt) ? null : resTxt,
-                            IdResultado = idResultado
+                            IdResultado = idResultado,
+                            IdCompetencia = idCompetencia
                         });
-
-                        // =========================
-                        // 3.6 Pendientes
-                        // =========================
-                        if (horasRequeridas > 0 && horasProgramadas < horasRequeridas)
-                        {
-                            pendientes.Add(new
-                            {
-                                Competencia = compTxt,
-                                Resultado = resTxt,
-                                HorasFaltantes = horasRequeridas - horasProgramadas
-                            });
-                        }
                     }
 
                     db.SaveChanges();
 
-                    // =========================
-                    // 4) Guardar pendientes JSON
-                    // =========================
+                    // ✅ RECONSTRUIR pendientes reales (acumulados)
+                    pendientes = new List<object>();
+
+                    // Pendientes por RESULTADO
+                    foreach (var kv in acumuladoReqPorResultado)
+                    {
+                        int idRes = kv.Key;
+                        int req = kv.Value;
+                        int prog = acumuladoProgPorResultado.TryGetValue(idRes, out var p) ? p : 0;
+
+                        if (req > prog)
+                        {
+                            var txt = textoPorResultado[idRes];
+                            pendientes.Add(new
+                            {
+                                Tipo = "RESULTADO",
+                                Competencia = txt.comp,
+                                Resultado = txt.res,
+                                HorasFaltantes = req - prog,
+                                TrimestreAcad = trimestreSolicitado, // ✅ trimestre al que pertenecen
+                                AnioHorario = anioReal
+                            });
+                        }
+                    }
+
+                    // Pendientes por COMPETENCIA completa
+                    foreach (var kv in acumuladoReqPorCompetencia)
+                    {
+                        int idComp = kv.Key;
+                        int req = kv.Value;
+                        int prog = acumuladoProgPorCompetencia.TryGetValue(idComp, out var p) ? p : 0;
+
+                        if (req > prog)
+                        {
+                            pendientes.Add(new
+                            {
+                                Tipo = "COMPETENCIA",
+                                Competencia = textoPorCompetencia[idComp],
+                                Resultado = (string)null,
+                                HorasFaltantes = req - prog,
+                                TrimestreAcad = trimestreSolicitado, // ✅ trimestre
+                                AnioHorario = anioReal
+                            });
+                        }
+                    }
+
                     horarioNuevo.CompetenciasPendientes =
                         pendientes.Any() ? JsonConvert.SerializeObject(pendientes) : null;
 
                     db.Entry(horarioNuevo).State = EntityState.Modified;
                     db.SaveChanges();
 
-                    // =========================
-                    // 5) Actualizar trimestre ficha
-                    // =========================
                     ficha.Trimestre = Math.Min(7, trimestreSolicitado);
                     db.Entry(ficha).State = EntityState.Modified;
                     db.SaveChanges();
@@ -967,6 +1053,29 @@ namespace EjemploHorarios.Controllers
                     tx.Commit();
                     return Json(new { ok = true, msg = "✅ Horario creado correctamente." });
                 }
+                catch (DbEntityValidationException ex)
+                {
+                    tx.Rollback();
+
+                    var errores = ex.EntityValidationErrors
+                        .SelectMany(evr => evr.ValidationErrors.Select(ve => new
+                        {
+                            Entidad = evr.Entry.Entity.GetType().Name,
+                            Propiedad = ve.PropertyName,
+                            Error = ve.ErrorMessage
+                        }))
+                        .ToList();
+
+                    var detalle = string.Join(" | ", errores.Select(e =>
+                        $"Entidad: {e.Entidad}, Propiedad: {e.Propiedad}, Error: {e.Error}"));
+
+                    return Json(new
+                    {
+                        ok = false,
+                        msg = "❌ Error de validación: " + detalle
+                    });
+                }
+
                 catch (Exception ex)
                 {
                     tx.Rollback();
@@ -980,6 +1089,12 @@ namespace EjemploHorarios.Controllers
             }
         }
 
+
+        private string LimpiarTexto(string t)
+        {
+            if (string.IsNullOrWhiteSpace(t) || t == "undefined") return "";
+            return t.Trim();
+        }
 
 
 
@@ -1004,42 +1119,29 @@ namespace EjemploHorarios.Controllers
                         h.IdFicha,
                         CodigoFicha = f.CodigoFicha,
                         ProgramaNombre = p.DenominacionPrograma,
-
                         FechaInicio = f.FechaInFicha,
                         FechaFin = f.FechaFinFicha,
-
-                        TrimestreFicha = f.Trimestre,       // Trimestre REAL de la ficha (1–7)
-                        TrimestreAnio = h.Año_Horario,      // 🔥 ESTE ES EL TRIMESTRE DEL AÑO QUE QUIERES
-                        TrimestreAcademico = h.Trimestre_Año,  // 1–7
-
+                        TrimestreFicha = f.Trimestre,        // 1–7
+                        AnioHorario = h.Año_Horario,         // ✅ año real
+                        TrimestreAcademico = h.Trimestre_Año,// 1–7
                         FechaCreacion = h.Fecha_Creacion,
                         InstructorLider = inst.NombreCompletoInstructor
                     };
 
-
-                // Formateo fuera de LINQ to Entities
-                var data = query
-      .AsEnumerable()
-      .Select(x => new
-      {
-          x.Id_Horario,
-          x.IdFicha,
-
-          CodigoFicha = x.CodigoFicha?.ToString(),
-          x.ProgramaNombre,
-
-          FechaInicioFicha = x.FechaInicio?.ToString("yyyy-MM-dd"),
-          FechaFinFicha = x.FechaFin?.ToString("yyyy-MM-dd"),
-
-          TrimestreFicha = x.TrimestreFicha,     // 1–7
-          Trimestre_Año = x.TrimestreAnio,       // 🔥 TRIMESTRE DEL AÑO (1–4)
-
-          FechaCreacionHorario = x.FechaCreacion?.ToString("yyyy-MM-dd HH:mm"),
-
-          InstructorLider = x.InstructorLider ?? "Sin asignar"
-      })
-      .ToList();
-
+                var data = query.AsEnumerable().Select(x => new
+                {
+                    x.Id_Horario,
+                    x.IdFicha,
+                    CodigoFicha = x.CodigoFicha?.ToString(),
+                    x.ProgramaNombre,
+                    FechaInicioFicha = x.FechaInicio?.ToString("yyyy-MM-dd"),
+                    FechaFinFicha = x.FechaFin?.ToString("yyyy-MM-dd"),
+                    TrimestreFicha = x.TrimestreFicha,
+                    Año_Horario = x.AnioHorario,
+                    TrimestreAcademico = x.TrimestreAcademico,
+                    FechaCreacionHorario = x.FechaCreacion?.ToString("yyyy-MM-dd HH:mm"),
+                    InstructorLider = x.InstructorLider ?? "Sin asignar"
+                }).ToList();
 
                 return Json(new { ok = true, data }, JsonRequestBehavior.AllowGet);
             }
@@ -1048,9 +1150,6 @@ namespace EjemploHorarios.Controllers
                 return Json(new { ok = false, msg = ex.Message }, JsonRequestBehavior.AllowGet);
             }
         }
-
-
-
 
 
 
@@ -1223,7 +1322,7 @@ namespace EjemploHorarios.Controllers
             // =========================
             int totalReq = trazabilidad.Sum(x => x.HorasRequeridas);
             int totalProg = trazabilidad.Sum(x => x.HorasProgramadas);
-            int totalPend = trazabilidad.Sum(x => x.HorasPendientes);
+            int totalPend = trazabilidad.Sum(x => Math.Max(x.HorasRequeridas - x.HorasProgramadas, 0));
 
             // =========================
             // 6) VM FINAL
@@ -1355,16 +1454,12 @@ namespace EjemploHorarios.Controllers
         }
 
 
-
-
         public ActionResult CrearSiguienteHorario(int idFicha, int trimestre)
         {
             try
             {
-                // 🔹 Calculamos el trimestre siguiente
                 int trimestreSiguiente = (trimestre < 7) ? trimestre + 1 : 7;
 
-                // 🔹 Obtenemos la ficha
                 var ficha = db.Ficha
                     .Include("Programa_Formacion")
                     .FirstOrDefault(f => f.IdFicha == idFicha);
@@ -1372,41 +1467,24 @@ namespace EjemploHorarios.Controllers
                 if (ficha == null)
                     return HttpNotFound("Ficha no encontrada.");
 
-                // 🔹 Cargamos los registros del diseño curricular asociados a la ficha
-                var registros = db.Diseño_Curricular
-                    .Where(c => c.IdFicha == idFicha)
-                    .ToList();
+                var competenciasTrim = FiltrarCompetenciasPorTrimestre(idFicha, trimestreSiguiente);
 
-                // 🔹 Filtramos por el trimestre siguiente directamente en la tabla
-                var resultadosTrimestre = registros
-                    .Where(r =>
-                        (trimestreSiguiente == 1 && (r.HrTrimI ?? 0) > 0) ||
-                        (trimestreSiguiente == 2 && (r.HrTrimII ?? 0) > 0) ||
-                        (trimestreSiguiente == 3 && (r.HrTrimIII ?? 0) > 0) ||
-                        (trimestreSiguiente == 4 && (r.HrTrimIV ?? 0) > 0) ||
-                        (trimestreSiguiente == 5 && (r.HrTrimV ?? 0) > 0) ||
-                        (trimestreSiguiente == 6 && (r.HrTrimVI ?? 0) > 0) ||
-                        (trimestreSiguiente == 7 && (r.HrTrimVII ?? 0) > 0)
-                    )
-                    .OrderBy(r => r.Competencia)
-                    .ThenBy(r => r.Resultado)
-                    .ToList();
-
-                // 🔹 Enviamos información de la ficha al ViewBag
                 ViewBag.IdFicha = idFicha;
                 ViewBag.CodigoFicha = ficha.CodigoFicha;
                 ViewBag.Programa = ficha.Programa_Formacion?.DenominacionPrograma ?? "Sin programa";
                 ViewBag.TrimestreActual = trimestre;
                 ViewBag.TrimestreSiguiente = trimestreSiguiente;
 
-                return View(resultadosTrimestre); // 👈 directamente la lista de Diseño_Curricular
+                // ✅ ahora enviamos CompetenciaDTO en vez de Diseño_Curricular
+                return View(competenciasTrim);
             }
             catch (Exception ex)
             {
                 ViewBag.Error = "Error al cargar el siguiente horario: " + ex.Message;
-                return View(new List<Diseño_Curricular>());
+                return View(new List<CompetenciaDTO>());
             }
         }
+
 
         private decimal CalcularHorasTrabajadas(TimeSpan desde, TimeSpan hasta)
         {
@@ -1546,8 +1624,9 @@ namespace EjemploHorarios.Controllers
                 if (ultimoHorario == null || string.IsNullOrWhiteSpace(ultimoHorario.CompetenciasPendientes))
                     return Json(new { ok = true, pendientes = new List<object>() }, JsonRequestBehavior.AllowGet);
 
-                var pendientes = JsonConvert.DeserializeObject<List<object>>(ultimoHorario.CompetenciasPendientes)
-                                 ?? new List<object>();
+                var pendientes = JsonConvert.DeserializeObject<List<dynamic>>(ultimoHorario.CompetenciasPendientes)
+                                 ?? new List<dynamic>();
+
 
                 return Json(new { ok = true, pendientes }, JsonRequestBehavior.AllowGet);
             }
@@ -1558,17 +1637,65 @@ namespace EjemploHorarios.Controllers
             }
         }
 
-        private static string Normalizar(string t)
+        private Competencia BuscarOCrearCompetencia(int idPrograma, string nombre, List<Competencia> cache)
         {
-            if (string.IsNullOrWhiteSpace(t)) return "";
+            string nomNorm = Normalizar(nombre);
 
-            t = t.Trim().ToUpperInvariant();
+            var comp = cache.FirstOrDefault(c =>
+                c.IdPrograma == idPrograma && Normalizar(c.Nombre) == nomNorm);
 
-            while (t.Contains("  "))
-                t = t.Replace("  ", " ");
+            if (comp != null) return comp;
 
-            // quitar tildes
-            var normalized = t.Normalize(System.Text.NormalizationForm.FormD);
+            comp = new Competencia
+            {
+                IdPrograma = idPrograma,
+                Nombre = nombre.Trim(),
+                DuracionTotal = null
+            };
+
+            db.Competencia.Add(comp);
+            db.SaveChanges();
+
+            cache.Add(comp);
+            return comp;
+        }
+
+        private ResultadoAprendizaje BuscarOCrearResultado(int idCompetencia, string descripcion, List<ResultadoAprendizaje> cache)
+        {
+            string resNorm = Normalizar(descripcion);
+
+            var res = cache.FirstOrDefault(r =>
+                r.IdCompetencia == idCompetencia && Normalizar(r.Descripcion) == resNorm);
+
+            if (res != null) return res;
+
+            res = new ResultadoAprendizaje
+            {
+                IdCompetencia = idCompetencia,
+                Descripcion = descripcion.Trim(),
+                DuracionResultado = 0
+            };
+
+            db.ResultadoAprendizaje.Add(res);
+            db.SaveChanges();
+
+            cache.Add(res);
+            return res;
+        }
+
+
+        private string Normalizar(string texto)
+        {
+            if (string.IsNullOrWhiteSpace(texto)) return "";
+
+            texto = texto.Trim().ToUpperInvariant();
+
+            // 1) Quitar dobles espacios
+            while (texto.Contains("  "))
+                texto = texto.Replace("  ", " ");
+
+            // 2) Quitar tildes / diacríticos
+            var normalized = texto.Normalize(System.Text.NormalizationForm.FormD);
             var sb = new System.Text.StringBuilder();
 
             foreach (char c in normalized)
@@ -1578,8 +1705,47 @@ namespace EjemploHorarios.Controllers
                     sb.Append(c);
             }
 
+            // 3) Retornar limpio
             return sb.ToString().Trim();
         }
+
+        private (DateTime Inicio, DateTime Fin) GetRangoTrimestreAnio(int anio, int trimestre)
+        {
+            int mesInicio;
+            switch (trimestre)
+            {
+                case 1: mesInicio = 1; break;   // Ene–Mar
+                case 2: mesInicio = 4; break;   // Abr–Jun
+                case 3: mesInicio = 7; break;   // Jul–Sep
+                case 4: mesInicio = 10; break;  // Oct–Dic
+                default: throw new ArgumentOutOfRangeException(nameof(trimestre));
+            }
+
+            var inicio = new DateTime(anio, mesInicio, 1);
+            var fin = inicio.AddMonths(3).AddDays(-1);
+            return (inicio, fin);
+        }
+
+        /// <summary>
+        /// Calcula en qué trimestre de la ficha (1–7) se encuentra
+        /// en la fecha de inicio del trimestre del año.
+        /// </summary>
+        private int CalcularTrimestreFicha(DateTime fechaInicioFicha, DateTime inicioTrimestreAnio)
+        {
+            if (inicioTrimestreAnio < fechaInicioFicha)
+                return 0; // el trimestre del año comienza antes de que empiece la ficha
+
+            var meses = ((inicioTrimestreAnio.Year - fechaInicioFicha.Year) * 12)
+                        + (inicioTrimestreAnio.Month - fechaInicioFicha.Month);
+
+            var trimestreFicha = (meses / 3) + 1;
+
+            if (trimestreFicha < 1) trimestreFicha = 1;
+            if (trimestreFicha > 7) trimestreFicha = 7;
+
+            return trimestreFicha;
+        }
+
 
         private int? ResolverIdResultadoSeguro(
     string competenciaTxt,

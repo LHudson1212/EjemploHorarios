@@ -20,7 +20,7 @@ namespace EjemploHorarios.Models
         public int Horas { get; set; }
         public int IdFicha { get; set; }
     
-        public virtual ResultadoAprendizaje ResultadoAprendizaje { get; set; }
         public virtual Ficha Ficha { get; set; }
+        public virtual ResultadoAprendizaje ResultadoAprendizaje { get; set; }
     }
 }

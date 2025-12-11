@@ -123,7 +123,7 @@
           <Property Name="IdFicha" Type="int" Nullable="false" />
           <Property Name="Id_Asignacion" Type="int" />
           <Property Name="IdInstructorLider" Type="int" />
-          <Property Name="CompetenciasPendientes" Type="varchar" MaxLength="255" />
+          <Property Name="CompetenciasPendientes" Type="nvarchar(max)" />
         </EntityType>
         <EntityType Name="HorarioInstructor">
           <Key>
@@ -249,6 +249,7 @@
           <Key>
             <PropertyRef Name="IdResultado" />
             <PropertyRef Name="TrimestreAcad" />
+            <PropertyRef Name="IdFicha" />
           </Key>
           <Property Name="IdResultado" Type="int" Nullable="false" />
           <Property Name="TrimestreAcad" Type="int" Nullable="false" />
@@ -908,7 +909,7 @@
           <NavigationProperty Name="Ficha" Relationship="Self.FK_Horario_Ficha" FromRole="Horario" ToRole="Ficha" />
           <Property Name="IdInstructorLider" Type="Int32" />
           <NavigationProperty Name="Instructor" Relationship="SenaPlanningModel.FK_Horario_InstructorLider" FromRole="Horario" ToRole="Instructor" />
-          <Property Name="CompetenciasPendientes" Type="String" MaxLength="255" FixedLength="false" Unicode="false" />
+          <Property Name="CompetenciasPendientes" Type="String" MaxLength="Max" FixedLength="false" Unicode="true" />
           <NavigationProperty Name="Diseño_Curricular" Relationship="SenaPlanningModel.FK_DisenioHorario" FromRole="Horario" ToRole="Diseño_Curricular" />
           <NavigationProperty Name="HorarioInstructor" Relationship="SenaPlanningModel.FK_HorarioInstructor_Horario" FromRole="Horario" ToRole="HorarioInstructor" />
         </EntityType>
@@ -1330,7 +1331,6 @@
           <EntitySet Name="Competencia" EntityType="SenaPlanningModel.Competencia" />
           <EntitySet Name="InstructorResultado" EntityType="SenaPlanningModel.InstructorResultado" />
           <EntitySet Name="ResultadoAprendizaje" EntityType="SenaPlanningModel.ResultadoAprendizaje" />
-          <EntitySet Name="ResultadoTrimestre" EntityType="SenaPlanningModel.ResultadoTrimestre" />
           <EntitySet Name="sysdiagrams" EntityType="SenaPlanningModel.sysdiagrams" />
           <AssociationSet Name="FK_Competencia_Programa" Association="SenaPlanningModel.FK_Competencia_Programa">
             <End Role="Programa_Formacion" EntitySet="Programa_Formacion" />
@@ -1356,15 +1356,20 @@
             <End Role="ResultadoAprendizaje" EntitySet="ResultadoAprendizaje" />
             <End Role="InstructorResultado" EntitySet="InstructorResultado" />
           </AssociationSet>
-          <AssociationSet Name="FK_ResultadoTrimestre_Resultado" Association="SenaPlanningModel.FK_ResultadoTrimestre_Resultado">
-            <End Role="ResultadoAprendizaje" EntitySet="ResultadoAprendizaje" />
-            <End Role="ResultadoTrimestre" EntitySet="ResultadoTrimestre" />
-          </AssociationSet>
+          <EntitySet Name="ResultadoTrimestres" EntityType="SenaPlanningModel.ResultadoTrimestre" />
           <AssociationSet Name="FK_ResultadoTrimestre_Ficha" Association="SenaPlanningModel.FK_ResultadoTrimestre_Ficha">
             <End Role="Ficha" EntitySet="Ficha" />
-            <End Role="ResultadoTrimestre" EntitySet="ResultadoTrimestre" />
+            <End Role="ResultadoTrimestre" EntitySet="ResultadoTrimestres" />
           </AssociationSet>
-        </EntityContainer>
+          <AssociationSet Name="FK_ResultadoTrimestre_Resultado" Association="SenaPlanningModel.FK_ResultadoTrimestre_Resultado">
+            <End Role="ResultadoAprendizaje" EntitySet="ResultadoAprendizaje" />
+            <End Role="ResultadoTrimestre" EntitySet="ResultadoTrimestres" />
+          </AssociationSet>
+          <AssociationSet Name="FK_ResultadoTrimestre_ResultadoAprendizaje" Association="SenaPlanningModel.FK_ResultadoTrimestre_ResultadoAprendizaje">
+            <End Role="ResultadoAprendizaje" EntitySet="ResultadoAprendizaje" />
+            <End Role="ResultadoTrimestre" EntitySet="ResultadoTrimestres" />
+          </AssociationSet>
+          </EntityContainer>
         <Association Name="FK_Horario_InstructorLider">
           <End Type="SenaPlanningModel.Instructor" Role="Instructor" Multiplicity="0..1" />
           <End Type="SenaPlanningModel.Horario" Role="Horario" Multiplicity="*" />
@@ -1486,21 +1491,9 @@
           <NavigationProperty Name="Competencia" Relationship="SenaPlanningModel.FK_ResultadoAprendizaje_Competencia" FromRole="ResultadoAprendizaje" ToRole="Competencia" />
           <NavigationProperty Name="HorarioInstructor" Relationship="SenaPlanningModel.FK_HorarioInstructor_Resultado" FromRole="ResultadoAprendizaje" ToRole="HorarioInstructor" />
           <NavigationProperty Name="InstructorResultado" Relationship="SenaPlanningModel.FK_InstructorResultado_Resultado" FromRole="ResultadoAprendizaje" ToRole="InstructorResultado" />
-          <NavigationProperty Name="ResultadoTrimestre" Relationship="SenaPlanningModel.FK_ResultadoTrimestre_Resultado" FromRole="ResultadoAprendizaje" ToRole="ResultadoTrimestre" />
-        </EntityType>
-        <EntityType Name="ResultadoTrimestre">
-          <Key>
-            <PropertyRef Name="IdResultado" />
-            <PropertyRef Name="TrimestreAcad" />
-          </Key>
-          <Property Name="IdResultado" Type="Int32" Nullable="false" />
-          <Property Name="TrimestreAcad" Type="Int32" Nullable="false" />
-          <Property Name="HorasPlaneadas" Type="Int32" Nullable="false" />
-          <NavigationProperty Name="ResultadoAprendizaje" Relationship="SenaPlanningModel.FK_ResultadoTrimestre_Resultado" FromRole="ResultadoTrimestre" ToRole="ResultadoAprendizaje" />
-          <Property Name="Horas" Type="Int32" Nullable="false" />
-          <Property Name="IdFicha" Type="Int32" Nullable="false" />
-          <NavigationProperty Name="Ficha" Relationship="SenaPlanningModel.FK_ResultadoTrimestre_Ficha" FromRole="ResultadoTrimestre" ToRole="Ficha" />
-        </EntityType>
+          <NavigationProperty Name="ResultadoTrimestres" Relationship="SenaPlanningModel.FK_ResultadoTrimestre_Resultado" FromRole="ResultadoAprendizaje" ToRole="ResultadoTrimestre" />
+          <NavigationProperty Name="ResultadoTrimestres1" Relationship="SenaPlanningModel.FK_ResultadoTrimestre_ResultadoAprendizaje" FromRole="ResultadoAprendizaje" ToRole="ResultadoTrimestre" />
+          </EntityType>
         <EntityType Name="sysdiagrams">
           <Key>
             <PropertyRef Name="diagram_id" />
@@ -1583,18 +1576,20 @@
             </Dependent>
           </ReferentialConstraint>
         </Association>
-        <Association Name="FK_ResultadoTrimestre_Resultado">
-          <End Type="SenaPlanningModel.ResultadoAprendizaje" Role="ResultadoAprendizaje" Multiplicity="1" />
-          <End Type="SenaPlanningModel.ResultadoTrimestre" Role="ResultadoTrimestre" Multiplicity="*" />
-          <ReferentialConstraint>
-            <Principal Role="ResultadoAprendizaje">
-              <PropertyRef Name="IdResultado" />
-            </Principal>
-            <Dependent Role="ResultadoTrimestre">
-              <PropertyRef Name="IdResultado" />
-            </Dependent>
-          </ReferentialConstraint>
-        </Association>
+        <EntityType Name="ResultadoTrimestre">
+          <Key>
+            <PropertyRef Name="IdResultado" />
+            <PropertyRef Name="TrimestreAcad" />
+            <PropertyRef Name="IdFicha" />
+          </Key>
+          <Property Name="IdResultado" Type="Int32" Nullable="false" />
+          <Property Name="TrimestreAcad" Type="Int32" Nullable="false" />
+          <Property Name="HorasPlaneadas" Type="Int32" Nullable="false" />
+          <Property Name="Horas" Type="Int32" Nullable="false" />
+          <Property Name="IdFicha" Type="Int32" Nullable="false" />
+          <NavigationProperty Name="Ficha" Relationship="SenaPlanningModel.FK_ResultadoTrimestre_Ficha" FromRole="ResultadoTrimestre" ToRole="Ficha" />
+          <NavigationProperty Name="ResultadoAprendizaje" Relationship="SenaPlanningModel.FK_ResultadoTrimestre_Resultado" FromRole="ResultadoTrimestre" ToRole="ResultadoAprendizaje" />
+        </EntityType>
         <Association Name="FK_ResultadoTrimestre_Ficha">
           <End Type="SenaPlanningModel.Ficha" Role="Ficha" Multiplicity="1" />
           <End Type="SenaPlanningModel.ResultadoTrimestre" Role="ResultadoTrimestre" Multiplicity="*" />
@@ -1607,7 +1602,31 @@
             </Dependent>
           </ReferentialConstraint>
         </Association>
-      </Schema>
+        <Association Name="FK_ResultadoTrimestre_Resultado">
+          <End Type="SenaPlanningModel.ResultadoAprendizaje" Role="ResultadoAprendizaje" Multiplicity="1" />
+          <End Type="SenaPlanningModel.ResultadoTrimestre" Role="ResultadoTrimestre" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="ResultadoAprendizaje">
+              <PropertyRef Name="IdResultado" />
+            </Principal>
+            <Dependent Role="ResultadoTrimestre">
+              <PropertyRef Name="IdResultado" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_ResultadoTrimestre_ResultadoAprendizaje">
+          <End Type="SenaPlanningModel.ResultadoAprendizaje" Role="ResultadoAprendizaje" Multiplicity="1" />
+          <End Type="SenaPlanningModel.ResultadoTrimestre" Role="ResultadoTrimestre" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="ResultadoAprendizaje">
+              <PropertyRef Name="IdResultado" />
+            </Principal>
+            <Dependent Role="ResultadoTrimestre">
+              <PropertyRef Name="IdResultado" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        </Schema>
     </edmx:ConceptualModels>
     <!-- C-S mapping content -->
     <edmx:Mappings>
@@ -1884,17 +1903,6 @@
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
-          <EntitySetMapping Name="ResultadoTrimestre">
-            <EntityTypeMapping TypeName="SenaPlanningModel.ResultadoTrimestre">
-              <MappingFragment StoreEntitySet="ResultadoTrimestre">
-                <ScalarProperty Name="IdFicha" ColumnName="IdFicha" />
-                <ScalarProperty Name="Horas" ColumnName="Horas" />
-                <ScalarProperty Name="HorasPlaneadas" ColumnName="HorasPlaneadas" />
-                <ScalarProperty Name="TrimestreAcad" ColumnName="TrimestreAcad" />
-                <ScalarProperty Name="IdResultado" ColumnName="IdResultado" />
-              </MappingFragment>
-            </EntityTypeMapping>
-          </EntitySetMapping>
           <EntitySetMapping Name="sysdiagrams">
             <EntityTypeMapping TypeName="SenaPlanningModel.sysdiagrams">
               <MappingFragment StoreEntitySet="sysdiagrams">
@@ -1903,6 +1911,17 @@
                 <ScalarProperty Name="diagram_id" ColumnName="diagram_id" />
                 <ScalarProperty Name="principal_id" ColumnName="principal_id" />
                 <ScalarProperty Name="name" ColumnName="name" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="ResultadoTrimestres">
+            <EntityTypeMapping TypeName="SenaPlanningModel.ResultadoTrimestre">
+              <MappingFragment StoreEntitySet="ResultadoTrimestre">
+                <ScalarProperty Name="IdFicha" ColumnName="IdFicha" />
+                <ScalarProperty Name="Horas" ColumnName="Horas" />
+                <ScalarProperty Name="HorasPlaneadas" ColumnName="HorasPlaneadas" />
+                <ScalarProperty Name="TrimestreAcad" ColumnName="TrimestreAcad" />
+                <ScalarProperty Name="IdResultado" ColumnName="IdResultado" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
