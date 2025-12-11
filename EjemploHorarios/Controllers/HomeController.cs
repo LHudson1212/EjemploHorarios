@@ -1250,33 +1250,36 @@ namespace EjemploHorarios.Controllers
                 }
             ).ToList();
 
-
-            // =========================
-            // 2) HORAS PROGRAMADAS SOLO DE ESTE HORARIO
-            // =========================
+            // 2) DETALLE COMPLETO DEL HORARIO (franjas)
             var detalleHorario = db.HorarioInstructor
                 .Where(hi => hi.Id_Horario == idHorario)
                 .Include("Instructor")
-                .ToList(); ;
+                .ToList();
 
-            // diccionario: (Competencia, Resultado) -> horasProgramadas
-            var progDict = detalleHorario
-                .GroupBy(x => new { x.Competencia, x.Resultado })
+            // ============================
+            // A) HORAS PROGRAMADAS POR (COMPETENCIA, RESULTADO)
+            // ============================
+            var progPorResultado = detalleHorario
+                .Where(h => !string.IsNullOrWhiteSpace(h.Competencia))
+                .GroupBy(h => new { h.Competencia, h.Resultado })
                 .ToDictionary(
                     g => g.Key,
-                    g => (int)Math.Round(g.Sum(a =>
-                        (a.HoraHasta - a.HoraDesde).TotalHours * SEMANAS))
+                    g => (int)Math.Round(
+                            g.Sum(a => (a.HoraHasta - a.HoraDesde).TotalHours * SEMANAS)
+                         )
                 );
 
-            // =========================
             // 3) TRAZABILIDAD POR RESULTADO
-            // =========================
             var trazabilidad = requeridas
                 .GroupBy(r => new { r.Competencia, r.Resultado })
                 .Select(g =>
                 {
                     int req = g.Sum(x => x.HorasReq);
-                    int prog = progDict.TryGetValue(g.Key, out var p) ? p : 0;
+
+                    progPorResultado.TryGetValue(
+                        new { g.Key.Competencia, g.Key.Resultado },
+                        out int prog
+                    );
 
                     return new TrazabilidadResultadoVM
                     {
@@ -1284,6 +1287,7 @@ namespace EjemploHorarios.Controllers
                         Resultado = g.Key.Resultado,
                         HorasRequeridas = req,
                         HorasProgramadas = prog,
+                        // HorasPendientes y HorasExtra se calculan en el VM
                         Porcentaje = req > 0
                             ? Math.Round((decimal)prog * 100m / req, 2)
                             : 0
@@ -1293,40 +1297,60 @@ namespace EjemploHorarios.Controllers
                 .ThenBy(x => x.Resultado)
                 .ToList();
 
+            // ============================
+            // B) HORAS PROGRAMADAS POR COMPETENCIA (sumando todos los resultados)
+            // ============================
 
-            // =========================
-            // 4) RESUMEN POR COMPETENCIA (sumando resultados)
-            // =========================
-            var competenciasResumen = trazabilidad
-                .GroupBy(t => t.Competencia)
-                .Select(g =>
+            // requeridas por competencia
+            var reqPorComp = requeridas
+                .GroupBy(r => r.Competencia)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Sum(x => x.HorasReq)
+                );
+
+            // programadas por competencia (todas las franjas de esa competencia)
+            var progPorComp = detalleHorario
+                .Where(h => !string.IsNullOrWhiteSpace(h.Competencia))
+                .GroupBy(h => h.Competencia)
+                .ToDictionary(
+                    g => g.Key,
+                    g => (int)Math.Round(
+                            g.Sum(a => (a.HoraHasta - a.HoraDesde).TotalHours * SEMANAS)
+                         )
+                );
+
+            var competenciasResumen = reqPorComp
+                .Select(kv =>
                 {
-                    int req = g.Sum(x => x.HorasRequeridas);
-                    int prog = g.Sum(x => x.HorasProgramadas);
+                    string comp = kv.Key;
+                    int req = kv.Value;
+                    progPorComp.TryGetValue(comp, out int prog);
 
                     return new CompetenciaResumenVM
                     {
-                        Competencia = g.Key,
+                        Competencia = comp,
                         HorasRequeridas = req,
                         HorasProgramadas = prog,
+                        // HorasPendientes y HorasExtra se calculan en el VM
                         Porcentaje = req > 0
                             ? Math.Round((decimal)prog * 100m / req, 2)
                             : 0
                     };
                 })
-                .OrderBy(x => x.Competencia)
+                .OrderBy(c => c.Competencia)
                 .ToList();
 
-            // =========================
-            // 5) TOTALES GENERALES
-            // =========================
-            int totalReq = trazabilidad.Sum(x => x.HorasRequeridas);
-            int totalProg = trazabilidad.Sum(x => x.HorasProgramadas);
-            int totalPend = trazabilidad.Sum(x => Math.Max(x.HorasRequeridas - x.HorasProgramadas, 0));
+            // ============================
+            // C) TOTALES GENERALES (para la tarjeta de arriba)
+            // ============================
+            int totalReq = competenciasResumen.Sum(x => x.HorasRequeridas);
+            int totalProg = competenciasResumen.Sum(x => x.HorasProgramadas);
+            int totalPend = competenciasResumen.Sum(x => x.HorasPendientes);
 
-            // =========================
-            // 6) VM FINAL
-            // =========================
+            // ============================
+            // VM FINAL
+            // ============================
             var vm = new VerHorarioFichaVM
             {
                 IdHorario = idHorario,
@@ -1345,6 +1369,8 @@ namespace EjemploHorarios.Controllers
 
             return View(vm);
         }
+
+
 
 
 
