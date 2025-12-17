@@ -125,9 +125,10 @@
 
             <button class="btn-siguiente"
                     onclick="location.href='@Url.Action("CrearSiguienteHorario","Home",
-                        new { idFicha = Model.IdFicha, trimestre = Model.TrimestreActual })'">
+                        new { idFicha = Model.IdFicha, trimestre = Model.TrimestreActual, anio = Model.AnioHorario })'">
                 <i class="bi bi-plus-circle me-1"></i> Crear siguiente horario
             </button>
+
         </div>
     </div>
 

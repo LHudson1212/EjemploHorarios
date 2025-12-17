@@ -74,15 +74,12 @@ namespace EjemploHorarios.Models.ViewModels
         public int IdFicha { get; set; }
         public string CodigoFicha { get; set; }
         public int TrimestreActual { get; set; }
-
+        public int? AnioHorario { get; set; }
         public List<HorarioInstructor> DetalleHorario { get; set; }
         public List<TrazabilidadResultadoVM> Trazabilidad { get; set; }
-
         // ✅ NUEVO: % por competencia completa
         public List<CompetenciaResumenVM> CompetenciasResumen { get; set; }
-
         public int TotalRequeridas { get; set; }
-
         public int TotalProgramadas { get; set; }
         public int TotalPendientes { get; set; }
 

@@ -767,6 +767,28 @@
         padding-right: .5rem; /* separa del icono */
     }
 
+    .resultado-pendiente {
+        background: #fff3cd !important;
+        border-color: #ffecb5 !important;
+        color: #664d03 !important;
+    }
+
+    .pendiente-orange {
+        background: #ffedd5 !important;
+        border: 1px solid #fdba74 !important;
+        color: #9a3412 !important;
+    }
+
+    .comp-pendiente {
+        border-left: 4px solid #ff9800 !important;
+    }
+
+    .pendiente-naranja {
+        background: #fff7ed !important;
+        border-color: #fb923c !important;
+        color: #9a3412 !important;
+    }
+
 </style>
 
 
@@ -1324,6 +1346,21 @@
     const nextId = (() => { let c = 1; return () => c++; })();
     // 🔥 NECESARIA: almacena horarios reales de otras fichas
     let HORARIOS_GLOBAL = [];
+
+    let PENDIENTES_SET = new Set();
+
+    function normTxt(s) {
+        return (s || "")
+            .toString()
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+            .toUpperCase().trim()
+            .replace(/\s+/g, " ");
+    }
+
+    function pendKey(comp, res) {
+        return `${normTxt(comp)}|${normTxt(res)}`;
+    }
+
 
     // Flag para permitir cerrar el modal cuando nosotros lo cerremos manualmente
     let allowCloseAsignarModal = false;
@@ -2106,7 +2143,7 @@
                     </small>`;
 
 
-                btn.addEventListener("click", () => {
+                btn.addEventListener("click", async () => {
                     inputFicha.value = f.CodigoFicha;
                     hfFichaId.value = f.IdFicha;
                     inputPrograma.value = f.ProgramaNombre;
@@ -2114,11 +2151,21 @@
                     actualizarSiguienteTrimestre();
                     ocultarSugerencias();
 
-                    const trimestreDestino = txtSiguienteTrimestre.value;
+                    // ✅ IMPORTANTÍSIMO: limpiar cache al cambiar de ficha
+                    RESULTADOS_CACHE.clear();
+                    PENDIENTES_SET.clear();
+
+                    const anioSel = selAnio.value.trim();
+                    const trimestreDestino = txtSiguienteTrimestre.value.trim();
+
+                    // ✅ cargar pendientes para pintar naranja desde el primer render
+                    await cargarPendientesAnterior(f.IdFicha, anioSel, trimestreDestino);
+
                     if (typeof cargarCompetenciasFicha === "function") {
-                        cargarCompetenciasFicha(f.IdFicha, trimestreDestino);
+                        await cargarCompetenciasFicha(f.IdFicha, trimestreDestino);
                     }
                 });
+
 
                 fichaSugerencias.appendChild(btn);
             });
@@ -2212,6 +2259,10 @@
                     if (txtSiguienteTrimestre) {
                         txtSiguienteTrimestre.value = data.trimestreDestino;
                     }
+
+                    // ✅ cargar pendientes para que se pinten naranja
+                    await cargarPendientesAnterior(idFicha, anio, String(data.trimestreDestino));
+                    RESULTADOS_CACHE.clear();
                 }
 
                 mostrarCompetenciasCargadas(data.competencias);
@@ -2285,7 +2336,7 @@
                 const compId = `comp_${idx}`;
                 const isOpen = OPEN_COMP_IDS.has(compId);
                 const compTxt = (c.Competencia || "").trim();
-
+                const isPendBlock = !!c._pendientes || /PENDIENTES/i.test(compTxt);
                 const card = document.createElement("div");
                 card.className = "card mb-2 border-0 shadow-sm";
 
@@ -2293,7 +2344,7 @@
                 const resultadosIniciales = Array.isArray(c.Resultados) ? c.Resultados : [];
 
                 card.innerHTML = `
-<div class="card-header d-flex justify-content-between align-items-start bg-white border-start border-4 border-success pointer"
+<div class="card-header d-flex justify-content-between align-items-start bg-white border-start border-4 border-success pointer ${isPendBlock ? "comp-pendiente" : ""}"
      role="button"
      aria-expanded="${isOpen}"
      aria-controls="${compId}">
@@ -2309,7 +2360,7 @@
         <ul class="list-unstyled mb-0">
             ${resultadosIniciales.length
                         ? resultadosIniciales.map(r => `
-                    <li class="resultado-item small text-muted border p-1 mb-1 rounded bg-light"
+                    <li class="resultado-item small text-muted border p-1 mb-1 rounded bg-light ${isPendBlock ? "resultado-pendiente" : ""}"
                         draggable="true"
                         data-competencia="${encodeURIComponent(compTxt)}"
                         data-resultado="${encodeURIComponent(r)}">
@@ -2426,8 +2477,6 @@
 
 
         function pintarResultadosEnUL(ul, competenciaTxt, data) {
-
-            // data puede ser: [{Resultado, HorasRequeridas...}] o ["texto", ...]
             ul.innerHTML = data.map(r => {
                 const texto = (typeof r === "string") ? r : r.Resultado;
 
@@ -2435,23 +2484,22 @@
                 const prog = (typeof r === "string") ? null : (r.HorasProgramadas ?? 0);
                 const pct = (typeof r === "string") ? null : (r.Porcentaje ?? 0);
 
+                // ✅ naranja si viene como pendiente del trimestre anterior
+                const esNaranja = PENDIENTES_SET.has(pendKey(competenciaTxt, texto));
+
                 return `
-        <li class="resultado-item small text-muted border p-1 mb-1 rounded bg-light"
-            draggable="true"
-            data-competencia="${encodeURIComponent(competenciaTxt)}"
-            data-resultado="${encodeURIComponent(texto)}">
-            <i class="bi bi-arrows-move me-1 text-success"></i>
-            ${texto}
-            ${req !== null
-                        ? `<div class="small text-secondary mt-1">
-                       Req: ${req}h · Prog: ${prog}h · ${pct}%
-                   </div>`
-                        : ``
-                    }
-        </li>`;
+                  <li class="resultado-item small text-muted border p-1 mb-1 rounded bg-light ${esNaranja ? "pendiente-naranja" : ""}"
+                      draggable="true"
+                      data-competencia="${encodeURIComponent(competenciaTxt)}"
+                      data-resultado="${encodeURIComponent(texto)}">
+                      <i class="bi bi-arrows-move me-1 text-success"></i>
+                      ${texto}
+                      ${req !== null
+                                    ? `<div class="small text-secondary mt-1">Req: ${req}h · Prog: ${prog}h · ${pct}%</div>`
+                                    : ``}
+                  </li>`;
             }).join("");
         }
-
 
 
         function pintarResumenCompetencia(resumenBox, resumen) {
@@ -2648,6 +2696,46 @@
                     <i class="bi bi-hourglass-split me-1"></i> Cargando competencias...
                 </div>`;
 
+
+            // ✅ Pendientes del trimestre anterior (para programar en el destino)
+            const anioSel = (selAnio?.value || "").trim();
+            const trimestreDestino = (trimestre || "").toString().trim();
+
+            if (!idFicha || !anioSel || !trimestreDestino) {
+                console.warn("Pendientes omitidos: faltan parámetros", { idFicha, anioSel, trimestreDestino });
+            } else {
+                try {
+                    const urlPend = `/Home/GetPendientesParaProximoTrimestre?idFicha=${idFicha}&anio=${anioSel}&trimestreDestino=${trimestreDestino}`;
+                    const respPend = await fetch(urlPend, { headers: { "Accept": "application/json" } });
+                    const jsonPend = await respPend.json();
+
+                    if (jsonPend.ok && Array.isArray(jsonPend.data) && jsonPend.data.length) {
+
+                        // 🔥 IMPORTANTÍSIMO: llenar el set para que pinte naranja
+                        PENDIENTES_SET.clear();
+                        jsonPend.data.forEach(x => {
+                            if (x.Competencia && x.Resultado) {
+                                PENDIENTES_SET.add(pendKey(x.Competencia, x.Resultado));
+                            }
+                        });
+
+                        const resultadosPend = jsonPend.data.map(p =>
+                            `${p.Resultado} — Pendiente (${p.HorasFaltantes ?? 0}h)`
+                        );
+
+                        competencias = [
+                            {
+                                Competencia: "🟧 PENDIENTES DEL TRIMESTRE ANTERIOR",
+                                Resultados: resultadosPend
+                            },
+                            ...competencias
+                        ];
+                    }
+                } catch (e) {
+                    console.warn("Pendientes omitidos:", e.message);
+                }
+            }
+
             try {
                 const url = '@Url.Action("GetCompetenciasPorTrimestre", "Home")'
                     + `?idFicha=${idFicha}&trimestre=${trimestre}`;
@@ -2669,34 +2757,6 @@
 
                 let competencias = json.data;
 
-                try {
-                    const urlPend = '@Url.Action("GetPendientesHorarioAnterior", "Home")'
-                        + `?idFicha=${idFicha}`;
-                    const respPend = await fetch(urlPend, {
-                        headers: { "Accept": "application/json" }
-                    });
-                    const jsonPend = await respPend.json();
-
-                    if (jsonPend.ok && Array.isArray(jsonPend.pendientes) && jsonPend.pendientes.length) {
-
-                        const resultadosPend = jsonPend.pendientes
-                            .filter(p => p && p.Resultado)
-                            .map(p => `${p.Resultado} — Pendiente (${p.HorasFaltantes ?? 0}h)`);
-
-                        if (resultadosPend.length) {
-                            competencias = [
-                                {
-                                    Competencia: "🔥 PENDIENTES DEL TRIMESTRE ANTERIOR",
-                                    Resultados: resultadosPend
-                                },
-                                ...competencias
-                            ];
-                        }
-                    }
-                } catch (e) {
-                    console.warn("Pendientes omitidos:", e.message);
-                }
-
                 competencias = competencias.map(c => ({
                     Competencia: (c.Competencia || "").trim(),
                     Resultados: [...new Set((c.Resultados || []).map(r => (r || "").trim()))] // puede quedar vacío
@@ -2717,6 +2777,23 @@
                     `<div class="text-danger text-center py-2">Error cargando competencias.</div>`;
             }
         }
+
+        async function cargarPendientesAnterior(idFicha, anio, trimestreDestino) {
+            PENDIENTES_SET.clear();
+
+            const url = `/Home/GetPendientesParaProximoTrimestre?idFicha=${encodeURIComponent(idFicha)}&anio=${encodeURIComponent(anio)}&trimestreDestino=${encodeURIComponent(trimestreDestino)}`;
+            const resp = await fetch(url);
+            const json = await resp.json();
+
+            if (!json || !json.ok || !Array.isArray(json.data)) return;
+
+            json.data.forEach(x => {
+                if (x.Resultado) {
+                    PENDIENTES_SET.add(pendKey(x.Competencia, x.Resultado));
+                }
+            });
+        }
+
 
         async function abrirDetalleCompetencia(nombreCompetencia, idFicha, trimestreAcad) {
             try {
@@ -3337,7 +3414,7 @@
                 initDropHints();
                 wireDayDropZones();
                 await cargarHorariosGlobales();
-            })();
+        })();
 
     </script>
 }
