@@ -789,6 +789,27 @@
         color: #9a3412 !important;
     }
 
+
+    <style >
+    .item-competencia {
+        padding: 8px;
+        border-radius: 6px;
+        margin-bottom: 6px;
+        cursor: grab;
+    }
+
+    .pendiente {
+        background-color: #ff9800;
+        color: white;
+        font-weight: bold;
+    }
+
+    .completo {
+        background-color: #4caf50;
+        color: white;
+    }
+</style>
+
 </style>
 
 
@@ -914,7 +935,9 @@
                              class="list-group list-group-flush"
                              aria-live="polite"
                              aria-label="Listado de competencias">
+                            <!-- Aquí se cargan dinámicamente competencias/resultados -->
                         </div>
+
                     </div>
                 </div>
             </aside>
@@ -2679,104 +2702,104 @@
             });
         }
 
+async function cargarCompetenciasFicha(idFicha, trimestreForzado = null) {
 
-        async function cargarCompetenciasFicha(idFicha, trimestreForzado = null) {
+    let trimestre = trimestreForzado
+        ? trimestreForzado
+        : txtTrimestreFicha.value?.trim();
 
-            let trimestre = trimestreForzado
-                ? trimestreForzado
-                : txtTrimestreFicha.value?.trim();
+    if (!idFicha || !trimestre) {
+        showAlert("No se puede cargar competencias sin seleccionar ficha y trimestre.", "warning");
+        return;
+    }
 
-            if (!idFicha || !trimestre) {
-                showAlert("No se puede cargar competencias sin seleccionar ficha y trimestre.", "warning");
-                return;
-            }
+    competenciasList.innerHTML = `
+        <div class="text-muted text-center py-2">
+            <i class="bi bi-hourglass-split me-1"></i> Cargando competencias...
+        </div>`;
 
+    // ===============================
+    // 1. Cargar competencias normales
+    // ===============================
+    let competencias = [];
+
+    try {
+        const url = '@Url.Action("GetCompetenciasPorTrimestre", "Home")'
+            + `?idFicha=${idFicha}&trimestre=${trimestre}`;
+
+        const resp = await fetch(url, {
+            headers: { "Accept": "application/json" },
+            credentials: "same-origin"
+        });
+
+        const json = await resp.json();
+
+        if (!json.ok || !Array.isArray(json.data) || json.data.length === 0) {
             competenciasList.innerHTML = `
                 <div class="text-muted text-center py-2">
-                    <i class="bi bi-hourglass-split me-1"></i> Cargando competencias...
+                    Sin competencias para este trimestre.
                 </div>`;
+            return;
+        }
 
+        competencias = json.data.map(c => ({
+            Competencia: (c.Competencia || "").trim(),
+            Resultados: [...new Set((c.Resultados || []).map(r => (r || "").trim()))]
+        })).filter(c => c.Competencia);
 
-            // ✅ Pendientes del trimestre anterior (para programar en el destino)
-            const anioSel = (selAnio?.value || "").trim();
-            const trimestreDestino = (trimestre || "").toString().trim();
+    } catch (err) {
+        console.error("Error:", err);
+        showAlert("Error cargando competencias: " + err.message, "danger");
+        return;
+    }
 
-            if (!idFicha || !anioSel || !trimestreDestino) {
-                console.warn("Pendientes omitidos: faltan parámetros", { idFicha, anioSel, trimestreDestino });
-            } else {
-                try {
-                    const urlPend = `/Home/GetPendientesParaProximoTrimestre?idFicha=${idFicha}&anio=${anioSel}&trimestreDestino=${trimestreDestino}`;
-                    const respPend = await fetch(urlPend, { headers: { "Accept": "application/json" } });
-                    const jsonPend = await respPend.json();
+    // ==========================================
+    // 2. Cargar pendientes del trimestre anterior
+    // ==========================================
+    const anioSel = (selAnio?.value || "").trim();
+    const trimestreDestino = (trimestre || "").toString().trim();
 
-                    if (jsonPend.ok && Array.isArray(jsonPend.data) && jsonPend.data.length) {
+    if (idFicha && anioSel && trimestreDestino) {
+        try {
+            const urlPend = `/Home/GetPendientesParaProximoTrimestre?idFicha=${idFicha}&anio=${anioSel}&trimestreDestino=${trimestreDestino}`;
+            const respPend = await fetch(urlPend, { headers: { "Accept": "application/json" } });
+            const jsonPend = await respPend.json();
 
-                        // 🔥 IMPORTANTÍSIMO: llenar el set para que pinte naranja
-                        PENDIENTES_SET.clear();
-                        jsonPend.data.forEach(x => {
-                            if (x.Competencia && x.Resultado) {
-                                PENDIENTES_SET.add(pendKey(x.Competencia, x.Resultado));
-                            }
-                        });
+            if (jsonPend.ok && Array.isArray(jsonPend.data) && jsonPend.data.length) {
 
-                        const resultadosPend = jsonPend.data.map(p =>
-                            `${p.Resultado} — Pendiente (${p.HorasFaltantes ?? 0}h)`
-                        );
+                PENDIENTES_SET.clear();
 
-                        competencias = [
-                            {
-                                Competencia: "🟧 PENDIENTES DEL TRIMESTRE ANTERIOR",
-                                Resultados: resultadosPend
-                            },
-                            ...competencias
-                        ];
+                jsonPend.data.forEach(x => {
+                    if (x.Competencia && x.Resultado) {
+                        PENDIENTES_SET.add(pendKey(x.Competencia, x.Resultado));
                     }
-                } catch (e) {
-                    console.warn("Pendientes omitidos:", e.message);
-                }
-            }
-
-            try {
-                const url = '@Url.Action("GetCompetenciasPorTrimestre", "Home")'
-                    + `?idFicha=${idFicha}&trimestre=${trimestre}`;
-
-                const resp = await fetch(url, {
-                    headers: { "Accept": "application/json" },
-                    credentials: "same-origin"
                 });
 
-                const json = await resp.json();
+                const resultadosPend = jsonPend.data.map(p =>
+                    `${p.Resultado} — Pendiente (${p.HorasFaltantes ?? 0}h)`
+                );
 
-                if (!json.ok || !Array.isArray(json.data) || json.data.length === 0) {
-                    competenciasList.innerHTML =
-                        `<div class="text-muted text-center py-2">
-                            Sin competencias para este trimestre.
-                         </div>`;
-                    return;
-                }
-
-                let competencias = json.data;
-
-                competencias = competencias.map(c => ({
-                    Competencia: (c.Competencia || "").trim(),
-                    Resultados: [...new Set((c.Resultados || []).map(r => (r || "").trim()))] // puede quedar vacío
-                })).filter(c => c.Competencia);
-
-                if (!competencias.length) {
-                    competenciasList.innerHTML =
-                        `<div class="text-muted text-center py-2">Sin competencias válidas para mostrar.</div>`;
-                    return;
-                }
-
-                mostrarCompetenciasCargadas(competencias);
-
-            } catch (err) {
-                console.error("Error:", err);
-                showAlert("Error cargando competencias: " + err.message, "danger");
-                competenciasList.innerHTML =
-                    `<div class="text-danger text-center py-2">Error cargando competencias.</div>`;
+                competencias.unshift({
+                    Competencia: "🟧 PENDIENTES DEL TRIMESTRE ANTERIOR",
+                    Resultados: resultadosPend
+                });
             }
+        } catch (e) {
+            console.warn("Pendientes omitidos:", e.message);
         }
+    }
+
+    // ==========================
+    // 3. Mostrar en pantalla
+    // ==========================
+    if (!competencias.length) {
+        competenciasList.innerHTML =
+            `<div class="text-muted text-center py-2">Sin competencias válidas para mostrar.</div>`;
+        return;
+    }
+
+    mostrarCompetenciasCargadas(competencias);
+}
 
         async function cargarPendientesAnterior(idFicha, anio, trimestreDestino) {
             PENDIENTES_SET.clear();

@@ -25,6 +25,8 @@ namespace EjemploHorarios.Models
         public int IdPrograma { get; set; }
         public string Nombre { get; set; }
         public Nullable<int> DuracionTotal { get; set; }
+        public Nullable<bool> Pendiente { get; set; }
+        public Nullable<int> HorasAsignadas { get; set; }
     
         public virtual Programa_Formacion Programa_Formacion { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]

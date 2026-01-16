@@ -55,6 +55,8 @@
           <Property Name="IdPrograma" Type="int" Nullable="false" />
           <Property Name="Nombre" Type="nvarchar" MaxLength="2000" Nullable="false" />
           <Property Name="DuracionTotal" Type="int" />
+          <Property Name="Pendiente" Type="bit" />
+          <Property Name="HorasAsignadas" Type="int" />
         </EntityType>
         <EntityType Name="Competencias">
           <Key>
@@ -244,6 +246,8 @@
           <Property Name="IdCompetencia" Type="int" Nullable="false" />
           <Property Name="Descripcion" Type="nvarchar" MaxLength="2000" Nullable="false" />
           <Property Name="DuracionResultado" Type="int" Nullable="false" />
+          <Property Name="Pendiente" Type="bit" />
+          <Property Name="HorasAsignadas" Type="int" />
         </EntityType>
         <EntityType Name="ResultadoTrimestre">
           <Key>
@@ -281,7 +285,7 @@
           <Property Name="TipoUsuario" Type="varchar" MaxLength="255" />
           <Property Name="EstadoUsuario" Type="bit" Nullable="false" />
         </EntityType>
-        <Association Name="FK__Area_Cono__IdRed__72C60C4A">
+        <Association Name="FK__Area_Cono__IdRed__1DB06A4F">
           <End Role="Red_Conocimiento" Type="Self.Red_Conocimiento" Multiplicity="0..1" />
           <End Role="Area_Conocimiento" Type="Self.Area_Conocimiento" Multiplicity="*" />
           <ReferentialConstraint>
@@ -293,7 +297,19 @@
             </Dependent>
           </ReferentialConstraint>
         </Association>
-        <Association Name="FK__Diseño_Cu__IdFic__778AC167">
+        <Association Name="FK__Area_Cono__IdRed__6A30C649">
+          <End Role="Red_Conocimiento" Type="Self.Red_Conocimiento" Multiplicity="0..1" />
+          <End Role="Area_Conocimiento" Type="Self.Area_Conocimiento" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Red_Conocimiento">
+              <PropertyRef Name="IdRed" />
+            </Principal>
+            <Dependent Role="Area_Conocimiento">
+              <PropertyRef Name="IdRed" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK__Diseño_Cu__IdFic__1EA48E88">
           <End Role="Ficha" Type="Self.Ficha" Multiplicity="1" />
           <End Role="Diseño_Curricular" Type="Self.Diseño_Curricular" Multiplicity="*" />
           <ReferentialConstraint>
@@ -305,7 +321,19 @@
             </Dependent>
           </ReferentialConstraint>
         </Association>
-        <Association Name="FK__Diseño_Cu__IdIns__787EE5A0">
+        <Association Name="FK__Diseño_Cu__IdFic__6FE99F9F">
+          <End Role="Ficha" Type="Self.Ficha" Multiplicity="1" />
+          <End Role="Diseño_Curricular" Type="Self.Diseño_Curricular" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Ficha">
+              <PropertyRef Name="IdFicha" />
+            </Principal>
+            <Dependent Role="Diseño_Curricular">
+              <PropertyRef Name="IdFicha" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK__Diseño_Cu__IdIns__1F98B2C1">
           <End Role="Instructor" Type="Self.Instructor" Multiplicity="1" />
           <End Role="Diseño_Curricular" Type="Self.Diseño_Curricular" Multiplicity="*" />
           <ReferentialConstraint>
@@ -317,7 +345,19 @@
             </Dependent>
           </ReferentialConstraint>
         </Association>
-        <Association Name="FK__Ficha__IdOferta__7A672E12">
+        <Association Name="FK__Diseño_Cu__IdIns__70DDC3D8">
+          <End Role="Instructor" Type="Self.Instructor" Multiplicity="1" />
+          <End Role="Diseño_Curricular" Type="Self.Diseño_Curricular" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Instructor">
+              <PropertyRef Name="IdInstructor" />
+            </Principal>
+            <Dependent Role="Diseño_Curricular">
+              <PropertyRef Name="IdInstructor" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK__Ficha__IdOferta__208CD6FA">
           <End Role="Oferta" Type="Self.Oferta" Multiplicity="0..1" />
           <End Role="Ficha" Type="Self.Ficha" Multiplicity="*" />
           <ReferentialConstraint>
@@ -329,7 +369,19 @@
             </Dependent>
           </ReferentialConstraint>
         </Association>
-        <Association Name="FK__Ficha__IdProgram__7B5B524B">
+        <Association Name="FK__Ficha__IdOferta__72C60C4A">
+          <End Role="Oferta" Type="Self.Oferta" Multiplicity="0..1" />
+          <End Role="Ficha" Type="Self.Ficha" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Oferta">
+              <PropertyRef Name="IdOferta" />
+            </Principal>
+            <Dependent Role="Ficha">
+              <PropertyRef Name="IdOferta" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK__Ficha__IdProgram__2180FB33">
           <End Role="Programa_Formacion" Type="Self.Programa_Formacion" Multiplicity="0..1" />
           <End Role="Ficha" Type="Self.Ficha" Multiplicity="*" />
           <ReferentialConstraint>
@@ -341,7 +393,19 @@
             </Dependent>
           </ReferentialConstraint>
         </Association>
-        <Association Name="FK__Oferta__IdMetas__02FC7413">
+        <Association Name="FK__Ficha__IdProgram__73BA3083">
+          <End Role="Programa_Formacion" Type="Self.Programa_Formacion" Multiplicity="0..1" />
+          <End Role="Ficha" Type="Self.Ficha" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Programa_Formacion">
+              <PropertyRef Name="IdPrograma" />
+            </Principal>
+            <Dependent Role="Ficha">
+              <PropertyRef Name="IdPrograma" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK__Oferta__IdMetas__00200768">
           <End Role="Meta" Type="Self.Meta" Multiplicity="0..1" />
           <End Role="Oferta" Type="Self.Oferta" Multiplicity="*" />
           <ReferentialConstraint>
@@ -353,7 +417,19 @@
             </Dependent>
           </ReferentialConstraint>
         </Association>
-        <Association Name="FK__Oferta__IdUsuari__03F0984C">
+        <Association Name="FK__Oferta__IdMetas__22751F6C">
+          <End Role="Meta" Type="Self.Meta" Multiplicity="0..1" />
+          <End Role="Oferta" Type="Self.Oferta" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Meta">
+              <PropertyRef Name="IdMeta" />
+            </Principal>
+            <Dependent Role="Oferta">
+              <PropertyRef Name="IdMetas" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK__Oferta__IdUsuari__01142BA1">
           <End Role="Usuario" Type="Self.Usuario" Multiplicity="0..1" />
           <End Role="Oferta" Type="Self.Oferta" Multiplicity="*" />
           <ReferentialConstraint>
@@ -365,7 +441,19 @@
             </Dependent>
           </ReferentialConstraint>
         </Association>
-        <Association Name="FK__Programa___IdAre__04E4BC85">
+        <Association Name="FK__Oferta__IdUsuari__236943A5">
+          <End Role="Usuario" Type="Self.Usuario" Multiplicity="0..1" />
+          <End Role="Oferta" Type="Self.Oferta" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Usuario">
+              <PropertyRef Name="IdUsuario" />
+            </Principal>
+            <Dependent Role="Oferta">
+              <PropertyRef Name="IdUsuario" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK__Programa___IdAre__02084FDA">
           <End Role="Area_Conocimiento" Type="Self.Area_Conocimiento" Multiplicity="0..1" />
           <End Role="Programa_Formacion" Type="Self.Programa_Formacion" Multiplicity="*" />
           <ReferentialConstraint>
@@ -377,7 +465,19 @@
             </Dependent>
           </ReferentialConstraint>
         </Association>
-        <Association Name="FK__Resultado__Id_Co__05D8E0BE">
+        <Association Name="FK__Programa___IdAre__245D67DE">
+          <End Role="Area_Conocimiento" Type="Self.Area_Conocimiento" Multiplicity="0..1" />
+          <End Role="Programa_Formacion" Type="Self.Programa_Formacion" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Area_Conocimiento">
+              <PropertyRef Name="IdArea" />
+            </Principal>
+            <Dependent Role="Programa_Formacion">
+              <PropertyRef Name="IdArea" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK__Resultado__Id_Co__02FC7413">
           <End Role="Competencias" Type="Self.Competencias" Multiplicity="1" />
           <End Role="Resultado_aprendizaje" Type="Self.Resultado_aprendizaje" Multiplicity="*" />
           <ReferentialConstraint>
@@ -389,7 +489,19 @@
             </Dependent>
           </ReferentialConstraint>
         </Association>
-        <Association Name="FK__Resultado__IdIns__06CD04F7">
+        <Association Name="FK__Resultado__Id_Co__25518C17">
+          <End Role="Competencias" Type="Self.Competencias" Multiplicity="1" />
+          <End Role="Resultado_aprendizaje" Type="Self.Resultado_aprendizaje" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="Competencias">
+              <PropertyRef Name="Id_Competencias" />
+            </Principal>
+            <Dependent Role="Resultado_aprendizaje">
+              <PropertyRef Name="Id_Competencia" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK__Resultado__IdIns__2645B050">
           <End Role="Instructor" Type="Self.Instructor" Multiplicity="1" />
           <End Role="Resultado_aprendizaje" Type="Self.Resultado_aprendizaje" Multiplicity="*" />
           <ReferentialConstraint>
@@ -688,43 +800,79 @@
           <EntitySet Name="ResultadoTrimestre" EntityType="Self.ResultadoTrimestre" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="sysdiagrams" EntityType="Self.sysdiagrams" Schema="dbo" store:Type="Tables" />
           <EntitySet Name="Usuario" EntityType="Self.Usuario" Schema="dbo" store:Type="Tables" />
-          <AssociationSet Name="FK__Area_Cono__IdRed__72C60C4A" Association="Self.FK__Area_Cono__IdRed__72C60C4A">
+          <AssociationSet Name="FK__Area_Cono__IdRed__1DB06A4F" Association="Self.FK__Area_Cono__IdRed__1DB06A4F">
             <End Role="Red_Conocimiento" EntitySet="Red_Conocimiento" />
             <End Role="Area_Conocimiento" EntitySet="Area_Conocimiento" />
           </AssociationSet>
-          <AssociationSet Name="FK__Diseño_Cu__IdFic__778AC167" Association="Self.FK__Diseño_Cu__IdFic__778AC167">
+          <AssociationSet Name="FK__Area_Cono__IdRed__6A30C649" Association="Self.FK__Area_Cono__IdRed__6A30C649">
+            <End Role="Red_Conocimiento" EntitySet="Red_Conocimiento" />
+            <End Role="Area_Conocimiento" EntitySet="Area_Conocimiento" />
+          </AssociationSet>
+          <AssociationSet Name="FK__Diseño_Cu__IdFic__1EA48E88" Association="Self.FK__Diseño_Cu__IdFic__1EA48E88">
             <End Role="Ficha" EntitySet="Ficha" />
             <End Role="Diseño_Curricular" EntitySet="Diseño_Curricular" />
           </AssociationSet>
-          <AssociationSet Name="FK__Diseño_Cu__IdIns__787EE5A0" Association="Self.FK__Diseño_Cu__IdIns__787EE5A0">
+          <AssociationSet Name="FK__Diseño_Cu__IdFic__6FE99F9F" Association="Self.FK__Diseño_Cu__IdFic__6FE99F9F">
+            <End Role="Ficha" EntitySet="Ficha" />
+            <End Role="Diseño_Curricular" EntitySet="Diseño_Curricular" />
+          </AssociationSet>
+          <AssociationSet Name="FK__Diseño_Cu__IdIns__1F98B2C1" Association="Self.FK__Diseño_Cu__IdIns__1F98B2C1">
             <End Role="Instructor" EntitySet="Instructor" />
             <End Role="Diseño_Curricular" EntitySet="Diseño_Curricular" />
           </AssociationSet>
-          <AssociationSet Name="FK__Ficha__IdOferta__7A672E12" Association="Self.FK__Ficha__IdOferta__7A672E12">
+          <AssociationSet Name="FK__Diseño_Cu__IdIns__70DDC3D8" Association="Self.FK__Diseño_Cu__IdIns__70DDC3D8">
+            <End Role="Instructor" EntitySet="Instructor" />
+            <End Role="Diseño_Curricular" EntitySet="Diseño_Curricular" />
+          </AssociationSet>
+          <AssociationSet Name="FK__Ficha__IdOferta__208CD6FA" Association="Self.FK__Ficha__IdOferta__208CD6FA">
             <End Role="Oferta" EntitySet="Oferta" />
             <End Role="Ficha" EntitySet="Ficha" />
           </AssociationSet>
-          <AssociationSet Name="FK__Ficha__IdProgram__7B5B524B" Association="Self.FK__Ficha__IdProgram__7B5B524B">
+          <AssociationSet Name="FK__Ficha__IdOferta__72C60C4A" Association="Self.FK__Ficha__IdOferta__72C60C4A">
+            <End Role="Oferta" EntitySet="Oferta" />
+            <End Role="Ficha" EntitySet="Ficha" />
+          </AssociationSet>
+          <AssociationSet Name="FK__Ficha__IdProgram__2180FB33" Association="Self.FK__Ficha__IdProgram__2180FB33">
             <End Role="Programa_Formacion" EntitySet="Programa_Formacion" />
             <End Role="Ficha" EntitySet="Ficha" />
           </AssociationSet>
-          <AssociationSet Name="FK__Oferta__IdMetas__02FC7413" Association="Self.FK__Oferta__IdMetas__02FC7413">
+          <AssociationSet Name="FK__Ficha__IdProgram__73BA3083" Association="Self.FK__Ficha__IdProgram__73BA3083">
+            <End Role="Programa_Formacion" EntitySet="Programa_Formacion" />
+            <End Role="Ficha" EntitySet="Ficha" />
+          </AssociationSet>
+          <AssociationSet Name="FK__Oferta__IdMetas__00200768" Association="Self.FK__Oferta__IdMetas__00200768">
             <End Role="Meta" EntitySet="Meta" />
             <End Role="Oferta" EntitySet="Oferta" />
           </AssociationSet>
-          <AssociationSet Name="FK__Oferta__IdUsuari__03F0984C" Association="Self.FK__Oferta__IdUsuari__03F0984C">
+          <AssociationSet Name="FK__Oferta__IdMetas__22751F6C" Association="Self.FK__Oferta__IdMetas__22751F6C">
+            <End Role="Meta" EntitySet="Meta" />
+            <End Role="Oferta" EntitySet="Oferta" />
+          </AssociationSet>
+          <AssociationSet Name="FK__Oferta__IdUsuari__01142BA1" Association="Self.FK__Oferta__IdUsuari__01142BA1">
             <End Role="Usuario" EntitySet="Usuario" />
             <End Role="Oferta" EntitySet="Oferta" />
           </AssociationSet>
-          <AssociationSet Name="FK__Programa___IdAre__04E4BC85" Association="Self.FK__Programa___IdAre__04E4BC85">
+          <AssociationSet Name="FK__Oferta__IdUsuari__236943A5" Association="Self.FK__Oferta__IdUsuari__236943A5">
+            <End Role="Usuario" EntitySet="Usuario" />
+            <End Role="Oferta" EntitySet="Oferta" />
+          </AssociationSet>
+          <AssociationSet Name="FK__Programa___IdAre__02084FDA" Association="Self.FK__Programa___IdAre__02084FDA">
             <End Role="Area_Conocimiento" EntitySet="Area_Conocimiento" />
             <End Role="Programa_Formacion" EntitySet="Programa_Formacion" />
           </AssociationSet>
-          <AssociationSet Name="FK__Resultado__Id_Co__05D8E0BE" Association="Self.FK__Resultado__Id_Co__05D8E0BE">
+          <AssociationSet Name="FK__Programa___IdAre__245D67DE" Association="Self.FK__Programa___IdAre__245D67DE">
+            <End Role="Area_Conocimiento" EntitySet="Area_Conocimiento" />
+            <End Role="Programa_Formacion" EntitySet="Programa_Formacion" />
+          </AssociationSet>
+          <AssociationSet Name="FK__Resultado__Id_Co__02FC7413" Association="Self.FK__Resultado__Id_Co__02FC7413">
             <End Role="Competencias" EntitySet="Competencias" />
             <End Role="Resultado_aprendizaje" EntitySet="Resultado_aprendizaje" />
           </AssociationSet>
-          <AssociationSet Name="FK__Resultado__IdIns__06CD04F7" Association="Self.FK__Resultado__IdIns__06CD04F7">
+          <AssociationSet Name="FK__Resultado__Id_Co__25518C17" Association="Self.FK__Resultado__Id_Co__25518C17">
+            <End Role="Competencias" EntitySet="Competencias" />
+            <End Role="Resultado_aprendizaje" EntitySet="Resultado_aprendizaje" />
+          </AssociationSet>
+          <AssociationSet Name="FK__Resultado__IdIns__2645B050" Association="Self.FK__Resultado__IdIns__2645B050">
             <End Role="Instructor" EntitySet="Instructor" />
             <End Role="Resultado_aprendizaje" EntitySet="Resultado_aprendizaje" />
           </AssociationSet>
@@ -1468,6 +1616,8 @@
           <NavigationProperty Name="Programa_Formacion" Relationship="SenaPlanningModel.FK_Competencia_Programa" FromRole="Competencia" ToRole="Programa_Formacion" />
           <NavigationProperty Name="HorarioInstructor" Relationship="SenaPlanningModel.FK_HorarioInstructor_Competencia" FromRole="Competencia" ToRole="HorarioInstructor" />
           <NavigationProperty Name="ResultadoAprendizaje" Relationship="SenaPlanningModel.FK_ResultadoAprendizaje_Competencia" FromRole="Competencia" ToRole="ResultadoAprendizaje" />
+          <Property Name="Pendiente" Type="Boolean" />
+          <Property Name="HorasAsignadas" Type="Int32" />
         </EntityType>
         <EntityType Name="InstructorResultado">
           <Key>
@@ -1493,6 +1643,8 @@
           <NavigationProperty Name="InstructorResultado" Relationship="SenaPlanningModel.FK_InstructorResultado_Resultado" FromRole="ResultadoAprendizaje" ToRole="InstructorResultado" />
           <NavigationProperty Name="ResultadoTrimestres" Relationship="SenaPlanningModel.FK_ResultadoTrimestre_Resultado" FromRole="ResultadoAprendizaje" ToRole="ResultadoTrimestre" />
           <NavigationProperty Name="ResultadoTrimestres1" Relationship="SenaPlanningModel.FK_ResultadoTrimestre_ResultadoAprendizaje" FromRole="ResultadoAprendizaje" ToRole="ResultadoTrimestre" />
+          <Property Name="Pendiente" Type="Boolean" />
+          <Property Name="HorasAsignadas" Type="Int32" />
           </EntityType>
         <EntityType Name="sysdiagrams">
           <Key>
@@ -1877,6 +2029,8 @@
           <EntitySetMapping Name="Competencia">
             <EntityTypeMapping TypeName="SenaPlanningModel.Competencia">
               <MappingFragment StoreEntitySet="Competencia">
+                <ScalarProperty Name="HorasAsignadas" ColumnName="HorasAsignadas" />
+                <ScalarProperty Name="Pendiente" ColumnName="Pendiente" />
                 <ScalarProperty Name="DuracionTotal" ColumnName="DuracionTotal" />
                 <ScalarProperty Name="Nombre" ColumnName="Nombre" />
                 <ScalarProperty Name="IdPrograma" ColumnName="IdPrograma" />
@@ -1896,6 +2050,8 @@
           <EntitySetMapping Name="ResultadoAprendizaje">
             <EntityTypeMapping TypeName="SenaPlanningModel.ResultadoAprendizaje">
               <MappingFragment StoreEntitySet="ResultadoAprendizaje">
+                <ScalarProperty Name="HorasAsignadas" ColumnName="HorasAsignadas" />
+                <ScalarProperty Name="Pendiente" ColumnName="Pendiente" />
                 <ScalarProperty Name="DuracionResultado" ColumnName="DuracionResultado" />
                 <ScalarProperty Name="Descripcion" ColumnName="Descripcion" />
                 <ScalarProperty Name="IdCompetencia" ColumnName="IdCompetencia" />
