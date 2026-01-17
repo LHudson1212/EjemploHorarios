@@ -1011,7 +1011,7 @@ namespace EjemploHorarios.Controllers
                     }
 
                     int anioReal = anio;
-
+                     
 
                     if (db.Horario.Any(h => h.IdFicha == ficha.IdFicha &&
                                             h.Trimestre_Año == trimestreDelAnio &&
