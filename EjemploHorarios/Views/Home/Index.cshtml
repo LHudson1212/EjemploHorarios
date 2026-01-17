@@ -788,9 +788,6 @@
         border-color: #fb923c !important;
         color: #9a3412 !important;
     }
-
-
-    <style >
     .item-competencia {
         padding: 8px;
         border-radius: 6px;
@@ -810,8 +807,6 @@
     }
 </style>
 
-</style>
-
 
 <!-- ========================= HTML / VISTA ========================= -->
 
@@ -826,7 +821,7 @@
         <!-- Año -->
         <div class="col-lg-2 col-md-3">
             <label class="form-label fw-bold text-sena" for="selAnio">Año del Horario</label>
-            <input id="selAnio" type="number" min="2024" max="2100" class="form-control" placeholder="Ej: 2026" autocomplete="off" />
+            <input id="selAnio" type="number" step="1" min="@DateTime.Now.Year" max="2100" class="form-control" placeholder="Ej: 2026" autocomplete="off" />
         </div>
 
         <!-- Trimestre del año -->
@@ -1027,7 +1022,15 @@
                 <div class="mb-3">
                     <label class="form-label" for="selInstructor">Instructor</label>
                     <div class="d-flex gap-2 align-items-start">
-                        <select id="selInstructor" class="form-select flex-grow-1"></select>
+                        <div class="flex-grow-1">
+                            <input id="txtBuscarInstructor"
+                                   class="form-control"
+                                   placeholder="Escribe nombre o iniciales..."
+                                   list="dlInstructores" />
+                            <datalist id="dlInstructores"></datalist>
+
+                            <input type="hidden" id="hfInstructorIdSeleccionado" />
+                        </div>
                         <button type="button"
                                 id="btnVerHorarioInstructor"
                                 class="btn btn-outline-success"
@@ -1199,10 +1202,16 @@
 
                 <!-- === INSTRUCTOR LÍDER (queda igual que antes) === -->
                 <div class="mb-3">
-                    <label for="selInstructorLider" class="form-label fw-bold">Instructor Líder</label>
-                    <select id="selInstructorLider" class="form-select">
-                        <option value="">Cargando instructores...</option>
-                    </select>
+                    <label class="form-label fw-bold">Instructor Líder</label>
+
+                    <input id="txtBuscarInstructorLider"
+                           class="form-control"
+                           placeholder="Escribe nombre o iniciales..."
+                           list="dlInstructoresLider" />
+
+                    <datalist id="dlInstructoresLider"></datalist>
+
+                    <input type="hidden" id="hfInstructorLiderId" />
                 </div>
                 <button id="btnConfirmarLider"
                         type="button"
@@ -1409,60 +1418,192 @@
     const inputExcel          = document.getElementById("inputExcel");
 
     const modalAsignarEl      = document.getElementById("modalAsignar");
-    const selInstructorEl     = document.getElementById("selInstructor");
     const horaDesdeEl         = document.getElementById("horaDesde");
     const horaHastaEl         = document.getElementById("horaHasta");
     const btnGuardarAsig      = document.getElementById("btnGuardarAsignacion");
 
     const btnGuardarHorario   = document.getElementById("btnGuardarHorario");
-    const selInstructorLider  = document.getElementById("selInstructorLider");
-    const btnConfirmarLider   = document.getElementById("btnConfirmarLider");
+    const btnConfirmarLider = document.getElementById("btnConfirmarLider");
 
-    // ========== INSTRUCTORES ==========
-    async function loadInstructores(q = "") {
+    const txtBuscarInstructor = document.getElementById("txtBuscarInstructor");
+    const dlInstructores = document.getElementById("dlInstructores");
+    const hfInstructorIdSeleccionado = document.getElementById("hfInstructorIdSeleccionado");
+
+    const txtBuscarInstructorLider = document.getElementById("txtBuscarInstructorLider");
+    const dlInstructoresLider = document.getElementById("dlInstructoresLider");
+    const hfInstructorLiderId = document.getElementById("hfInstructorLiderId");
+
+
+
+
+        const ANIO_ACTUAL = new Date().getFullYear();
+
+        selAnio.addEventListener("change", () => {
+            const val = parseInt(selAnio.value, 10);
+
+            if (!val) return;
+
+            if (val < ANIO_ACTUAL) {
+                alert(`⚠️ El año del horario no puede ser menor a ${ANIO_ACTUAL}.`);
+
+                // Opción UX recomendada: corregir automáticamente
+                selAnio.value = ANIO_ACTUAL;
+
+                // Refrescar lógica dependiente del año
+                refrescarTrimestresAnioDisponibles?.();
+            }
+        });
+
+
+    async function refrescarTrimestresAnioDisponibles() {
+        const idFicha = (hfFichaId.value || "").trim();
+        const anio = (selAnio.value || "").trim();
+
+        // Si no hay ficha/año, habilitar todo
+        if (!idFicha || !anio) {
+            Array.from(selTrimestreAnio.options).forEach(o => { if (o.value) o.disabled = false; });
+            return;
+        }
+
         try {
-            const url = '@Url.Action("GetInstructores", "Home")' + (q ? ('?q=' + encodeURIComponent(q)) : '');
-            const resp = await fetch(url, {
+            const resp = await fetch(`/Home/GetTrimestresAnioOcupados?idFicha=${encodeURIComponent(idFicha)}&anio=${encodeURIComponent(anio)}`, {
                 headers: { "Accept": "application/json" },
                 credentials: "same-origin"
             });
 
-            let json = await resp.json();
-            if (!resp.ok || !json?.ok) {
-                throw new Error(json?.msg || "No se pudieron cargar los instructores.");
+            const json = await resp.json();
+            if (!json.ok) return;
+
+            const usados = new Set((json.usados || []).map(x => String(x)));
+
+            // Deshabilitar los trimestres ya usados
+            Array.from(selTrimestreAnio.options).forEach(o => {
+                if (!o.value) return;
+                o.disabled = usados.has(o.value);
+            });
+
+            // Si el seleccionado quedó bloqueado, mover al primero disponible
+            if (selTrimestreAnio.value && usados.has(selTrimestreAnio.value)) {
+                selTrimestreAnio.value = "";
+                const firstOk = Array.from(selTrimestreAnio.options).find(o => o.value && !o.disabled);
+                if (firstOk) selTrimestreAnio.value = firstOk.value;
             }
 
-            const lista = Array.isArray(json.data) ? json.data : [];
-            INSTRUCTORES_BY_ID.clear();
-
-            selInstructorEl.innerHTML = "";
-            selInstructorEl.appendChild(new Option("Seleccione un instructor…", "", true, false));
-
-            lista.forEach(i => {
-                INSTRUCTORES_BY_ID.set(String(i.id), i.nombre);
-                selInstructorEl.appendChild(new Option(i.nombre, String(i.id)));
-            });
-        } catch (err) {
-            showAlert("Error cargando instructores: " + err.message, "danger");
-            selInstructorEl.innerHTML = "";
-            selInstructorEl.appendChild(new Option("Seleccione un instructor…", "", true, false));
+        } catch (e) {
+            console.warn("No se pudo refrescar trimestres del año:", e);
         }
     }
+
+
+    // ========== INSTRUCTORES ==========
+    async function loadInstructores(q = "") {
+      try {
+        const url = '@Url.Action("GetInstructores", "Home")' + (q ? ('?q=' + encodeURIComponent(q)) : '');
+        const resp = await fetch(url, {
+          headers: { "Accept": "application/json" },
+          credentials: "same-origin"
+        });
+
+        const json = await resp.json();
+        if (!resp.ok || !json?.ok) {
+          throw new Error(json?.msg || "No se pudieron cargar los instructores.");
+        }
+
+        const lista = Array.isArray(json.data) ? json.data : [];
+
+        dlInstructores.innerHTML = "";
+        INSTRUCTORES_BY_ID.clear();
+
+        lista.forEach(i => {
+          const id = String(i.id);
+          const nombre = i.nombre;
+
+          INSTRUCTORES_BY_ID.set(id, nombre);
+
+          const opt = document.createElement("option");
+          opt.value = nombre;
+          opt.dataset.id = id;
+          dlInstructores.appendChild(opt);
+        });
+
+        // limpiar selección actual
+        txtBuscarInstructor.value = "";
+        hfInstructorIdSeleccionado.value = "";
+
+        const btnVerHorario = document.getElementById("btnVerHorarioInstructor");
+        if (btnVerHorario) btnVerHorario.disabled = true;
+
+      } catch (err) {
+        showAlert("Error cargando instructores: " + err.message, "danger");
+
+        dlInstructores.innerHTML = "";
+        txtBuscarInstructor.value = "";
+        hfInstructorIdSeleccionado.value = "";
+
+        const btnVerHorario = document.getElementById("btnVerHorarioInstructor");
+        if (btnVerHorario) btnVerHorario.disabled = true;
+      }
+    }
+
+
+        function resolverInstructorIdDesdeTexto(texto) {
+            const t = (texto || "").trim().toLowerCase();
+            if (!t) return "";
+
+            // match exacto (el datalist devuelve texto exacto del option)
+            for (const [id, nombre] of INSTRUCTORES_BY_ID.entries()) {
+                if (nombre.toLowerCase() === t) return id;
+            }
+            return "";
+        }
+
+        txtBuscarInstructor?.addEventListener("input", () => {
+            const id = resolverInstructorIdDesdeTexto(txtBuscarInstructor.value);
+            hfInstructorIdSeleccionado.value = id;
+
+            // habilitar botón de ver horario solo si hay id válido
+            const btnVerHorario = document.getElementById("btnVerHorarioInstructor");
+            if (btnVerHorario) btnVerHorario.disabled = !id;
+        });
+
+        txtBuscarInstructorLider?.addEventListener("input", () => {
+            const id = resolverInstructorIdDesdeTexto(txtBuscarInstructorLider.value);
+            hfInstructorLiderId.value = id;
+        });
+
 
     async function cargarInstructoresLider() {
-        selInstructorLider.innerHTML = `<option value="">Cargando...</option>`;
-        try {
-            const resp = await fetch('@Url.Action("GetInstructores", "Home")');
-            const json = await resp.json();
+      try {
+        dlInstructoresLider.innerHTML = "";
+        txtBuscarInstructorLider.value = "";
+        hfInstructorLiderId.value = "";
 
-            selInstructorLider.innerHTML = `<option value="">Seleccione...</option>`;
-            (json.data || []).forEach(i => {
-                selInstructorLider.innerHTML += `<option value="${i.id}">${i.nombre}</option>`;
-            });
-        } catch (error) {
-            selInstructorLider.innerHTML = `<option value="">Error al cargar instructores</option>`;
-        }
+        const resp = await fetch('@Url.Action("GetInstructores", "Home")', {
+          headers: { "Accept": "application/json" },
+          credentials: "same-origin"
+        });
+        const json = await resp.json();
+
+        if (!json?.ok) throw new Error(json?.msg || "No se pudieron cargar instructores.");
+
+        (json.data || []).forEach(i => {
+          const id = String(i.id);
+          const nombre = i.nombre;
+
+          // Reutilizamos el mismo map global (sirve para ambos modales)
+          INSTRUCTORES_BY_ID.set(id, nombre);
+
+          const opt = document.createElement("option");
+          opt.value = nombre;
+          opt.dataset.id = id;
+          dlInstructoresLider.appendChild(opt);
+        });
+
+      } catch (error) {
+        showAlert("Error al cargar instructores líder: " + error.message, "danger");
+      }
     }
+
 
     // ========== MODAL ASIGNAR ==========
     async function abrirModalAsignar(ctx, preset = null) {
@@ -1498,7 +1639,7 @@
             await loadInstructores();
 
             // Selección inicial
-            selInstructorEl.value =
+            hfInstructorIdSeleccionado.value =
                 instructorAsignado?.id ||
                 preset?.instructorId ||
                 "";
@@ -1524,8 +1665,8 @@
             if (asignacion) {
                 asignacion.horaDesde = horaDesdeEl.value;
                 asignacion.horaHasta = horaHastaEl.value;
-                asignacion.instructorId = selInstructorEl.value ? parseInt(selInstructorEl.value) : null;
-                asignacion.instructorNombre = INSTRUCTORES_BY_ID.get(selInstructorEl.value) || null;
+                asignacion.instructorId = hfInstructorIdSeleccionado.value ? parseInt(hfInstructorIdSeleccionado.value) : null;
+                asignacion.instructorNombre = INSTRUCTORES_BY_ID.get(hfInstructorIdSeleccionado.value) || null;
             }
 
             // =====================================================
@@ -1537,8 +1678,8 @@
             // =====================================================
             //       Cargar info real desde BD del instructor
             // =====================================================
-            if (selInstructorEl.value) {
-                await cargarHorasInstructor(selInstructorEl.value);
+            if (hfInstructorIdSeleccionado.value) {
+                await cargarHorasInstructor(hfInstructorIdSeleccionado.value);
                 actualizarBarraInstructor();
             }
 
@@ -1550,23 +1691,23 @@
             if (!window._eventosModalAsignarRegistrados) {
                 window._eventosModalAsignarRegistrados = true;
 
-                selInstructorEl.addEventListener("change", async () => {
+                txtBuscarInstructor.addEventListener("input", async () => {
+                    const id = resolverInstructorIdDesdeTexto(txtBuscarInstructor.value);
+                    hfInstructorIdSeleccionado.value = id;
 
+                    // actualiza asignación en edición
                     if (dropContext) {
                         const a = payload.asignaciones.find(x => x.id === dropContext.asignacionId);
                         if (a) {
-                            a.instructorId = selInstructorEl.value ? parseInt(selInstructorEl.value) : null;
-                            a.instructorNombre = INSTRUCTORES_BY_ID.get(selInstructorEl.value) || null;
+                            a.instructorId = id ? parseInt(id) : null;
+                            a.instructorNombre = INSTRUCTORES_BY_ID.get(id) || null;
                         }
                     }
 
-                    if (selInstructorEl.value) {
-                        await cargarHorasInstructor(selInstructorEl.value);
-                    }
-
+                    // carga horas / barras
+                    if (id) await cargarHorasInstructor(id);
                     refrescarListaInstructoresEnHorario();
                     await mostrarInstructorActual();
-
                     actualizarBarraHorario();
                     validarEnVivo();
                 });
@@ -1636,7 +1777,7 @@
 
                 if (!dropContext) return;
 
-                const instructorId = selInstructorEl.value;
+                const instructorId = hfInstructorIdSeleccionado.value;
                 const horaDesde = horaDesdeEl.value;
                 const horaHasta = horaHastaEl.value;
 
@@ -1759,7 +1900,7 @@
             return;
         }
 
-        const instructorId = selInstructorEl.value || null;
+        const instructorId = hfInstructorIdSeleccionado.value || null;
         const horaDesde = horaDesdeEl.value || "06:00";
         const horaHasta = horaHastaEl.value || "09:00";
         const idFicha = hfFichaId.value;
@@ -2174,14 +2315,17 @@
                     actualizarSiguienteTrimestre();
                     ocultarSugerencias();
 
-                    // ✅ IMPORTANTÍSIMO: limpiar cache al cambiar de ficha
+                    // bloquear trimestres del año ya usados por esta ficha en este año
+                    await refrescarTrimestresAnioDisponibles();
+
+                    // IMPORTANTÍSIMO: limpiar cache al cambiar de ficha
                     RESULTADOS_CACHE.clear();
                     PENDIENTES_SET.clear();
 
                     const anioSel = selAnio.value.trim();
                     const trimestreDestino = txtSiguienteTrimestre.value.trim();
 
-                    // ✅ cargar pendientes para pintar naranja desde el primer render
+                    // cargar pendientes para pintar naranja desde el primer render
                     await cargarPendientesAnterior(f.IdFicha, anioSel, trimestreDestino);
 
                     if (typeof cargarCompetenciasFicha === "function") {
@@ -2205,15 +2349,29 @@
 
     inputFicha?.addEventListener("input", debounce(async () => {
         const q = inputFicha.value.trim();
-        hfFichaId.value = "";
-        txtTrimestreFicha.value = "";
-        inputPrograma.value = "";
+
+        // 🔥 CASO CLAVE: borró la ficha
+        if (!q) {
+            resetFicha(false); // limpia TODO
+            ocultarSugerencias();
+
+            // desbloquear trimestres del año
+            Array.from(selTrimestreAnio.options).forEach(o => {
+                if (o.value) o.disabled = false;
+            });
+
+            return;
+        }
+
+        // mientras escribe pero aún no busca
         if (q.length < 2) {
             ocultarSugerencias();
             return;
         }
+
         await buscarFichasLectivas(q);
     }, 300));
+
 
     inputFicha?.addEventListener("focus", async () => {
         if (!selAnio.value || !selTrimestreAnio.value) {
@@ -2229,8 +2387,15 @@
         }
     });
 
-    selAnio?.addEventListener("change", () => buscarFichasLectivas(inputFicha.value.trim()));
-    selTrimestreAnio?.addEventListener("change", () => buscarFichasLectivas(inputFicha.value.trim()));
+        selAnio?.addEventListener("change", async () => {
+            await refrescarTrimestresAnioDisponibles();
+            await buscarFichasLectivas(inputFicha.value.trim());
+        });
+
+        // Aquí NO es obligatorio refrescar, porque el bloqueo depende de ficha+año.
+        // Pero puedes dejarlo así sin problema:
+        selTrimestreAnio?.addEventListener("change", () => buscarFichasLectivas(inputFicha.value.trim()));
+
 
     // ========== IMPORTAR EXCEL ==========
     btnCargarExcel?.addEventListener("click", () => {
@@ -2910,7 +3075,7 @@ async function cargarCompetenciasFicha(idFicha, trimestreForzado = null) {
 
 
     btnConfirmarLider?.addEventListener("click", async () => {
-        const idInstructorLider = selInstructorLider.value;
+        const idInstructorLider = hfInstructorLiderId.value;
 
         if (!idInstructorLider) {
             showAlert("Debes seleccionar un instructor líder.", "warning");
@@ -2944,11 +3109,9 @@ async function cargarCompetenciasFicha(idFicha, trimestreForzado = null) {
             fd.append("numeroFicha", codigoFicha);
             fd.append("nombreHorario", `Horario ${codigoFicha} - T${trimestreDestino}`);
 
-            // ✅ AHORA SÍ: mandamos el trimestre destino real (6 en tu caso)
-            fd.append("trimestreFicha", trimestreDestino);
-
-            // ✅ Año del horario (2026)
-            fd.append("trimestreAnio", selAnio.value.trim());
+            fd.append("trimestreFicha", trimestreDestino);                 // 1–7 (académico)
+            fd.append("anio", selAnio.value.trim());                       // 2026
+            fd.append("trimestreAnio", selTrimestreAnio.value.trim());     // 1–4
 
             fd.append("idInstructorLider", idInstructorLider);
 
@@ -2988,6 +3151,34 @@ async function cargarCompetenciasFicha(idFicha, trimestreForzado = null) {
     });
 
 
+        function resetFicha(parcial = false) {
+            if (!parcial) {
+                inputFicha.value = "";
+                hfFichaId.value = "";
+                inputPrograma.value = "";
+                txtTrimestreFicha.value = "";
+                txtSiguienteTrimestre.value = "";
+            }
+
+            competenciasList.innerHTML = "";
+            payload.asignaciones = [];
+            document.querySelectorAll(".day-col").forEach(col => {
+                col.innerHTML = `<small class="text-muted drop-hint">Suelta aquí</small>`;
+            });
+            initDropHints();
+        }
+
+
+        selAnio.addEventListener("change", async () => {
+            resetFicha(true); // limpia horario/competencias pero mantiene ficha
+            await refrescarTrimestresAnioDisponibles();
+        });
+
+        selTrimestreAnio.addEventListener("change", () => {
+            resetFicha(true);
+        });
+
+
 
     // ========== TRIMESTRE SIGUIENTE ==========
     function actualizarSiguienteTrimestre() {
@@ -3011,7 +3202,7 @@ async function cargarCompetenciasFicha(idFicha, trimestreForzado = null) {
         if (!dropContext) return;
 
         const alertaChoque = document.getElementById("alertChoque");
-        const instructorId = selInstructorEl.value;
+        const instructorId = hfInstructorIdSeleccionado.value;
         const horaDesde = horaDesdeEl.value;
         const horaHasta = horaHastaEl.value;
         const idFicha = payload.idFichaActual || hfFichaId.value || null;
@@ -3056,12 +3247,15 @@ async function cargarCompetenciasFicha(idFicha, trimestreForzado = null) {
         }
 
         try {
-            const respBD = await getJson("/Home/ValidarFranjaExactaInstructor", {
-                idInstructor: instructorId,
-                dia: dia,
-                desde: horaDesde,
-                hasta: horaHasta,
-                idFichaActual: idFicha
+            async function getJson(url, params) {
+                const qs = new URLSearchParams(params).toString();
+                const resp = await fetch(`${url}?${qs}`, { credentials: "same-origin" });
+                return await resp.json();
+            }
+
+            // uso:
+            const respBD = await getJson('/Home/ValidarFranjaExactaInstructor', {
+                idInstructor: instructorId, dia, desde: horaDesde, hasta: horaHasta, idFichaActual: idFicha
             });
 
             if (myCallId !== validarEnVivo._callId) return;
@@ -3276,14 +3470,20 @@ async function cargarCompetenciasFicha(idFicha, trimestreForzado = null) {
             mostrarInstructorActual();
         });
 
+        // ========== MODAL HORARIO INSTRUCTOR ==========
 
-            // ========== MODAL HORARIO INSTRUCTOR ==========
-            let instructorSeleccionadoId = null;
-            let instructorSeleccionadoNombre = null;
-            let modalAsignarInstance = null;
-            let modalHorarioInstance = null;
+        document.getElementById("btnVerHorarioInstructor")?.addEventListener("click", function () {
+            const id = hfInstructorIdSeleccionado.value;
+            if (!id) {
+                showAlert("Por favor, selecciona un instructor primero.", "warning");
+                return;
+            }
 
-            selInstructorEl?.addEventListener("change", function () {
+            const nombre = INSTRUCTORES_BY_ID.get(String(id)) || "Instructor";
+            abrirModalHorarioInstructor(id, nombre);
+        });
+
+                hfInstructorIdSeleccionado?.addEventListener("change", function () {
                 instructorSeleccionadoId = this.value;
                 const option = this.options[this.selectedIndex];
                 instructorSeleccionadoNombre = option.text;

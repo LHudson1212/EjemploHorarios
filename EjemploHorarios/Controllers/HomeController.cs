@@ -965,12 +965,14 @@ namespace EjemploHorarios.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         public JsonResult GuardarHorario(
-     string AsignacionesJson,
-     string numeroFicha,
-     string nombreHorario,
-     string trimestreFicha,
-     string trimestreAnio,
-     int idInstructorLider)
+         string AsignacionesJson,
+         string numeroFicha,
+         string nombreHorario,
+         string trimestreFicha,
+         string trimestreAnio,
+         int idInstructorLider,
+         int anio // Así se llama la variable de año actual
+        )
         {
             using (var tx = db.Database.BeginTransaction())
             {
@@ -997,7 +999,19 @@ namespace EjemploHorarios.Controllers
                     if (!int.TryParse(trimestreAnio, out trimestreDelAnio) || trimestreDelAnio < 1 || trimestreDelAnio > 4)
                         trimestreDelAnio = ((DateTime.Now.Month - 1) / 3) + 1;
 
-                    int anioReal = DateTime.Now.Year;
+                    int anioActual = DateTime.Now.Year;
+
+                    if (anio < anioActual)
+                    {
+                        return Json(new
+                        {
+                            ok = false,
+                            msg = $"❌ El año del horario no puede ser menor a {anioActual}."
+                        });
+                    }
+
+                    int anioReal = anio;
+
 
                     if (db.Horario.Any(h => h.IdFicha == ficha.IdFicha &&
                                             h.Trimestre_Año == trimestreDelAnio &&
@@ -1776,6 +1790,36 @@ namespace EjemploHorarios.Controllers
                     JsonRequestBehavior.AllowGet);
             }
         }
+
+
+        [HttpGet]
+        public JsonResult GetTrimestresAnioOcupados(int idFicha, int anio)
+        {
+            try
+            {
+                if (idFicha <= 0 || anio <= 0)
+                    return Json(new { ok = false, msg = "Parámetros inválidos.", usados = new int[0] },
+                                JsonRequestBehavior.AllowGet);
+
+                // En tu sistema actual: Trimestre_Año = trimestre del año (1–4)
+                var usados = db.Horario
+                    .AsNoTracking()
+                    .Where(h => h.IdFicha == idFicha && h.Año_Horario == anio)
+                    .Select(h => h.Trimestre_Año)
+                    .Distinct()
+                    .OrderBy(x => x)
+                    .ToList();
+
+                return Json(new { ok = true, usados }, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { ok = false, msg = ex.Message, usados = new int[0] },
+                            JsonRequestBehavior.AllowGet);
+            }
+        }
+
+
 
         [HttpGet]
         public JsonResult GetPendientesHorarioAnterior(int idFicha)
