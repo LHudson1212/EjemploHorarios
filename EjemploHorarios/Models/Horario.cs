@@ -19,6 +19,10 @@ namespace EjemploHorarios.Models
         {
             this.Diseño_Curricular = new HashSet<Diseño_Curricular>();
             this.HorarioInstructor = new HashSet<HorarioInstructor>();
+            this.Competencias = new HashSet<Competencia>();
+            this.ResultadoAprendizajes = new HashSet<ResultadoAprendizaje>();
+            this.CompetenciaHorarios = new HashSet<CompetenciaHorario>();
+            this.ResultadoAprendizajeHorarios = new HashSet<ResultadoAprendizajeHorario>();
         }
     
         public int Id_Horario { get; set; }
@@ -29,6 +33,7 @@ namespace EjemploHorarios.Models
         public Nullable<int> Id_Asignacion { get; set; }
         public Nullable<int> IdInstructorLider { get; set; }
         public string CompetenciasPendientes { get; set; }
+        public Nullable<int> Trimestre_Ficha { get; set; }
     
         public virtual Asignacion_horario Asignacion_horario { get; set; }
         public virtual Ficha Ficha { get; set; }
@@ -37,5 +42,13 @@ namespace EjemploHorarios.Models
         public virtual ICollection<Diseño_Curricular> Diseño_Curricular { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<HorarioInstructor> HorarioInstructor { get; set; }
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<Competencia> Competencias { get; set; }
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<ResultadoAprendizaje> ResultadoAprendizajes { get; set; }
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<CompetenciaHorario> CompetenciaHorarios { get; set; }
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<ResultadoAprendizajeHorario> ResultadoAprendizajeHorarios { get; set; }
     }
 }

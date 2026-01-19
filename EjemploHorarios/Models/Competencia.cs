@@ -19,6 +19,7 @@ namespace EjemploHorarios.Models
         {
             this.HorarioInstructor = new HashSet<HorarioInstructor>();
             this.ResultadoAprendizaje = new HashSet<ResultadoAprendizaje>();
+            this.CompetenciaHorarios = new HashSet<CompetenciaHorario>();
         }
     
         public int IdCompetencia { get; set; }
@@ -27,11 +28,15 @@ namespace EjemploHorarios.Models
         public Nullable<int> DuracionTotal { get; set; }
         public Nullable<bool> Pendiente { get; set; }
         public Nullable<int> HorasAsignadas { get; set; }
+        public int Id_Horario { get; set; }
     
         public virtual Programa_Formacion Programa_Formacion { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<HorarioInstructor> HorarioInstructor { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<ResultadoAprendizaje> ResultadoAprendizaje { get; set; }
+        public virtual Horario Horario { get; set; }
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<CompetenciaHorario> CompetenciaHorarios { get; set; }
     }
 }

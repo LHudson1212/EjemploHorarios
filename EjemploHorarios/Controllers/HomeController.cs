@@ -448,6 +448,7 @@ namespace EjemploHorarios.Controllers
             }
         }
 
+
         // Clase auxiliar privada (puede ir dentro del controller)
         private class TempRow
         {
@@ -961,16 +962,17 @@ namespace EjemploHorarios.Controllers
                     JsonRequestBehavior.AllowGet);
             }
         }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public JsonResult GuardarHorario(
-         string AsignacionesJson,
-         string numeroFicha,
-         string nombreHorario,
-         string trimestreFicha,
-         string trimestreAnio,
-         int idInstructorLider,
-         int anio
+            string AsignacionesJson,
+            string numeroFicha,
+            string nombreHorario,
+            string trimestreFicha,
+            string trimestreAnio,
+            int idInstructorLider,
+            int anio
         )
         {
             using (var tx = db.Database.BeginTransaction())
@@ -988,31 +990,25 @@ namespace EjemploHorarios.Controllers
                     if (ficha == null)
                         return Json(new { ok = false, msg = "❌ Ficha no encontrada." });
 
-                    int trimestreActualFicha = ficha.Trimestre ?? 0;
+                    if (!ficha.IdPrograma.HasValue || ficha.IdPrograma.Value <= 0)
+                        return Json(new { ok = false, msg = "❌ La ficha no tiene programa asignado (IdPrograma vacío)." });
 
-                    int trimestreSolicitado;
-                    if (!int.TryParse(trimestreFicha, out trimestreSolicitado) || trimestreSolicitado < 1 || trimestreSolicitado > 7)
-                        trimestreSolicitado = trimestreActualFicha > 0 ? trimestreActualFicha : 1;
+                    int idPrograma = ficha.IdPrograma.Value;
 
                     int trimestreDelAnio;
                     if (!int.TryParse(trimestreAnio, out trimestreDelAnio) || trimestreDelAnio < 1 || trimestreDelAnio > 4)
                         trimestreDelAnio = ((DateTime.Now.Month - 1) / 3) + 1;
 
                     int anioActual = DateTime.Now.Year;
-
                     if (anio < anioActual)
                         return Json(new { ok = false, msg = $"❌ El año del horario no puede ser menor a {anioActual}." });
 
-                    int anioReal = anio;
-
-                    if (db.Horario.Any(h => h.IdFicha == ficha.IdFicha &&
-                                            h.Trimestre_Año == trimestreDelAnio &&
-                                            h.Año_Horario == anioReal))
-                        return Json(new { ok = false, msg = "❌ Ya existe horario para ese periodo." });
-
+                    // ==========================
+                    // CREAR HORARIO
+                    // ==========================
                     var horarioNuevo = new Horario
                     {
-                        Año_Horario = anioReal,
+                        Año_Horario = anio,
                         Trimestre_Año = trimestreDelAnio,
                         Fecha_Creacion = DateTime.Now,
                         IdFicha = ficha.IdFicha,
@@ -1022,13 +1018,35 @@ namespace EjemploHorarios.Controllers
                     db.Horario.Add(horarioNuevo);
                     db.SaveChanges();
 
-                    const int SEMANAS = 12;
+                    int idHorarioNuevo = horarioNuevo.Id_Horario;
+                    if (idHorarioNuevo <= 0)
+                        return Json(new { ok = false, msg = "❌ No se pudo generar el Id del horario." });
 
-                    var resultadosBD = db.ResultadoAprendizaje.ToList();
-                    var competenciasBD = db.Competencia.ToList();
+                    // ==========================
+                    // ✅ Ajuste horas:
+                    //   - Sin multiplicar por semanas
+                    //   - Si a la competencia se le asignan X horas, cada resultado asociado recibe X horas
+                    // ==========================
+                    // (Se deja SEMANAS si lo usas en otra parte, pero ya NO se usa para el cálculo)
+                    // const int SEMANAS = 12;
 
+                    // ==========================
+                    // TRAER CATÁLOGO DEL PROGRAMA (TODAS)
+                    // ==========================
+                    var competenciasBD = db.Competencia
+                        .Where(c => c.IdPrograma == idPrograma)
+                        .ToList();
+
+                    var compIds = competenciasBD.Select(c => c.IdCompetencia).ToList();
+
+                    var resultadosBD = db.ResultadoAprendizaje
+                        .Where(r => compIds.Contains(r.IdCompetencia))
+                        .ToList();
+
+                    // ==========================
+                    // ACUMULAR HORAS POR RESULTADO (desde asignaciones)
+                    // ==========================
                     var acumuladoResultado = new Dictionary<int, int>();
-                    var acumuladoCompetencia = new Dictionary<int, int>();
 
                     foreach (var a in asignaciones)
                     {
@@ -1040,69 +1058,50 @@ namespace EjemploHorarios.Controllers
                             desde >= hasta)
                             continue;
 
-                        int horasProgramadas = (int)Math.Round(((hasta - desde).TotalMinutes / 60.0) * SEMANAS);
+                        // ✅ AJUSTE: horas reales del bloque (sin * SEMANAS)
+                        int horasProgramadas = (int)Math.Round(((hasta - desde).TotalMinutes / 60.0) * 12);
+
 
                         string compTxt = LimpiarTexto(a.competencia);
                         string resTxt = LimpiarTexto(a.resultado);
 
                         int? idResultado = ResolverIdResultadoSeguro(compTxt, resTxt, competenciasBD, resultadosBD);
-
                         int? idCompetencia = null;
 
-                        // Obtener competencia incluso si no viene resultado
                         if (idResultado.HasValue)
                         {
                             idCompetencia = resultadosBD
                                 .Where(r => r.IdResultado == idResultado.Value)
                                 .Select(r => (int?)r.IdCompetencia)
                                 .FirstOrDefault();
+
+                            acumuladoResultado[idResultado.Value] =
+                                acumuladoResultado.ContainsKey(idResultado.Value)
+                                    ? acumuladoResultado[idResultado.Value] + horasProgramadas
+                                    : horasProgramadas;
                         }
                         else
                         {
-                            // ✅ Corrección segura: usar el mismo normalizador
+                            // ✅ AJUSTE: si se asigna por COMPETENCIA, cada resultado asociado recibe LA MISMA cantidad (horasProgramadas)
                             idCompetencia = competenciasBD
                                 .Where(c => LimpiarTexto(c.Nombre) == compTxt)
                                 .Select(c => (int?)c.IdCompetencia)
                                 .FirstOrDefault();
-                        }
 
-
-                        // ==========================
-                        // ACUMULAR COMPETENCIA
-                        // ==========================
-                        if (idCompetencia.HasValue)
-                        {
-                            acumuladoCompetencia[idCompetencia.Value] =
-                                acumuladoCompetencia.ContainsKey(idCompetencia.Value)
-                                ? acumuladoCompetencia[idCompetencia.Value] + horasProgramadas
-                                : horasProgramadas;
-                        }
-
-                        // ==========================
-                        // ACUMULAR RESULTADOS
-                        // ==========================
-                        if (idResultado.HasValue)
-                        {
-                            // Caso normal
-                            acumuladoResultado[idResultado.Value] =
-                                acumuladoResultado.ContainsKey(idResultado.Value)
-                                ? acumuladoResultado[idResultado.Value] + horasProgramadas
-                                : horasProgramadas;
-                        }
-                        else if (idCompetencia.HasValue)
-                        {
-                            // ⚡ Caso requerido: solo competencia → todos los resultados suman las MISMAS horas
-                            var resultadosAsociados = resultadosBD
-                                .Where(r => r.IdCompetencia == idCompetencia.Value)
-                                .Select(r => r.IdResultado)
-                                .ToList();
-
-                            foreach (var idRes in resultadosAsociados)
+                            if (idCompetencia.HasValue)
                             {
-                                acumuladoResultado[idRes] =
-                                    acumuladoResultado.ContainsKey(idRes)
-                                    ? acumuladoResultado[idRes] + horasProgramadas
-                                    : horasProgramadas;
+                                var resultadosAsociados = resultadosBD
+                                    .Where(r => r.IdCompetencia == idCompetencia.Value)
+                                    .Select(r => r.IdResultado)
+                                    .ToList();
+
+                                foreach (var idRes in resultadosAsociados)
+                                {
+                                    acumuladoResultado[idRes] =
+                                        acumuladoResultado.ContainsKey(idRes)
+                                            ? acumuladoResultado[idRes] + horasProgramadas
+                                            : horasProgramadas;
+                                }
                             }
                         }
 
@@ -1110,7 +1109,7 @@ namespace EjemploHorarios.Controllers
                         {
                             IdInstructor = a.instructorId.Value,
                             IdFicha = ficha.IdFicha,
-                            Id_Horario = horarioNuevo.Id_Horario,
+                            Id_Horario = idHorarioNuevo,
                             Dia = a.dia,
                             HoraDesde = desde,
                             HoraHasta = hasta,
@@ -1124,52 +1123,148 @@ namespace EjemploHorarios.Controllers
                     db.SaveChanges();
 
                     // ==========================
-                    // ACTUALIZAR RESULTADOS
+                    // DURACIÓN PLANEADA POR RESULTADO (Excel)
                     // ==========================
+                    var duracionPlaneadaPorResultado = db.ResultadoTrimestres
+                        .Where(rt => rt.IdFicha == ficha.IdFicha)
+                        .GroupBy(rt => rt.IdResultado)
+                        .ToDictionary(
+                            g => g.Key,
+                            g => g.Sum(x => (int?)x.HorasPlaneadas) ?? 0
+                        );
+
+                    // ==========================
+                    // CALCULAR COMPETENCIAS DESDE RESULTADOS
+                    // ==========================
+                    var acumuladoCompetencia = resultadosBD
+                        .GroupBy(r => r.IdCompetencia)
+                        .ToDictionary(
+                            g => g.Key,
+                            g => g.Sum(r => acumuladoResultado.ContainsKey(r.IdResultado) ? acumuladoResultado[r.IdResultado] : 0)
+                        );
+
+                    var duracionPlaneadaPorCompetencia = resultadosBD
+                        .GroupBy(r => r.IdCompetencia)
+                        .ToDictionary(
+                            g => g.Key,
+                            g => g.Sum(r => duracionPlaneadaPorResultado.ContainsKey(r.IdResultado) ? duracionPlaneadaPorResultado[r.IdResultado] : 0)
+                        );
+
+                    // ======================================================
+                    // 🔒 NO DUPLICADOS: limpiar resumen previo de este horario
+                    // (si se reintenta guardar el mismo horario)
+                    // ======================================================
+                    db.ResultadoAprendizajeHorarios.RemoveRange(
+                        db.ResultadoAprendizajeHorarios.Where(x => x.Id_Horario == idHorarioNuevo));
+
+                    db.CompetenciaHorarios.RemoveRange(
+                        db.CompetenciaHorarios.Where(x => x.Id_Horario == idHorarioNuevo));
+
+                    db.SaveChanges();
+
+                    // ==========================
+                    // HISTÓRICO: INSERTAR TODOS LOS RESULTADOS (snapshot)
+                    // ==========================
+                    foreach (var res in resultadosBD)
+                    {
+                        int idRes = res.IdResultado;
+
+                        int planeada = duracionPlaneadaPorResultado.ContainsKey(idRes) ? duracionPlaneadaPorResultado[idRes] : 0;
+                        int asignadas = acumuladoResultado.ContainsKey(idRes) ? acumuladoResultado[idRes] : 0;
+
+                        db.ResultadoAprendizajeHorarios.Add(new ResultadoAprendizajeHorario
+                        {
+                            Id_Horario = idHorarioNuevo,
+                            IdFicha = ficha.IdFicha,
+                            IdResultado = idRes,
+                            DuracionPlaneada = planeada,
+                            HorasAsignadas = asignadas,
+                            Pendiente = asignadas < planeada,
+                            FechaCreacion = DateTime.Now
+                        });
+                    }
+
+                    // ==========================
+                    // HISTÓRICO: INSERTAR TODAS LAS COMPETENCIAS (snapshot)
+                    // ==========================
+                    foreach (var comp in competenciasBD)
+                    {
+                        int idComp = comp.IdCompetencia;
+
+                        int planeadaTotal = duracionPlaneadaPorCompetencia.ContainsKey(idComp) ? duracionPlaneadaPorCompetencia[idComp] : 0;
+                        int asignadas = acumuladoCompetencia.ContainsKey(idComp) ? acumuladoCompetencia[idComp] : 0;
+
+                        db.CompetenciaHorarios.Add(new CompetenciaHorario
+                        {
+                            Id_Horario = idHorarioNuevo,
+                            IdFicha = ficha.IdFicha,
+                            IdCompetencia = idComp,
+                            DuracionTotalPlaneada = planeadaTotal,
+                            HorasAsignadas = asignadas,
+                            Pendiente = asignadas < planeadaTotal,
+                            FechaCreacion = DateTime.Now
+                        });
+                    }
+
+                    db.SaveChanges();
+
+                    // ==========================================================
+                    // ✅ ESTADO ACTUAL (REESCRIBIR MAESTRAS SIEMPRE - FORZADO)
+                    // ==========================================================
                     foreach (var r in resultadosBD)
                     {
-                        int prog = acumuladoResultado.ContainsKey(r.IdResultado)
-                            ? acumuladoResultado[r.IdResultado]
-                            : 0;
+                        int idRes = r.IdResultado;
+                        int planeada = duracionPlaneadaPorResultado.ContainsKey(idRes) ? duracionPlaneadaPorResultado[idRes] : 0;
+                        int asignadas = acumuladoResultado.ContainsKey(idRes) ? acumuladoResultado[idRes] : 0;
 
-                        int duracionExcel = db.ResultadoTrimestres
-                            .Where(rt => rt.IdFicha == ficha.IdFicha && rt.IdResultado == r.IdResultado)
-                            .Sum(rt => (int?)rt.HorasPlaneadas) ?? 0;
+                        r.DuracionResultado = planeada;
+                        r.HorasAsignadas = asignadas;
+                        r.Pendiente = asignadas < planeada;
+                        r.Id_Horario = idHorarioNuevo;
 
-                        r.DuracionResultado = duracionExcel;
-                        r.HorasAsignadas = prog;
-                        r.Pendiente = prog < duracionExcel;
+                        if (db.Entry(r).State == EntityState.Detached)
+                            db.ResultadoAprendizaje.Attach(r);
 
                         db.Entry(r).State = EntityState.Modified;
                     }
 
-                    // ==========================
-                    // ==========================
-                    // ACTUALIZAR COMPETENCIAS
-                    // ==========================
                     foreach (var c in competenciasBD)
                     {
-                        int prog = acumuladoCompetencia.ContainsKey(c.IdCompetencia)
-                            ? acumuladoCompetencia[c.IdCompetencia]
-                            : 0;
+                        int idComp = c.IdCompetencia;
+                        int planeadaTotal = duracionPlaneadaPorCompetencia.ContainsKey(idComp) ? duracionPlaneadaPorCompetencia[idComp] : 0;
+                        int asignadas = acumuladoCompetencia.ContainsKey(idComp) ? acumuladoCompetencia[idComp] : 0;
 
-                        int duracionTotal = resultadosBD
-                            .Where(res => res.IdCompetencia == c.IdCompetencia)
-                            .Sum(res => res.DuracionResultado);
+                        c.DuracionTotal = planeadaTotal;
+                        c.HorasAsignadas = asignadas;
+                        c.Pendiente = asignadas < planeadaTotal;
+                        c.Id_Horario = idHorarioNuevo;
 
-                        c.DuracionTotal = duracionTotal;
-                        c.HorasAsignadas = prog;
-                        c.Pendiente = prog < duracionTotal;
+                        if (db.Entry(c).State == EntityState.Detached)
+                            db.Competencia.Attach(c);
 
                         db.Entry(c).State = EntityState.Modified;
                     }
 
-
-
                     db.SaveChanges();
-                    tx.Commit();
 
-                    return Json(new { ok = true, msg = "✅ Horario creado correctamente." });
+                    // ==========================================================
+                    // ✅ AJUSTE TRIMESTRE FICHA: sumar +1 al guardar (con tope)
+                    //    (Se hace al final, solo si todo salió bien)
+                    // ==========================================================
+                    int triActual = ficha.Trimestre ?? 0;
+                    if (triActual < 7) // ajusta si tu máximo es otro
+                    {
+                        ficha.Trimestre = triActual + 1;
+
+                        if (db.Entry(ficha).State == EntityState.Detached)
+                            db.Ficha.Attach(ficha);
+
+                        db.Entry(ficha).State = EntityState.Modified;
+                        db.SaveChanges();
+                    }
+
+                    tx.Commit();
+                    return Json(new { ok = true, msg = "✅ Horario creado correctamente.", idHorario = idHorarioNuevo });
                 }
                 catch (Exception ex)
                 {
@@ -1182,6 +1277,26 @@ namespace EjemploHorarios.Controllers
                 }
             }
         }
+
+
+
+
+
+
+
+
+
+
+
+        private string LimpiarTexto(string t)
+        {
+            if (string.IsNullOrWhiteSpace(t) || t == "undefined") return "";
+            return t.Trim();
+        }
+
+
+
+
 
 
 
@@ -1229,12 +1344,6 @@ namespace EjemploHorarios.Controllers
 
 
 
-
-        private string LimpiarTexto(string t)
-        {
-            if (string.IsNullOrWhiteSpace(t) || t == "undefined") return "";
-            return t.Trim();
-        }
 
 
 

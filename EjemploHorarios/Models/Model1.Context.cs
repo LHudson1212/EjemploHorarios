@@ -45,5 +45,7 @@ namespace EjemploHorarios.Models
         public virtual DbSet<ResultadoAprendizaje> ResultadoAprendizaje { get; set; }
         public virtual DbSet<sysdiagrams> sysdiagrams { get; set; }
         public virtual DbSet<ResultadoTrimestre> ResultadoTrimestres { get; set; }
+        public virtual DbSet<CompetenciaHorario> CompetenciaHorarios { get; set; }
+        public virtual DbSet<ResultadoAprendizajeHorario> ResultadoAprendizajeHorarios { get; set; }
     }
 }
