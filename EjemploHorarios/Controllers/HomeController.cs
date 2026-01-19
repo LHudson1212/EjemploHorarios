@@ -1012,6 +1012,7 @@ namespace EjemploHorarios.Controllers
                         Trimestre_Año = trimestreDelAnio,
                         Fecha_Creacion = DateTime.Now,
                         IdFicha = ficha.IdFicha,
+                        Trimestre_Ficha = ParseNullableInt(trimestreFicha),
                         IdInstructorLider = idInstructorLider
                     };
 
