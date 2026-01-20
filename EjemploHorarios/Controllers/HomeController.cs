@@ -36,7 +36,6 @@ namespace EjemploHorarios.Controllers
             return View();
         }
 
-
         [HttpGet]
         public JsonResult GetFichasEnFormacion(string term = "", int anio = 0, int trimestre = 0)
         {
@@ -89,9 +88,7 @@ namespace EjemploHorarios.Controllers
 
                         // ✅ trimestre REAL en BD (1–7)
                         int trimestreFicha = f.Trimestre ?? 1;
-
                         // ✅ si ya existe horario en ese año y ese trimestre académico → NO debe aparecer
-
                         bool yaTieneHorario = setHorarios.Contains($"{f.IdFicha}|{trimestreFicha}");
 
 
@@ -135,7 +132,6 @@ namespace EjemploHorarios.Controllers
                 );
             }
         }
-
 
         private int ObtenerTrimestreDestinoReal(int idFicha, int anio)
         {
@@ -198,7 +194,6 @@ namespace EjemploHorarios.Controllers
         [HttpPost]
         public JsonResult ImportarExcel(HttpPostedFileBase archivoExcel, int anio, int trimestre, int idFicha)
         {
-            // EPPlus (si te lo llega a pedir en runtime)
             // OfficeOpenXml.ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
 
             using (var tx = db.Database.BeginTransaction())
@@ -239,9 +234,6 @@ namespace EjemploHorarios.Controllers
                     if (prevRt.Any())
                         db.ResultadoTrimestres.RemoveRange(prevRt);
 
-                    // ============================
-                    // A) CACHE EXISTENTE (BD)
-                    // ============================
                     // Competencias existentes del programa (para resolver IdCompetencia)
                     var compsExist = db.Competencia.AsNoTracking()
                         .Where(c => c.IdPrograma == idPrograma)
@@ -264,9 +256,6 @@ namespace EjemploHorarios.Controllers
                         .GroupBy(x => $"{x.IdCompetencia}|{Normalizar(x.Descripcion)}")
                         .ToDictionary(g => g.Key, g => g.First().IdResultado);
 
-                    // ============================
-                    // B) LEER EXCEL A MEMORIA
-                    // ============================
                     var rows = new List<TempRow>();
 
                     using (var package = new OfficeOpenXml.ExcelPackage(new FileInfo(filePath)))
@@ -310,9 +299,6 @@ namespace EjemploHorarios.Controllers
                     if (!rows.Any())
                         return Json(new { ok = false, msg = "⚠️ El archivo no contiene filas válidas (competencia/resultado)." });
 
-                    // ============================
-                    // C) CREAR COMPETENCIAS FALTANTES (1 SaveChanges)
-                    // ============================
                     var nuevasComps = rows
                         .GroupBy(r => r.CompetenciaNorm)
                         .Select(g => g.First())
@@ -335,9 +321,6 @@ namespace EjemploHorarios.Controllers
                             compDict[Normalizar(c.Nombre)] = c.IdCompetencia;
                     }
 
-                    // ============================
-                    // D) CREAR RESULTADOS FALTANTES (1 SaveChanges)
-                    // ============================
                     var nuevosRes = new List<ResultadoAprendizaje>();
 
                     foreach (var r in rows)
@@ -373,9 +356,6 @@ namespace EjemploHorarios.Controllers
                         }
                     }
 
-                    // ============================
-                    // E) INSERTAR RESULTADOTRIMESTRE (1 SaveChanges)
-                    // ============================
                     var inserted = new HashSet<string>(); // "{idFicha}|{idResultado}|{trimAcad}"
 
                     foreach (var r in rows)
@@ -417,10 +397,8 @@ namespace EjemploHorarios.Controllers
                     int trimestreActualFicha = ficha.Trimestre ?? 1;
                     // 6) Calcular trimestre DESTINO real (académico 1–7) según horarios ya creados en ese año
                     int trimestreDestino = ObtenerTrimestreDestinoReal(idFicha, anio);
-
                     // 7) Filtrar resultados del TRIMESTRE DESTINO
                     var competenciasFiltradas = FiltrarCompetenciasPorTrimestre(idFicha, trimestreDestino);
-
 
                     return Json(new
                     {
@@ -448,7 +426,6 @@ namespace EjemploHorarios.Controllers
             }
         }
 
-
         // Clase auxiliar privada (puede ir dentro del controller)
         private class TempRow
         {
@@ -458,14 +435,11 @@ namespace EjemploHorarios.Controllers
             public string ResultadoNorm { get; set; }
             public int[] Horas { get; set; } // 7 posiciones (I..VII)
         }
-
-
         public class CompetenciaDTO
         {
             public string Competencia { get; set; }
             public List<string> Resultados { get; set; }
         }
-
         private int ObtenerInstructorId(string nombre)
         {
             // 1️⃣ Si viene vacío → usar instructor genérico
@@ -544,7 +518,6 @@ namespace EjemploHorarios.Controllers
             return 1219;
         }
 
-
         [HttpGet]
         public JsonResult GetCompetenciasPorTrimestre(int idFicha, int trimestre)
         {
@@ -562,8 +535,6 @@ namespace EjemploHorarios.Controllers
 
             return Json(new { ok = true, data }, JsonRequestBehavior.AllowGet);
         }
-
-
         private List<CompetenciaDTO> FiltrarCompetenciasPorTrimestre(int idFicha, int trimestreAcad)
         {
             const int SEMANAS = 12;
@@ -668,7 +639,6 @@ namespace EjemploHorarios.Controllers
 
             return data;
         }
-
 
         private int? ParseNullableInt(string text)
         {
@@ -811,8 +781,6 @@ namespace EjemploHorarios.Controllers
             }
         }
 
-
-
         [HttpGet]
         public JsonResult GetInstructores(string q = null, int? top = null)
         {
@@ -847,9 +815,6 @@ namespace EjemploHorarios.Controllers
             }
         }
 
-
-
-
         [HttpGet]
         public JsonResult GetInstructorPorResultado(string resultado)
         {
@@ -864,7 +829,6 @@ namespace EjemploHorarios.Controllers
                     }, JsonRequestBehavior.AllowGet);
                 }
 
-                // ===== NORMALIZADOR =====
                 string Normalize(string t)
                 {
                     if (string.IsNullOrEmpty(t)) return "";
@@ -879,7 +843,6 @@ namespace EjemploHorarios.Controllers
                     return sb.ToString().ToUpperInvariant().Trim();
                 }
 
-                // ===== LIMPIEZA =====
                 string QuitarBasura(string tx)
                 {
                     if (string.IsNullOrWhiteSpace(tx)) return "";
@@ -892,10 +855,6 @@ namespace EjemploHorarios.Controllers
                 }
 
                 string buscado = QuitarBasura(Normalize(resultado));
-
-                // ============================
-                // BUSCAR RESULTADO EXACTO / CERCA
-                // ============================
 
                 // Primero: coincidencia EXACTA normalizada
                 var lista = db.Diseño_Curricular.ToList();
@@ -916,9 +875,6 @@ namespace EjemploHorarios.Controllers
                     });
                 }
 
-                // ============================
-                // SI NO HUBO COINCIDENCIA
-                // ============================
                 if (data == null)
                 {
                     return Json(new
@@ -928,9 +884,6 @@ namespace EjemploHorarios.Controllers
                     }, JsonRequestBehavior.AllowGet);
                 }
 
-                // ============================
-                // SI HUBO → TRAER INSTRUCTOR
-                // ============================
                 var instructor = db.Instructor
                                    .FirstOrDefault(i => i.IdInstructor == data.IdInstructor);
 
@@ -943,9 +896,6 @@ namespace EjemploHorarios.Controllers
                     }, JsonRequestBehavior.AllowGet);
                 }
 
-                // ============================
-                // ÉXITO
-                // ============================
                 return Json(new
                 {
                     ok = true,
@@ -1278,28 +1228,11 @@ namespace EjemploHorarios.Controllers
             }
         }
 
-
-
-
-
-
-
-
-
-
-
         private string LimpiarTexto(string t)
         {
             if (string.IsNullOrWhiteSpace(t) || t == "undefined") return "";
             return t.Trim();
         }
-
-
-
-
-
-
-
 
         public void RecalcularPendientes()
         {
@@ -1338,14 +1271,6 @@ namespace EjemploHorarios.Controllers
                 db.SaveChanges();
             }
         }
-
-
-
-
-
-
-
-
 
         // =================== HORARIOS POR FICHA ===================
         [HttpGet]
@@ -1713,35 +1638,59 @@ namespace EjemploHorarios.Controllers
             }
         }
 
-
         [HttpGet]
         public JsonResult GetHorariosInstructor()
         {
             try
             {
-                // Buscamos instructores que tengan al menos una asignación
-                var data = db.Asignacion_horario
-                    .GroupBy(a => a.IdInstructor)
-                    .Select(g => new
+                // Opción 1: Intentar con Asignacion_horario
+                var data1 = db.Asignacion_horario
+                    .Include(a => a.Instructor)
+                    .Where(a => a.Instructor != null)
+                    .Select(a => new
                     {
-                        IdInstructor = g.Key,
-                        NombreInstructor = db.Instructor
-                            .Where(i => i.IdInstructor == g.Key)
-                            .Select(i => i.NombreCompletoInstructor)
-                            .FirstOrDefault()
+                        IdInstructor = a.IdInstructor,
+                        NombreInstructor = a.Instructor.NombreCompletoInstructor
                     })
-                    .Where(x => x.NombreInstructor != null) // solo instructores válidos
-                    .OrderBy(x => x.NombreInstructor)
+                    .Distinct()
                     .ToList();
 
-                return Json(new { ok = true, data }, JsonRequestBehavior.AllowGet);
+                // Opción 2: Si no hay datos, usar HorarioInstructor
+                if (!data1.Any())
+                {
+                    var data2 = db.HorarioInstructor
+                        .Include(hi => hi.Instructor)
+                        .Where(hi => hi.Instructor != null)
+                        .Select(hi => new
+                        {
+                            IdInstructor = hi.IdInstructor,
+                            NombreInstructor = hi.Instructor.NombreCompletoInstructor
+                        })
+                        .Distinct()
+                        .ToList();
+
+                    if (data2.Any())
+                    {
+                        return Json(new
+                        {
+                            ok = true,
+                            data = data2.OrderBy(x => x.NombreInstructor).ToList()
+                        }, JsonRequestBehavior.AllowGet);
+                    }
+                }
+
+                // Devolver datos (pueden estar vacíos)
+                return Json(new
+                {
+                    ok = true,
+                    data = data1.OrderBy(x => x.NombreInstructor).ToList()
+                }, JsonRequestBehavior.AllowGet);
             }
             catch (Exception ex)
             {
                 return Json(new { ok = false, msg = ex.Message }, JsonRequestBehavior.AllowGet);
             }
         }
-
 
         [HttpGet]
         public JsonResult ValidarFranjaExactaInstructor(int idInstructor, string dia, string desde, string hasta, int idFichaActual = 0)
@@ -2167,6 +2116,32 @@ namespace EjemploHorarios.Controllers
             // No encontró nada
             return null;
         }
+        // En HomeController.cs o tu controlador correspondiente
+        public JsonResult ObtenerResultadosPorCompetencia(int idCompetencia)
+        {
+            try
+            {
+                if (idCompetencia > 0)
+                {
+                    // Asegúrate de usar tu contexto de base de datos correcto
+                    using (var db = new SenaPlanningEntities1())
+                    {
+                        var resultados = db.ResultadoAprendizaje
+                            .Where(r => r.IdCompetencia == idCompetencia)
+                            .Select(r => r.Descripcion)//Nombre
+                            .ToList();
 
+                        return Json(resultados, JsonRequestBehavior.AllowGet);
+                    }
+                }
+
+                return Json(new List<string>(), JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                // Log del error si es necesario
+                return Json(new List<string>(), JsonRequestBehavior.AllowGet);
+            }
+        }
     }
 }

@@ -183,7 +183,7 @@
                         </thead>
 
                         <tbody id="tbodyFichas">
-                            <tr><td colspan="8" class="text-center text-muted py-3">Cargando horarios...</td></tr>
+                            <tr><td colspan="9" class="text-center text-muted py-3">Cargando horarios...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -201,11 +201,12 @@
                         <thead>
                             <tr>
                                 <th>Instructor</th>
+                                <th>Total Horarios</th>
                                 <th>Acción</th>
                             </tr>
                         </thead>
                         <tbody id="tbodyInstructores">
-                            <tr><td colspan="2" class="text-center text-muted py-3">Cargando horarios...</td></tr>
+                            <tr><td colspan="3" class="text-center text-muted py-3">Cargando horarios...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -233,35 +234,36 @@
             });
 
             cargarHorariosFicha();
-            cargarHorariosInstructor();
+
+            // Cargar horarios de instructores cuando se haga clic en el tab
+            const instructorTab = document.getElementById('instructores-tab');
+            if (instructorTab) {
+                instructorTab.addEventListener('click', () => {
+                    cargarHorariosInstructor();
+                });
+            }
         });
 
         /* ====================== CARGA Y RENDER TABLA ====================== */
         async function cargarHorariosFicha() {
             const tbody = document.getElementById("tbodyFichas");
             try {
-            const resp = await fetch('@Url.Action("GetHorariosFicha","Home")', { credentials: 'same-origin' });
-            const json = await resp.json();
-            console.log("Respuesta horarios ficha:", json);
+                const resp = await fetch('@Url.Action("GetHorariosFicha","Home")', { credentials: 'same-origin' });
+                const json = await resp.json();
+                console.log("Respuesta horarios ficha:", json);
 
                 if (!json.ok || !json.data || !json.data.length) {
-                    tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-3">No hay horarios registrados.</td></tr>`;
-                    // Aun así inicializamos filtros vacíos
+                    tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted py-3">No hay horarios registrados.</td></tr>`;
                     ALL_HORARIOS = [];
                     populateFilterControls();
                     return;
                 }
 
-                // guardamos datos originales
                 ALL_HORARIOS = json.data;
-
-                // llenar datalist/select con los valores que existen EN LOS HORARIOS (únicos)
                 populateFilterControls();
-
-                // render inicial (todos)
                 renderTable(ALL_HORARIOS);
             } catch (err) {
-                tbody.innerHTML = `<tr><td colspan="8" class="text-center text-danger py-3">Error: ${err.message}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger py-3">Error: ${err.message}</td></tr>`;
                 console.error(err);
             }
         }
@@ -270,7 +272,7 @@
             const tbody = document.getElementById("tbodyFichas");
             if (!data || !data.length) {
                 tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted py-3">
-            No hay coincidencias para los filtros seleccionados.</td></tr>`;
+                    No hay coincidencias para los filtros seleccionados.</td></tr>`;
                 return;
             }
 
@@ -278,26 +280,22 @@
             data.forEach(h => {
                 const tr = document.createElement("tr");
                 tr.innerHTML = `
-            <td>${h.CodigoFicha ?? ""}</td>
-            <td>${h.ProgramaNombre ?? ""}</td>
-            <td>${h.FechaInicioFicha ?? ""}</td>
-            <td>${h.FechaFinFicha ?? ""}</td>
-
-           <td class="text-center">${h.TrimestreFicha}</td>   <!-- 1–7 -->
-    <td class="text-center">${h.Trimestre_Año}</td>    <!-- 1–4 (Año_Horario) -->
-
-            <td>${h.FechaCreacionHorario ?? ""}</td>
-
-            <td>${h.InstructorLider ?? "Sin asignar"}</td>
-            <td class="text-center">
-                <button class="btn btn-outline-sena btn-sm" onclick="verHorarioFicha(${h.Id_Horario})">
-                    <i class="bi bi-eye-fill"></i> Ver
-                </button>
-            </td>`;
+                    <td>${h.CodigoFicha ?? ""}</td>
+                    <td>${h.ProgramaNombre ?? ""}</td>
+                    <td>${h.FechaInicioFicha ?? ""}</td>
+                    <td>${h.FechaFinFicha ?? ""}</td>
+                    <td class="text-center">${h.TrimestreFicha}</td>
+                    <td class="text-center">${h.Trimestre_Año}</td>
+                    <td>${h.FechaCreacionHorario ?? ""}</td>
+                    <td>${h.InstructorLider ?? "Sin asignar"}</td>
+                    <td class="text-center">
+                        <button class="btn btn-outline-sena btn-sm" onclick="verHorarioFicha(${h.Id_Horario})">
+                            <i class="bi bi-eye-fill"></i> Ver
+                        </button>
+                    </td>`;
                 tbody.appendChild(tr);
             });
         }
-
 
         /* ====================== POPULAR FILTROS ====================== */
         function populateFilterControls() {
@@ -336,7 +334,7 @@
                 const opt = document.createElement("option"); opt.value = i; dlInstr.appendChild(opt);
             });
 
-            // trimestres ficha (1..7) - solo los que existan en los horarios
+            // trimestres ficha (1..7)
             const selTriFicha = document.getElementById("filterTrimestreFicha");
             const triFichaOptions = [`<option value="">-- Todos --</option>`].concat(
                 Array.from(trimestresFichaSet)
@@ -347,7 +345,7 @@
             );
             selTriFicha.innerHTML = triFichaOptions.join("");
 
-            // trimestres año (1..4) - limitar a 1..4
+            // trimestres año (1..4)
             const selTriAño = document.getElementById("filterTrimestreAño");
             const triAñoOptions = [`<option value="">-- Todos --</option>`].concat(
                 Array.from(trimestresAnoSet)
@@ -367,27 +365,21 @@
             const triAño = (document.getElementById("filterTrimestreAño").value || "").trim();
             const instr = (document.getElementById("filterInstructor").value || "").trim().toLowerCase();
 
-            // filtrar
             const results = ALL_HORARIOS.filter(h => {
-                // programa (contains)
                 if (prog) {
                     const ph = (h.ProgramaNombre || "").toString().toLowerCase();
                     if (!ph.includes(prog)) return false;
                 }
-                // ficha (contains) -> permite escribir parte del código
                 if (ficha) {
                     const fh = (h.CodigoFicha != null ? h.CodigoFicha.toString().toLowerCase() : "");
                     if (!fh.includes(ficha)) return false;
                 }
-                // trimestre ficha (exact)
                 if (triFicha) {
                     if ((h.TrimestreFicha == null ? "" : String(h.TrimestreFicha)) !== triFicha) return false;
                 }
-                // trimestre año (exact)
                 if (triAño) {
                     if ((h.Trimestre_Año == null ? "" : String(h.Trimestre_Año)) !== triAño) return false;
                 }
-                // instructor (contains)
                 if (instr) {
                     const ih = (h.InstructorLider || "").toString().toLowerCase();
                     if (!ih.includes(instr)) return false;
@@ -407,47 +399,102 @@
             renderTable(ALL_HORARIOS);
         }
 
-        /* ====================== HORARIOS POR INSTRUCTOR (tab) ====================== */
-       async function cargarHorariosInstructor() {
-    const tbody = document.getElementById("tbodyInstructores");
-    try {
-        const resp = await fetch('@Url.Action("GetHorariosInstructor", "Home")', { credentials: "same-origin" });
-        const json = await resp.json();
+        /* ====================== HORARIOS POR INSTRUCTOR ====================== */
+        async function cargarHorariosInstructor() {
+            const tbody = document.getElementById("tbodyInstructores");
+            tbody.innerHTML = `<tr><td colspan="3" class="text-center text-muted py-3">Cargando...</td></tr>`;
 
-        if (!json.ok || !json.data || !json.data.length) {
-            tbody.innerHTML = `<tr><td colspan="2" class="text-center text-muted py-3">No hay horarios asignados.</td></tr>`;
-            return;
+            try {
+                const resp = await fetch('@Url.Action("GetHorariosInstructor", "Home")', {
+                    credentials: "same-origin"
+                });
+
+                if (!resp.ok) {
+                    throw new Error(`Error HTTP: ${resp.status}`);
+                }
+
+                const json = await resp.json();
+                console.log("Respuesta horarios instructor:", json);
+
+                if (!json.ok || !json.data || !json.data.length) {
+                    tbody.innerHTML = `<tr><td colspan="3" class="text-center text-muted py-3">
+                        No hay instructores con horarios asignados.</td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = "";
+
+                // También obtener el conteo de horarios por instructor
+                const respConteo = await fetch('@Url.Action("GetAsignacionesInstructor", "Home")');
+                const jsonConteo = await respConteo.json();
+
+                // Crear mapa de conteo por instructor
+                const conteoMap = new Map();
+                if (jsonConteo.ok && jsonConteo.data) {
+                    jsonConteo.data.forEach(asignacion => {
+                        const id = asignacion.IdInstructor;
+                        conteoMap.set(id, (conteoMap.get(id) || 0) + 1);
+                    });
+                }
+
+                json.data.forEach(instructor => {
+                    const idInstructor = instructor.IdInstructor || 0;
+                    const nombreInstructor = instructor.NombreInstructor || "Sin nombre";
+                    const totalHorarios = conteoMap.get(idInstructor) || 0;
+
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `
+                        <td>${nombreInstructor}</td>
+                        <td class="text-center">${totalHorarios}</td>
+                        <td class="text-center">
+                            <button class="btn btn-outline-sena btn-sm" onclick="verHorarioInstructor(${idInstructor})">
+                                <i class="bi bi-eye-fill"></i> Ver Horarios
+                            </button>
+                        </td>`;
+                    tbody.appendChild(tr);
+                });
+
+            } catch (err) {
+                console.error("Error cargando horarios por instructor:", err);
+                tbody.innerHTML = `<tr><td colspan="3" class="text-center text-danger py-3">
+                    Error al cargar los datos: ${err.message}</td></tr>`;
+            }
         }
 
-        tbody.innerHTML = "";
-        json.data.forEach(h => {
-            const idInstructor = h.IdInstructor || 0;
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-                <td>${h.NombreInstructor ?? "Sin nombre"}</td>
-                <td class="text-center">
-                    <button class="btn btn-outline-sena btn-sm" onclick="verHorarioInstructor(${idInstructor})">
-                        <i class="bi bi-eye-fill"></i> Ver
-                    </button>
-                </td>`;
-            tbody.appendChild(tr);
-        });
-    } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="2" class="text-center text-danger py-3">Error: ${err.message}</td></tr>`;
-        console.error(err);
-    }
-}
+        /* ====================== DEPURACIÓN ====================== */
+        async function debugHorariosInstructor() {
+            try {
+                console.log("=== DEBUG: Verificando datos de instructores ===");
+
+                // 1. Verificar endpoint GetHorariosInstructor
+                const resp1 = await fetch('@Url.Action("GetHorariosInstructor", "Home")');
+                const json1 = await resp1.json();
+                console.log("GetHorariosInstructor response:", json1);
+
+                // 2. Verificar endpoint GetAsignacionesInstructor
+                const resp2 = await fetch('@Url.Action("GetAsignacionesInstructor", "Home")');
+                const json2 = await resp2.json();
+                console.log("GetAsignacionesInstructor (primeros 5):",
+                            json2.data ? json2.data.slice(0, 5) : "No data");
+
+                // 3. Contar instructores únicos
+                if (json2.ok && json2.data && json2.data.length > 0) {
+                    const instructoresUnicos = [...new Set(json2.data.map(a => a.IdInstructor))];
+                    console.log(`Instructores únicos en asignaciones: ${instructoresUnicos.length}`);
+                    console.log("IDs:", instructoresUnicos);
+                }
+            } catch (err) {
+                console.error("Error en debug:", err);
+            }
+        }
 
         /* ====================== REDIRECCIONES ====================== */
         function verHorarioFicha(idHorario) {
-            const baseUrl = '@Url.Action("VerHorarioFicha", "Home")';
-            window.location.href = `${baseUrl}?idHorario=${idHorario}`;
+            window.location.href = '@Url.Action("VerHorarioFicha", "Home")?idHorario=' + idHorario;
         }
 
-
         function verHorarioInstructor(idInstructor) {
-            const baseUrl = '@Url.Action("VerHorarioInstructor", "Home")';
-            window.location.href = `${baseUrl}?idInstructor=${idInstructor}`;
+            window.location.href = '@Url.Action("VerHorarioInstructor", "Home")?idInstructor=' + idInstructor;
         }
     </script>
 }

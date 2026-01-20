@@ -14,13 +14,38 @@
         try
         {
             if (h is TimeSpan ts)
-                return ts.ToString(@"hh\\:mm");
+                return ts.ToString(@"hh\:mm");
             if (h is DateTime dt)
                 return dt.ToString("HH:mm");
             return h.ToString();
         }
         catch { return "--:--"; }
     };
+
+    // Función para abreviar texto
+    Func<string, string> shortWord = s =>
+    {
+        if (String.IsNullOrWhiteSpace(s)) return "";
+        var parts = s.Trim().Split(' ');
+        return parts[0] + (parts.Length > 1 ? "..." : "");
+    };
+
+    // Obtener todos los IDs de competencia únicos para hacer una sola consulta AJAX después
+    var idsCompetencias = Model
+        .Where(h => h.IdCompetencia.HasValue && h.IdCompetencia > 0)
+        .Select(h => h.IdCompetencia.Value)
+        .Distinct()
+        .ToList();
+
+    // Crear un diccionario temporal para mostrar en la vista
+    var datosAsignaciones = Model.Select(a => new
+    {
+        IdCompetencia = a.IdCompetencia ?? 0,
+        Competencia = a.Competencia ?? "",
+        Resultado = a.Resultado ?? "",
+        HoraDesde = a.HoraDesde,
+        HoraHasta = a.HoraHasta
+    }).ToList();
 }
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -35,36 +60,37 @@
 
     body {
         background: #f0fdf4;
-        font-family: 'Segoe UI',sans-serif;
+        font-family: 'Segoe UI', sans-serif;
     }
 
     .horario-container {
         background: #fff;
         border-radius: 10px;
         box-shadow: 0 4px 10px rgba(0,0,0,.08);
-        overflow: hidden
+        overflow: hidden;
+        margin-bottom: 1.5rem;
     }
 
     .horario-header {
-        background: linear-gradient(135deg,var(--sena-green),var(--sena-green-light));
+        background: linear-gradient(135deg, var(--sena-green), var(--sena-green-light));
         color: #fff;
         padding: 12px 16px;
-        font-weight: 700
+        font-weight: 700;
     }
 
     .horario-dias {
         display: flex;
         gap: .75rem;
         overflow-x: auto;
-        padding: 1rem
+        padding: 1rem;
     }
 
     .dia {
         flex: 1;
         min-width: 180px;
-        background: linear-gradient(180deg,#f6fff6,#fff);
+        background: linear-gradient(180deg, #f6fff6, #fff);
         border: 2px dashed #b6e4c3;
-        border-radius: 12px
+        border-radius: 12px;
     }
 
         .dia h5 {
@@ -73,11 +99,11 @@
             color: #fff;
             padding: .5rem;
             border-radius: 9px 9px 0 0;
-            text-align: center
+            text-align: center;
         }
 
     .slot {
-        padding: .5rem .6rem
+        padding: .5rem .6rem;
     }
 
     .asignacion {
@@ -86,25 +112,131 @@
         border-radius: 10px;
         padding: .6rem;
         margin: .5rem .4rem;
-        font-size: .92rem
+        font-size: .92rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
     }
 
+        .asignacion:hover {
+            background: #c6f7d5;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,.1);
+        }
+
         .asignacion strong {
-            color: var(--sena-green-dark)
+            color: var(--sena-green-dark);
+        }
+
+    .asignacion-abreviada {
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+        .asignacion-abreviada .nombre-instructor {
+            font-weight: bold;
+            color: var(--sena-green-dark);
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .asignacion-abreviada .competencia {
+            font-size: 0.85rem;
+            color: #666;
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .asignacion-abreviada .horario {
+            font-size: 0.8rem;
+            color: #888;
+            display: block;
+            margin-top: 0.3rem;
         }
 
     .muted {
-        color: #6b7280
+        color: #6b7280;
     }
 
     .btn-volver {
-        background: linear-gradient(135deg,var(--sena-green),var(--sena-green-light));
+        background: linear-gradient(135deg, var(--sena-green), var(--sena-green-light));
         color: #fff;
         border: none;
         border-radius: 8px;
         padding: .45rem .9rem;
-        font-weight: 600
+        font-weight: 600;
+        transition: all 0.2s ease;
     }
+
+        .btn-volver:hover {
+            background: linear-gradient(135deg, var(--sena-green-dark), var(--sena-green));
+            transform: translateY(-2px);
+        }
+
+    /* Estilos para lista de resultados en modal */
+    .resultados-lista {
+        max-height: 300px;
+        overflow-y: auto;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        padding: 10px;
+        background-color: #f8f9fa;
+    }
+
+    .resultado-item {
+        padding: 10px 12px;
+        margin-bottom: 8px;
+        border-left: 3px solid var(--sena-green);
+        background-color: white;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        transition: all 0.2s;
+    }
+
+        .resultado-item:hover {
+            background-color: #f0fdf4;
+            transform: translateX(3px);
+        }
+
+    .resultado-actual {
+        border-left: 3px solid var(--sena-green-dark);
+        background-color: #e8f7ed;
+        font-weight: 500;
+    }
+
+    .sin-resultados {
+        color: #6c757d;
+        font-style: italic;
+        padding: 20px;
+        text-align: center;
+        border: 1px dashed #dee2e6;
+        border-radius: 5px;
+        background-color: #f8f9fa;
+    }
+
+    /* Estilos para contador de resultados */
+    .badge-resultados {
+        background-color: var(--sena-green);
+        color: white;
+        font-size: 0.7rem;
+        padding: 2px 6px;
+        border-radius: 10px;
+        margin-left: 5px;
+    }
+
+    .link-detalle {
+        color: var(--sena-green);
+        cursor: pointer;
+        text-decoration: none;
+        transition: color 0.2s;
+    }
+
+        .link-detalle:hover {
+            color: var(--sena-green-dark);
+            text-decoration: underline;
+        }
 </style>
 
 <div class="container mt-4">
@@ -112,8 +244,9 @@
         <h3 class="fw-bold text-success">
             <i class="bi bi-person-badge me-2"></i> Horario de @ViewBag.NombreInstructor
         </h3>
-        <button class="btn-volver" onclick="location.href='@Url.Action("ListasHorarios","Home")'">
-            <i class="bi bi-arrow-left-circle me-1"></i> Volver
+        <button class="btn btn-success"
+                onclick="location.href='@Url.Action("ListaHorarios","Home")'">
+            <i class="bi bi-arrow-left"></i> Volver
         </button>
     </div>
 
@@ -132,10 +265,56 @@
                             foreach (var a in asignaciones)
                             {
                                 <div class="asignacion">
+                                    <!-- Ficha -->
                                     <strong>Ficha @(a.Ficha?.CodigoFicha?.ToString() ?? "—")</strong><br />
-                                    <div>@(a.Competencia ?? "")</div>
-                                    <small class="muted d-block">@((a.Resultado ?? ""))</small>
-                                    <small class="muted"><i class="bi bi-clock"></i> @fmt(a.HoraDesde) – @fmt(a.HoraHasta)</small>
+
+                                    <!-- Competencia abreviada con enlace al modal -->
+                                    <div>
+                                        <span class="link-detalle"
+                                              role="button"
+                                              data-bs-toggle="modal"
+                                              data-bs-target="#detalleTextoModal"
+                                              data-competencia="@(a.Competencia ?? "")"
+                                              data-resultado="@(a.Resultado ?? "")"
+                                              data-horadesde="@fmt(a.HoraDesde)"
+                                              data-horahasta="@fmt(a.HoraHasta)"
+                                              data-idcompetencia="@(a.IdCompetencia ?? 0)">
+                                            @shortWord(a.Competencia ?? "")
+                                            @if (a.IdCompetencia.HasValue && a.IdCompetencia > 0)
+                                            {
+                                                <span class="badge-resultados">?</span>
+                                            }
+                                        </span>
+                                    </div>
+
+                                    <!-- Resultado abreviado con enlace al modal -->
+                                    <small class="muted d-block">
+                                        <span class="link-detalle"
+                                              role="button"
+                                              data-bs-toggle="modal"
+                                              data-bs-target="#detalleTextoModal"
+                                              data-competencia="@(a.Competencia ?? "")"
+                                              data-resultado="@(a.Resultado ?? "")"
+                                              data-horadesde="@fmt(a.HoraDesde)"
+                                              data-horahasta="@fmt(a.HoraHasta)"
+                                              data-idcompetencia="@(a.IdCompetencia ?? 0)">
+                                            @if (!string.IsNullOrWhiteSpace(a.Resultado))
+                                            {
+                                                @shortWord(a.Resultado)
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted fst-italic">
+                                                    <i class="bi bi-list-check me-1"></i>Ver resultados
+                                                </span>
+                                            }
+                                        </span>
+                                    </small>
+
+                                    <!-- Horas -->
+                                    <small class="muted">
+                                        <i class="bi bi-clock"></i> @fmt(a.HoraDesde) – @fmt(a.HoraHasta)
+                                    </small>
                                 </div>
                             }
                         }
@@ -149,3 +328,223 @@
         </div>
     </div>
 </div>
+
+<!-- Modal para Competencia + Resultado + Horario (igual al anterior) -->
+<div class="modal fade" id="detalleTextoModal" tabindex="-1" aria-labelledby="detalleTextoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="detalleTextoModalLabel">
+                    <i class="bi bi-info-circle me-2"></i>Detalle de formación
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <h6 class="fw-bold mb-2 text-success">Competencia</h6>
+                        <p class="modal-comp-text mb-4 p-3 bg-light rounded border"></p>
+
+                        <!-- Área para resultado específico (solo si existe) -->
+                        <div id="resultado-especifico-container" class="mb-4">
+                            <h6 class="fw-bold mb-2 text-success">
+                                <i class="bi bi-check-circle me-1"></i>Resultado específico de esta sesión
+                            </h6>
+                            <div class="p-3 bg-light rounded border" id="resultado-especifico"></div>
+                        </div>
+
+                        <!-- Área para todos los resultados vinculados -->
+                        <div id="todos-resultados-container" class="mb-4">
+                            <h6 class="fw-bold mb-2 text-success">
+                                <i class="bi bi-list-check me-1"></i>Todos los resultados vinculados a esta competencia
+                                <span class="badge bg-success ms-2" id="contador-resultados">0</span>
+                            </h6>
+                            <div class="resultados-lista" id="todos-resultados-lista">
+                                <!-- Los resultados se cargarán aquí -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-success">
+                            <div class="card-header bg-success text-white">
+                                <i class="bi bi-clock-history me-1"></i> Horario
+                            </div>
+                            <div class="card-body text-center">
+                                <h3 class="modal-horario-text text-success fw-bold mb-2"></h3>
+                                <small class="text-muted">Duración de la sesión</small>
+                            </div>
+                        </div>
+
+                        <!-- Información de depuración compacta -->
+                        <div class="border border-info rounded mt-3 p-2" id="debug-card" style="max-height: 120px; background-color: #f8f9fa;">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <small class="text-info fw-bold">
+                                    <i class="bi bi-bug me-1"></i> Depuración
+                                </small>
+                                <button type="button" class="btn-close" style="font-size: 0.5rem; padding: 0.1rem;"
+                                        onclick="document.getElementById('debug-card').classList.add('d-none')"></button>
+                            </div>
+                            <div style="overflow-y: auto; max-height: 80px;">
+                                <small class="text-muted" id="debug-info" style="font-size: 0.7rem; line-height: 1.1;"></small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var modalEl = document.getElementById('detalleTextoModal');
+        if (!modalEl) return;
+
+        modalEl.addEventListener('show.bs.modal', function (event) {
+            var trigger = event.relatedTarget;
+            if (!trigger) return;
+
+            var comp = trigger.getAttribute('data-competencia') || 'No especificada';
+            var res = trigger.getAttribute('data-resultado') || '';
+            var hd = trigger.getAttribute('data-horadesde') || '--:--';
+            var hh = trigger.getAttribute('data-horahasta') || '--:--';
+            var idCompetencia = trigger.getAttribute('data-idcompetencia') || 0;
+
+            console.log("=== DATOS RECIBIDOS EN MODAL ===");
+            console.log("Competencia:", comp);
+            console.log("Resultado específico:", res);
+            console.log("ID Competencia:", idCompetencia);
+            console.log("=================================");
+
+            // Mostrar competencia
+            modalEl.querySelector('.modal-comp-text').textContent = comp;
+
+            // Mostrar horario
+            modalEl.querySelector('.modal-horario-text').textContent = hd + ' - ' + hh;
+
+            // Obtener contenedores
+            var resultadoEspecificoContainer = document.getElementById('resultado-especifico-container');
+            var resultadoEspecifico = document.getElementById('resultado-especifico');
+            var todosResultadosContainer = document.getElementById('todos-resultados-container');
+            var todosResultadosLista = document.getElementById('todos-resultados-lista');
+            var contadorResultados = document.getElementById('contador-resultados');
+            var debugCard = document.getElementById('debug-card');
+            var debugInfo = document.getElementById('debug-info');
+
+            // Limpiar contenedores
+            resultadoEspecifico.innerHTML = '';
+            todosResultadosLista.innerHTML = '';
+
+            // Mostrar información de depuración
+            debugInfo.innerHTML = 'Competencia: "' + comp + '"<br>';
+            debugInfo.innerHTML += 'Resultado específico: "' + (res || '(vacío)') + '"<br>';
+            debugInfo.innerHTML += 'ID Competencia: ' + idCompetencia;
+            debugCard.classList.remove('d-none');
+
+            // Verificar si hay resultado específico
+            var tieneResultadoEspecifico = res && res.trim() !== '';
+
+            if (tieneResultadoEspecifico) {
+                // CASO 1: Hay resultado específico
+                resultadoEspecificoContainer.classList.remove('d-none');
+                resultadoEspecifico.innerHTML = '<p class="mb-0">' + res + '</p>';
+            } else {
+                // CASO 2: NO hay resultado específico
+                resultadoEspecificoContainer.classList.add('d-none');
+            }
+
+            // Mostrar carga mientras se obtienen los resultados
+            todosResultadosLista.innerHTML = `
+                <div class="text-center py-4">
+                    <div class="spinner-border text-success" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <p class="mt-2">Cargando resultados de aprendizaje...</p>
+                </div>
+            `;
+
+            // Hacer la llamada AJAX al método del controlador
+            fetch('/Home/ObtenerResultadosPorCompetencia?idCompetencia=' + encodeURIComponent(idCompetencia))
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Error en la respuesta del servidor');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Datos recibidos de AJAX:", data);
+
+                    if (data && data.length > 0) {
+                        mostrarResultadosEnModal(data, res, tieneResultadoEspecifico);
+                    } else {
+                        mostrarMensajeSinResultados();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al cargar resultados:', error);
+                    mostrarMensajeError();
+                });
+
+            // Función para mostrar resultados en el modal
+            function mostrarResultadosEnModal(resultados, resultadoEspecifico, tieneResultadoEspecifico) {
+                todosResultadosLista.innerHTML = '';
+                contadorResultados.textContent = resultados.length;
+
+                if (tieneResultadoEspecifico) {
+                    // Agregar el resultado específico primero
+                    var divActual = document.createElement('div');
+                    divActual.className = 'resultado-item resultado-actual';
+                    divActual.innerHTML = '<div class="d-flex justify-content-between align-items-center">' +
+                        '<div><strong>' + resultadoEspecifico + '</strong></div>' +
+                        '<small class="text-success">(Este resultado)</small>' +
+                        '</div>';
+                    todosResultadosLista.appendChild(divActual);
+
+                    // Agregar los demás resultados (excluyendo el específico si está en la lista)
+                    resultados.forEach(function (resultado) {
+                        if (resultado !== resultadoEspecifico && resultado.trim() !== '') {
+                            var div = document.createElement('div');
+                            div.className = 'resultado-item';
+                            div.textContent = resultado;
+                            todosResultadosLista.appendChild(div);
+                        }
+                    });
+                } else {
+                    // Mostrar todos los resultados
+                    resultados.forEach(function (resultado) {
+                        if (resultado.trim() !== '') {
+                            var div = document.createElement('div');
+                            div.className = 'resultado-item';
+                            div.innerHTML = '<div class="d-flex justify-content-between align-items-center">' +
+                                '<div>' + resultado + '</div>' +
+                                '<small class="text-muted">Resultado de aprendizaje</small>' +
+                                '</div>';
+                            todosResultadosLista.appendChild(div);
+                        }
+                    });
+                }
+            }
+
+            // Función para mostrar mensaje cuando no hay resultados
+            function mostrarMensajeSinResultados() {
+                contadorResultados.textContent = '0';
+                todosResultadosLista.innerHTML = '<div class="sin-resultados">' +
+                    '<i class="bi bi-exclamation-triangle me-2"></i>' +
+                    'No hay resultados vinculados a esta competencia.' +
+                    '</div>';
+            }
+
+            // Función para mostrar mensaje de error
+            function mostrarMensajeError() {
+                contadorResultados.textContent = '0';
+                todosResultadosLista.innerHTML = '<div class="alert alert-danger">' +
+                    '<i class="bi bi-exclamation-triangle-fill me-2"></i>' +
+                    'Error al cargar los resultados de aprendizaje.' +
+                    '</div>';
+            }
+        });
+    });
+</script>

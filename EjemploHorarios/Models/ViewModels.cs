@@ -82,7 +82,6 @@ namespace EjemploHorarios.Models.ViewModels
         public int TotalRequeridas { get; set; }
         public int TotalProgramadas { get; set; }
         public int TotalPendientes { get; set; }
-
     }
 
 }
